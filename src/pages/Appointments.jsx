@@ -1,0 +1,194 @@
+import React, { useState, useEffect } from "react";
+import {
+  Calendar,
+  CreditCard,
+  Wallet,
+  TriangleAlert,
+  CalendarDays,
+} from "lucide-react";
+import {
+  getStoredAppointments,
+  storeAppointment,
+} from "./appointmentsUtils.js";
+import AppointmentSchedulerModal from "./AppointmentSchedulerModal";
+
+export default function Appointments() {
+  const [appointments, setAppointments] = useState([]);
+  const [selectedService, setSelectedService] = useState("");
+  const [selectedPayment, setSelectedPayment] = useState("");
+  const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+
+  useEffect(() => {
+    setAppointments(getStoredAppointments());
+  }, []);
+
+  const handleBookAppointment = (scheduledDateTime) => {
+    if (selectedService && selectedPayment && scheduledDateTime) {
+      const newAppointment = {
+        id: Date.now(),
+        service: selectedService,
+        date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
+        petName: "your Pet",
+        paymentMethod: selectedPayment,
+      };
+
+      const updatedAppointments = storeAppointment(newAppointment);
+      setAppointments(updatedAppointments);
+      setSelectedService("");
+      setSelectedPayment("");
+      setIsSchedulerOpen(false);
+    }
+  };
+
+  const handleCancelAppointment = (id) => {
+    const updatedAppointments = appointments.filter((apt) => apt.id !== id);
+    localStorage.setItem("appointments", JSON.stringify(updatedAppointments));
+    setAppointments(updatedAppointments);
+  };
+
+  return (
+    <div className="container mx-auto px-6 pb-20 font-nunito-bold">
+      <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
+        <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
+          <h2 className="text-lg font-bold text-text mb-8 tracking-wide">
+            Schedule New Appointment
+          </h2>
+
+          <div className="mb-8">
+            <label className="text-md font-medium text-text/80 mb-2 block">
+              Select Service
+            </label>
+            <div className="flex gap-4">
+              <button
+                className={`tracking-wide text-sm px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors ${
+                  selectedService === "Grooming"
+                    ? "bg-green3"
+                    : "hover:bg-green3/80"
+                }`}
+                onClick={() => setSelectedService("Grooming")}
+              >
+                Grooming
+              </button>
+              <p className="text-center font-nunito-medium text-primary pt-2">
+                {" "}
+                or{" "}
+              </p>
+              <button
+                className={`text-sm px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors ${
+                  selectedService === "Check-up"
+                    ? "bg-green3"
+                    : "hover:bg-green3/80"
+                }`}
+                onClick={() => setSelectedService("Check-up")}
+              >
+                Check-up
+              </button>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <h3 className="text-md font-nunito-bold text-text/80 mb-2">
+              Select Payment Method
+            </h3>
+            <div className="flex gap-4 text-sm">
+              <button
+                className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
+                  selectedPayment === "Credit Card"
+                    ? "ring-2 ring-green3 bg-green3/60"
+                    : ""
+                }`}
+                onClick={() => setSelectedPayment("Credit Card")}
+              >
+                <CreditCard className="mx-auto mb-2 text-text" />
+                <span className="text-text/80">Credit Card</span>
+              </button>
+              <button
+                className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
+                  selectedPayment === "PayPal"
+                    ? "ring-2 ring-green3 bg-green3/60"
+                    : ""
+                }`}
+                onClick={() => setSelectedPayment("PayPal")}
+              >
+                <Wallet className="mx-auto mb-2 text-text" />
+                <span className="text-text/80 text-sm">PayPal</span>
+              </button>
+              <button
+                className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
+                  selectedPayment === "Bank Transfer"
+                    ? "ring-2 ring-green3 bg-green3/60"
+                    : ""
+                }`}
+                onClick={() => setSelectedPayment("Bank Transfer")}
+              >
+                <Calendar className="mx-auto mb-2 text-text" />
+                <span className="text-text/80">Bank Transfer</span>
+              </button>
+            </div>
+            <div className="mt-4 flex items-center gap-1">
+              <TriangleAlert className="size-4 text-red/80 mb-[0.4px]" />
+              <p className="tracking-wide text-xs text-primary/60">
+                Downpayment of $100 is required
+              </p>
+            </div>
+          </div>
+
+          <button
+            onClick={() => setIsSchedulerOpen(true)}
+            disabled={!selectedService || !selectedPayment}
+            className={`w-full px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors text-text flex items-center justify-center space-x-2 group
+    ${
+      selectedService && selectedPayment
+        ? "bg-green3 hover:bg-green3/80 hover:text-text/80"
+        : "bg-text/10 cursor-not-allowed text-text/40"
+    }`}
+          >
+            <CalendarDays className="size-5 mb-1 text-text transition-colors group-hover:text-text/80" />
+            <span>Check Availability</span>
+          </button>
+        </div>
+
+        <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
+          <h2 className="text-lg font-bold text-text mb-8 tracking-wide">
+            Upcoming Appointments
+          </h2>
+          {appointments.length === 0 ? (
+            <div className="text-center text-text/80 py-8 tracking-wide">
+              No appointments scheduled
+            </div>
+          ) : (
+            <div className="space-y-6">
+              {appointments.map((apt) => (
+                <div
+                  key={apt.id}
+                  className="relative pl-8 pb-6 border-l-[1.6px] border-green2 last:pb-0"
+                >
+                  <div className="absolute left-[-6px] top-0 w-3 h-3 bg-green3 rounded-full border-[1.6px] border-green2" />
+                  <p className="font-medium text-text tracking-wide">
+                    {apt.date}
+                  </p>
+                  <p className="text-text/80 tracking-wide">{`${apt.service} for ${apt.petName}`}</p>
+                  <p className="text-text/60 text-sm tracking-wide">
+                    Payment: {apt.paymentMethod}
+                  </p>
+                  <button
+                    className="absolute right-2 bottom-0 text-red hover:text-red-800"
+                    onClick={() => handleCancelAppointment(apt.id)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <AppointmentSchedulerModal
+        isOpen={isSchedulerOpen}
+        onClose={() => setIsSchedulerOpen(false)}
+        onSchedule={handleBookAppointment}
+      />
+    </div>
+  );
+}

@@ -1,0 +1,68 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Vertical Scrollbar  */
+::-webkit-scrollbar {
+  width: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #5b9279;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #8fcb9b;
+}
+
+/* Horizontal Scrollbar */
+::-webkit-scrollbar-horizontal {
+  height: 4px; /* Control horizontal scrollbar height */
+}
+
+::-webkit-scrollbar-horizontal-track {
+  background: #f1f1f1; /* Track background color */
+}
+
+::-webkit-scrollbar-horizontal-thumb {
+  background: #5b9279; /* Thumb background color */
+  border-radius: 5px; /* Rounded corners */
+}
+
+::-webkit-scrollbar-horizontal-thumb:hover {
+  background: #8fcb9b; /* Hover color */
+}
+
+.rounded-4xl {
+  border-radius: 2rem;
+}
+
+@font-face {
+  font-family: "Nunito-Regular";
+  src: url("../public/fonts/Nunito-Regular.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Nunito-Bold";
+  src: url("../public/fonts/Nunito-Bold.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Nunito-Light";
+  src: url("../public/fonts/Nunito-Light.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Nunito-Medium";
+  src: url("../public/fonts/Nunito-Medium.ttf") format("truetype");
+}
+
+@font-face {
+  font-family: "Nunito-SemiBold";
+  src: url("../public/fonts/Nunito-SemiBold.ttf") format("truetype");
+}
