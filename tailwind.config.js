@@ -12,6 +12,7 @@ module.exports = {
         pantone: "#D1E8D5",
         red: "#EA5656",
         peach: "#FFA966",
+        gold: "EDB507",
       },
       fontFamily: {
         "nunito-regular": ["Nunito-Regular"],

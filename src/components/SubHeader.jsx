@@ -61,14 +61,14 @@ function SubHeader() {
       return;
     }
 
-    // Special handling for Grooming & Boarding
-    if (item === "Grooming & Boarding") {
+    // Special handling for Services
+    if (item === "Services") {
       const currentPath = location.pathname.toLowerCase();
       const nonHomePages = ["/shop", "/appointments", "/login", "/signup"];
 
       if (currentPath === "/home") {
         // On home page - scroll to section
-        const element = document.getElementById("grooming-boarding");
+        const element = document.getElementById("services");
         if (element) {
           const headerOffset = 120;
           const elementPosition = element.getBoundingClientRect().top;
@@ -76,17 +76,17 @@ function SubHeader() {
             elementPosition + window.pageYOffset - headerOffset;
           smoothScroll(offsetPosition, 700);
         }
-      } else if (currentPath === "/grooming-boarding") {
-        // Already on standalone page - do nothing or scroll to top
+      } else if (currentPath === "/services") {
+        // Already on standalone page - scroll to top
         window.scrollTo(0, 0);
       } else if (nonHomePages.includes(currentPath)) {
         // From other pages - navigate to standalone page
-        navigate("/grooming-boarding", { state: { fromHome: true } });
+        navigate("/services", { state: { fromHome: true } });
       } else {
         // From any other location - navigate to home and scroll
         navigate("/home");
         setTimeout(() => {
-          const element = document.getElementById("grooming-boarding");
+          const element = document.getElementById("services");
           if (element) {
             const headerOffset = 120;
             const elementPosition = element.getBoundingClientRect().top;
@@ -134,7 +134,7 @@ function SubHeader() {
       }`}
     >
       <ul className="flex space-x-10 text-sm font-nunito-medium tracking-wider">
-        {["Home", "Grooming & Boarding", "Shop", "Appointments"].map((item) => (
+        {["Home", "Services", "Shop", "Appointments"].map((item) => (
           <li key={item}>
             <button
               onClick={() => handleClick(item)}

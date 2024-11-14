@@ -11,31 +11,45 @@ import {
   storeAppointment,
 } from "./appointmentsUtils.js";
 import AppointmentSchedulerModal from "./AppointmentSchedulerModal";
+import ServiceSelectionModal from "./ServiceSelectionModal";
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState([]);
   const [selectedService, setSelectedService] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("");
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
+  const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [selectedServiceDetails, setSelectedServiceDetails] = useState(null);
 
   useEffect(() => {
     setAppointments(getStoredAppointments());
   }, []);
 
+  const handleServiceSelection = (serviceDetails) => {
+    setSelectedServiceDetails(serviceDetails);
+    setSelectedService(serviceDetails.category);
+    setIsServiceModalOpen(false);
+  };
+
   const handleBookAppointment = (scheduledDateTime) => {
     if (selectedService && selectedPayment && scheduledDateTime) {
       const newAppointment = {
         id: Date.now(),
-        service: selectedService,
+        service: selectedServiceDetails
+          ? `${selectedServiceDetails.category} - ${selectedServiceDetails.name}`
+          : selectedService,
         date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
         petName: "your Pet",
         paymentMethod: selectedPayment,
+        price: selectedServiceDetails?.price || "Price varies",
+        duration: selectedServiceDetails?.duration || "Duration varies",
       };
 
       const updatedAppointments = storeAppointment(newAppointment);
       setAppointments(updatedAppointments);
       setSelectedService("");
       setSelectedPayment("");
+      setSelectedServiceDetails(null);
       setIsSchedulerOpen(false);
     }
   };
@@ -58,32 +72,22 @@ export default function Appointments() {
             <label className="text-md font-medium text-text/80 mb-2 block">
               Select Service
             </label>
-            <div className="flex gap-4">
-              <button
-                className={`tracking-wide text-sm px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors ${
-                  selectedService === "Grooming"
-                    ? "bg-green3"
-                    : "hover:bg-green3/80"
-                }`}
-                onClick={() => setSelectedService("Grooming")}
-              >
-                Grooming
-              </button>
-              <p className="text-center font-nunito-medium text-primary pt-2">
-                {" "}
-                or{" "}
-              </p>
-              <button
-                className={`text-sm px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors ${
-                  selectedService === "Check-up"
-                    ? "bg-green3"
-                    : "hover:bg-green3/80"
-                }`}
-                onClick={() => setSelectedService("Check-up")}
-              >
-                Check-up
-              </button>
-            </div>
+            <button
+              onClick={() => setIsServiceModalOpen(true)}
+              className="w-full px-6 py-2 rounded-full border-[1.6px] border-green2 hover:bg-green3/80 transition-colors text-text"
+            >
+              {selectedServiceDetails ? (
+                <span>{`${selectedServiceDetails.category} - ${selectedServiceDetails.name}`}</span>
+              ) : (
+                "Choose a Service"
+              )}
+            </button>
+            {selectedServiceDetails && (
+              <div className="mt-2 text-sm text-text/60">
+                <p>Price: {selectedServiceDetails.price}</p>
+                <p>Duration: {selectedServiceDetails.duration}</p>
+              </div>
+            )}
           </div>
 
           <div className="mb-8">
@@ -137,11 +141,11 @@ export default function Appointments() {
             onClick={() => setIsSchedulerOpen(true)}
             disabled={!selectedService || !selectedPayment}
             className={`w-full px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors text-text flex items-center justify-center space-x-2 group
-    ${
-      selectedService && selectedPayment
-        ? "bg-green3 hover:bg-green3/80 hover:text-text/80"
-        : "bg-text/10 cursor-not-allowed text-text/40"
-    }`}
+              ${
+                selectedService && selectedPayment
+                  ? "bg-green3 hover:bg-green3/80 hover:text-text/80"
+                  : "bg-text/10 cursor-not-allowed text-text/40"
+              }`}
           >
             <CalendarDays className="size-5 mb-1 text-text transition-colors group-hover:text-text/80" />
             <span>Check Availability</span>
@@ -171,8 +175,18 @@ export default function Appointments() {
                   <p className="text-text/60 text-sm tracking-wide">
                     Payment: {apt.paymentMethod}
                   </p>
+                  {apt.price && (
+                    <p className="text-text/60 text-sm tracking-wide">
+                      Price: {apt.price}
+                    </p>
+                  )}
+                  {apt.duration && (
+                    <p className="text-text/60 text-sm tracking-wide">
+                      Duration: {apt.duration}
+                    </p>
+                  )}
                   <button
-                    className="absolute right-2 bottom-0 text-red hover:text-red-800"
+                    className="absolute right-2 bottom-0 text-red hover:text-red/80"
                     onClick={() => handleCancelAppointment(apt.id)}
                   >
                     Cancel
@@ -183,6 +197,12 @@ export default function Appointments() {
           )}
         </div>
       </div>
+
+      <ServiceSelectionModal
+        isOpen={isServiceModalOpen}
+        onClose={() => setIsServiceModalOpen(false)}
+        onSelectService={handleServiceSelection}
+      />
 
       <AppointmentSchedulerModal
         isOpen={isSchedulerOpen}

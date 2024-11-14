@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { ChevronDownIcon } from "@heroicons/react/24/outline";
+import { ChevronDown, MoveUpRight } from "lucide-react";
 
 const Services = () => {
   const [activeAccordion, setActiveAccordion] = useState(null);
@@ -25,7 +25,7 @@ const Services = () => {
 
   return (
     <div id="services" className="min-h-screen bg-transparent">
-      <div className="container mx-auto px-6 pb-20 font-nunito-bold">
+      <div className="container mx-auto px-6 pb-20  font-nunito-bold">
         <div className="max-w-5xl mx-auto sm:pt-20 lg:pt-0">
           <h1 className="text-4xl font-bold text-text mb-8 tracking-wide">
             What Highland PetVibes has to offer
@@ -57,8 +57,8 @@ const Services = () => {
                   <span className="text-lg font-medium text-text">
                     {service.title}
                   </span>
-                  <ChevronDownIcon
-                    className={`size-6 text-text transition-transform ${
+                  <ChevronDown
+                    className={`w-6 h-6 text-text transition-transform ${
                       activeAccordion === index ? "transform rotate-180" : ""
                     }`}
                   />
@@ -75,12 +75,10 @@ const Services = () => {
             ))}
           </div>
 
-          {/* Clinic Services Section */}
           <h2 className="text-3xl font-bold text-text mb-12">
             Clinic Services
           </h2>
           <div className="flex flex-col gap-12">
-            {/* Card 1 */}
             <div className="flex flex-col md:flex-row gap-8 items-center">
               <div className="w-full h-full md:w-1/2 border-[1.6px] border-green2 rounded-2xl">
                 <div className="flex items-center justify-center h-full bg-green3/10">
@@ -102,7 +100,6 @@ const Services = () => {
               </div>
             </div>
 
-            {/* Card 2 */}
             <div className="flex flex-col md:flex-row gap-8 items-center">
               <div className="w-full md:w-1/2 order-2 md:order-1">
                 <h3 className="text-2xl font-semibold text-text mb-4">
@@ -125,7 +122,6 @@ const Services = () => {
             </div>
             {showMore && (
               <>
-                {/* Card 3 */}
                 <div className="flex flex-col md:flex-row gap-8 items-center">
                   <div className="w-full md:w-1/2 border-[1.6px] border-green2 rounded-2xl">
                     <div className="flex items-center justify-center h-50 bg-green3/10">
@@ -147,7 +143,6 @@ const Services = () => {
                   </div>
                 </div>
 
-                {/* Card 4 */}
                 <div className="flex flex-col md:flex-row gap-8 items-center">
                   <div className="w-full md:w-1/2">
                     <h3 className="text-2xl font-semibold text-text mb-4">
@@ -172,15 +167,23 @@ const Services = () => {
             )}
           </div>
 
-          <div className="flex justify-center mt-12">
+          <div className="flex items-center justify-center gap-8 mt-12">
             <button
               onClick={() => setShowMore(!showMore)}
               className="mb-5 px-6 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 border-[1.6px] border-green2 transition-colors"
             >
               {showMore ? "Show Less" : "More"}
             </button>
+            {showMore && (
+              <a
+                href="/appointments"
+                className="mb-5 flex items-center gap-2 text-text hover:text-text/80 transition-colors"
+              >
+                View All Options
+                <MoveUpRight className="w-4 h-4" />
+              </a>
+            )}
           </div>
-          <div className="w-full border-b border-green2/70 mt-4"></div>
         </div>
       </div>
     </div>

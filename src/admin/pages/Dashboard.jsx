@@ -77,7 +77,7 @@ const mockData = {
 // Component to display a metric card on the dashboard
 function MetricCard({ title, value, change, icon: Icon }) {
   return (
-    <div className="bg-background p-6 rounded-lg shadow-sm border border-green3/20">
+    <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3">
       <div className="flex items-center justify-between">
         <div>
           {/* Metric title */}
@@ -110,7 +110,7 @@ function ActivityItem({ title, description, time, icon: Icon }) {
         <p className="text-sm font-nunito-medium text-gray-600">
           {description}
         </p>
-        <p className="text-xs font-nunito text-gray-400 mt-1">{time}</p>
+        <p className="text-xs font-nunito text-text/50 mt-1">{time}</p>
       </div>
     </div>
   );
@@ -140,14 +140,14 @@ function Dashboard() {
       </div>
 
       {/* Section for recent activity */}
-      <div className="bg-background rounded-lg shadow-sm border border-green3/20">
-        <div className="border-b border-green3/20 px-6 py-4">
+      <div className="bg-background rounded-lg shadow-sm border-2 border-green3">
+        <div className="border-b border-green3/50 px-6 py-4">
           {/* Title for recent activity */}
-          <h2 className="text-lg font-nunito-bold text-green2">
-            Recent Activity
+          <h2 className="text-lg font-nunito-bold text-green2 tracking-wide">
+            Recent Updates
           </h2>
         </div>
-        <div className="divide-y divide-green3/20">
+        <div className="divide-y-2 divide-green3/40">
           {/* Sample map that displays data */}
           {mockData.recentActivity.map((activity) => (
             <ActivityItem key={activity.id} {...activity} />

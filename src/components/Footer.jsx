@@ -42,7 +42,7 @@ const Footer = () => {
   return (
     <footer className="bg-green2 text-background font-nunito-medium">
       <div className="bg-gray-100">
-        <div className="container mx-auto px-6 py-12">
+        <div className="container mx-auto px-6 py-12 mt-5 ">
           <div className="max-w-xl mx-auto text-center">
             <h3 className="text-2xl font-nunito-bold mb-4 text-green2">
               Stay Updated with PetVibes
