@@ -64,10 +64,10 @@ function ToggleSwitch({ label, checked, onChange }) {
 function Settings() {
   // business info
   const [businessInfo, setBusinessInfo] = useState({
-    name: "PawCare Clinic",
-    address: "123 Pet Street",
-    phone: "+1 234-567-8900",
-    email: "contact@pawcare.com",
+    name: "Highland Petvibes",
+    address: "Maginhawa Branch 208 Lower East Camp 7",
+    phone: "349-0091, 917-1522",
+    email: "info@petvibes.com",
   });
 
   // State for notification preferences
