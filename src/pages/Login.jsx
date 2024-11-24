@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
+import InputField from "../components/InputField";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -18,7 +19,6 @@ const Login = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-
     console.log("Login submitted:", formData);
   };
 
@@ -48,7 +48,7 @@ const Login = () => {
         }}
       />
 
-      <div className="relative z-10 container mx-auto px-6 py-20 font-nunito-bold mt-20">
+      <div className="relative z-10 container mx-auto px-6 py-10 font-nunito-bold mt-20">
         <div className="max-w-md mx-auto bg-background/95 p-8 rounded-2xl border-[1.6px] border-green2 shadow-lg backdrop-blur-sm">
           <h1 className="text-3xl font-bold text-text mb-6 tracking-wide text-center">
             Welcome Back
@@ -59,53 +59,36 @@ const Login = () => {
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-text mb-2 tracking-wide"
-              >
-                Email Address
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
+            <InputField
+              label="Email Address"
+              type="email"
+              value={formData.email}
+              onChange={handleChange}
+              id="email"
+              required
+            />
+
+            <div className="relative">
+              <InputField
+                label="Password"
+                type={showPassword ? "text" : "password"}
+                value={formData.password}
                 onChange={handleChange}
-                className="font-nunito-medium w-full px-4 py-2 rounded-xl border-[1.6px] border-green2 bg-green3/10 text-text focus:outline-none focus:border-green3 transition-colors"
+                id="password"
                 required
               />
-            </div>
-
-            <div>
-              <label
-                htmlFor="password"
-                className="block text-text mb-2 tracking-wide"
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-[10px] text-text/60 hover:text-text transition-colors"
+                tabIndex="-1"
               >
-                Password
-              </label>
-              <div className="relative">
-                <input
-                  type={showPassword ? "text" : "password"}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  className="font-nunito-medium w-full px-4 py-2 rounded-xl border-[1.6px] border-green2 bg-green3/10 text-text focus:outline-none focus:border-green3 transition-colors"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-text/60 hover:text-text transition-colors"
-                >
-                  {showPassword ? (
-                    <EyeOffIcon className="size-5" />
-                  ) : (
-                    <EyeIcon className="size-5" />
-                  )}
-                </button>
-              </div>
+                {showPassword ? (
+                  <EyeOffIcon className="size-5" />
+                ) : (
+                  <EyeIcon className="size-5" />
+                )}
+              </button>
             </div>
 
             <div className="flex items-center justify-between">
@@ -121,7 +104,7 @@ const Login = () => {
               </div>
               <Link
                 to="/forgot-password"
-                className=" text-sm text-text/80 hover:text-text transition-colors"
+                className="text-sm text-text/80 hover:text-text transition-colors"
               >
                 Forgot password?
               </Link>

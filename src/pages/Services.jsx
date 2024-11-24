@@ -177,9 +177,9 @@ const Services = () => {
             {showMore && (
               <a
                 href="/appointments"
-                className="mb-5 flex items-center gap-2 text-text hover:text-text/80 transition-colors"
+                className="mb-5 flex items-center gap-2 text-text hover:text-text/80 transition-colors text-md font-nunito-medium"
               >
-                View All Options
+                View all options
                 <MoveUpRight className="w-4 h-4" />
               </a>
             )}

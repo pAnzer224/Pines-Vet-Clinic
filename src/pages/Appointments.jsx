@@ -5,6 +5,7 @@ import {
   Wallet,
   TriangleAlert,
   CalendarDays,
+  Info,
 } from "lucide-react";
 import {
   getStoredAppointments,
@@ -62,6 +63,26 @@ export default function Appointments() {
 
   return (
     <div className="container mx-auto px-6 pb-20 font-nunito-bold">
+      <div className="max-w-5xl mx-auto mb-8 bg-green3/30 rounded-2xl p-6 border-[1.6px] border-green2">
+        <div className="flex items-start gap-3">
+          <Info className="size-5 text-primary mt-1 flex-shrink-0" />
+          <div>
+            <h2 className="text-lg font-nunito-bold text-primary mb-2 tracking-wide">
+              Find the right veterinary care for your pet
+            </h2>
+            <p className="text-text/75 text-sm">
+              Browse our full range of services, including prices and
+              appointment lengths, by clicking{" "}
+              <span className="text-primary font-nunito-bold tracking-wide">
+                'Choose a Service'
+              </span>
+              . Take your time reviewing our treatment options before scheduling
+              your appointment.
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
         <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
           <h2 className="text-lg font-bold text-text mb-8 tracking-wide">

@@ -22,23 +22,33 @@ const mockAppointments = [
     time: "11:30 AM",
     status: "Pending",
   },
+  {
+    id: 3,
+    petName: "Luna",
+    petType: "Persian Cat",
+    ownerName: "Mike Williams",
+    service: "Dental Check-up",
+    date: "2024-11-14",
+    time: "11:30 AM",
+    status: "Cancelled",
+  },
 ];
 
 function AppointmentCard({ appointment }) {
   const statusColors = {
-    Confirmed: "bg-green-100 text-green-800",
+    Confirmed: "bg-green3/50 text-green-800",
     Pending: "bg-yellow-100 text-yellow-800",
-    Cancelled: "bg-red-100 text-red-800",
+    Cancelled: "bg-red/80 text-red-800",
   };
 
   return (
-    <div className="bg-background p-4 rounded-lg border-2 border-green3 hover:border-primary transition-colors">
+    <div className="bg-gold p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors">
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-nunito-bold text-green2">
             {appointment.petName}
           </h3>
-          <p className="font-nunito text-sm text-text/60">
+          <p className="font-nunito-bold text-xs text-text/60">
             {appointment.petType}
           </p>
         </div>

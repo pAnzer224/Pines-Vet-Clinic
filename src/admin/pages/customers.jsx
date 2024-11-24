@@ -36,17 +36,19 @@ const mockCustomers = [
 
 function CustomerCard({ customer }) {
   const statusColors = {
-    Active: "bg-green-100 text-green-800",
-    Inactive: "bg-gray-100 text-gray-800",
+    Active: "bg-green3/50 text-green-800",
+    Inactive: "bg-primary/30 text-text/80",
   };
 
   return (
-    <div className="bg-background p-4 rounded-lg border-2 border-green3 hover:border-primary transition-colors">
+    <div className="bg-background p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors">
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-nunito-bold text-green2">{customer.name}</h3>
-          <p className="font-nunito text-sm text-text/60">{customer.email}</p>
-          <p className="font-nunito text-sm text-text/60">{customer.phone}</p>
+          <p className="font-nunito-bold text-xs text-text/60">
+            {customer.email}
+          </p>
+          <p className="font-nunito text-xs text-text/60">{customer.phone}</p>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${
@@ -58,8 +60,8 @@ function CustomerCard({ customer }) {
       </div>
 
       <div className="space-y-2">
-        <div className="font-nunito text-sm text-text/80">
-          <span className="font-nunito-medium">Pets:</span>{" "}
+        <div className="font-nunito-bold text-xs text-text/80">
+          <span className="font-nunito-bold text-text/80">Pets:</span>{" "}
           {customer.pets.map((pet, index) => (
             <span key={index}>
               {pet.name} ({pet.type})

@@ -46,7 +46,7 @@ const SignUp = () => {
           backgroundPosition: "top",
         }}
       />
-      <div className="relative z-10 container mx-auto px-6 py-20 font-nunito-bold mt-20">
+      <div className="relative z-10 container mx-auto px-6 py-10 font-nunito-bold mt-20">
         <div className="max-w-md mx-auto bg-background/95 p-8 rounded-2xl border-[1.6px] border-green2 shadow-lg backdrop-blur-sm">
           <h1 className="text-3xl font-bold text-text mb-6 tracking-wide text-center">
             Create Account

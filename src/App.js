@@ -21,29 +21,13 @@ import Signup from "./pages/Signup";
 import Pricing from "./pages/Pricing";
 
 // Pages for the admin panel
+import UserLayout from "./userDashboard/components/userLayout";
+// Pages for the admin panel
 import AdminLayout from "./admin/components/Layout";
-import AdminDashboard from "./admin/pages/Dashboard";
 
 function AppContent() {
   const location = useLocation();
   const isHomePage = location.pathname === "/home";
-  const isAdminPage = location.pathname.startsWith("/admin");
-
-  if (isAdminPage) {
-    return (
-      <Routes location={location} key={location.pathname}>
-        <Route path="/admin" element={<AdminLayout />}>
-          <Route index element={<AdminDashboard />} />
-          <Route path="appointments" element={<div>Appointments Page</div>} />
-          <Route path="shop" element={<div>Shop Management Page</div>} />
-          <Route path="customers" element={<div>Customers Page</div>} />
-          <Route path="content" element={<div>Content Management Page</div>} />
-          <Route path="reports" element={<div>Reports Page</div>} />
-          <Route path="settings" element={<div>Settings Page</div>} />
-        </Route>
-      </Routes>
-    );
-  }
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -83,7 +67,16 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <AppContent />
+      <Routes>
+        {/* Standalone userDashboard route */}
+        <Route path="/user/*" element={<UserLayout />} />
+
+        {/* Standalone admin route */}
+        <Route path="/admin/*" element={<AdminLayout />} />
+
+        {/* Public routes */}
+        <Route path="/*" element={<AppContent />} />
+      </Routes>
     </Router>
   );
 }

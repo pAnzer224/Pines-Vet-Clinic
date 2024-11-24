@@ -22,7 +22,7 @@ const Shop = () => {
       name: "Premium Dog Food",
       price: "₱100/kilo",
       category: "Food & Treats",
-      image: "/images/cat_toy.jpg",
+      image: "/images/dog_food.jpg",
       description: "High-quality nutrition for your furry friend",
     },
     {
@@ -30,7 +30,7 @@ const Shop = () => {
       name: "Interactive Cat Wand",
       price: "₱700",
       category: "Toys",
-      image: "/images/cat_toy.jpg",
+      image: "/images/cat_wand.jpg",
       description: "Keep your cat entertained for hours",
     },
     {
@@ -46,7 +46,7 @@ const Shop = () => {
       name: "Pet Vitamins",
       price: "₱800",
       category: "Health & Wellness",
-      image: "/images/pet_bed.jpg",
+      image: "/images/pet_vitamins.jpg",
       description: "Daily supplements for optimal health",
     },
     {
@@ -54,7 +54,7 @@ const Shop = () => {
       name: "Stylish Collar",
       price: "₱450",
       category: "Accessories",
-      image: "/images/cat_toy.jpg",
+      image: "/images/pet_collar.jpg",
       description: "Fashion meets function",
     },
     {
@@ -62,7 +62,7 @@ const Shop = () => {
       name: "Cat Treats",
       price: "₱250",
       category: "Food & Treats",
-      image: "/images/cat_toy.jpg",
+      image: "/images/cat_treats.jpg",
       description: "Irresistible treats your cat will love",
     },
   ];
@@ -98,7 +98,7 @@ const Shop = () => {
       variants={pageVariants}
       transition={{ duration: 0.5 }}
     >
-      <div className="container mx-auto px-6 py-8 font-nunito-bold">
+      <div className="container mx-auto px-6 pb-8  font-nunito-bold">
         <h1 className="text-4xl font-bold text-text mb-2 tracking-wide text-center">
           Pet Shop
         </h1>

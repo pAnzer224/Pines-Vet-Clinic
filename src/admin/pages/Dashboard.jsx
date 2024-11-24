@@ -77,13 +77,13 @@ const mockData = {
 // Component to display a metric card on the dashboard
 function MetricCard({ title, value, change, icon: Icon }) {
   return (
-    <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3">
+    <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <div className="flex items-center justify-between">
         <div>
           {/* Metric title */}
           <p className="text-sm text-green2 font-nunito-medium">{title}</p>
           {/* Metric value */}
-          <p className="text-2xl font-nunito-bold mt-2">{value}</p>
+          <p className="text-2xl font-nunito-bold mt-2 text-primary">{value}</p>
           {/* {Change} from last month */}
           <p className="text-sm text-primary mt-1 font-nunito-medium">
             {change} from last month
@@ -100,17 +100,17 @@ function MetricCard({ title, value, change, icon: Icon }) {
 // Display recent activities
 function ActivityItem({ title, description, time, icon: Icon }) {
   return (
-    <div className="flex items-start space-x-4 p-4 hover:bg-green3/5 rounded-lg">
+    <div className="flex items-start space-x-4 p-5 hover:bg-green3/10 rounded-lg">
       <div className="bg-green3/10 p-2 rounded-full text-green2">
         <Icon size={20} />
       </div>
       {/* Activity details */}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-nunito-bold text-green2">{title}</p>
-        <p className="text-sm font-nunito-medium text-gray-600">
+        <p className="text-sm font-nunito-medium text-primary/50">
           {description}
         </p>
-        <p className="text-xs font-nunito text-text/50 mt-1">{time}</p>
+        <p className="text-xs font-nunito-bold text-gray-400 mt-1">{time}</p>
       </div>
     </div>
   );
@@ -140,14 +140,14 @@ function Dashboard() {
       </div>
 
       {/* Section for recent activity */}
-      <div className="bg-background rounded-lg shadow-sm border-2 border-green3">
-        <div className="border-b border-green3/50 px-6 py-4">
+      <div className="bg-background rounded-lg shadow-sm border-2 border-green3/60">
+        <div className="border-b border-green3/60 px-6 py-4">
           {/* Title for recent activity */}
-          <h2 className="text-lg font-nunito-bold text-green2 tracking-wide">
-            Recent Updates
+          <h2 className="text-lg font-nunito-bold text-green2">
+            Recent Activity
           </h2>
         </div>
-        <div className="divide-y-2 divide-green3/40">
+        <div className="divide-y divide-green3/50">
           {/* Sample map that displays data */}
           {mockData.recentActivity.map((activity) => (
             <ActivityItem key={activity.id} {...activity} />

@@ -42,10 +42,10 @@ const Footer = () => {
   return (
     <footer className="bg-green2 text-background font-nunito-medium">
       <div className="bg-gray-100">
-        <div className="container mx-auto px-6 py-12 mt-5 ">
+        <div className="container mx-auto px-6 py-12 mt-5">
           <div className="max-w-xl mx-auto text-center">
             <h3 className="text-2xl font-nunito-bold mb-4 text-green2">
-              Stay Updated with PetVibes
+              Stay Updated with Highland Petvibes
             </h3>
             <p className="text-green2/80 mb-6">
               Subscribe to our newsletter for pet care tips, updates, and
@@ -72,14 +72,16 @@ const Footer = () => {
       </div>
 
       <div className="container mx-auto px-6 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          <div>
-            <h3 className="text-2xl font-nunito-bold mb-6">About PetVibes</h3>
-            <p className="text-background/80 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+          <div className="text-center">
+            <h3 className="text-lg font-nunito-bold mb-6">
+              About Highland Petvibes
+            </h3>
+            <p className="text-background/80 mb-6 text-sm">
               Your trusted partner in pet care, providing quality services and
               products for your beloved companions since 2020.
             </p>
-            <div className="flex gap-4">
+            <div className="flex justify-center gap-4">
               {socialLinks.map((social) => (
                 <motion.a
                   key={social.label}
@@ -96,31 +98,32 @@ const Footer = () => {
             </div>
           </div>
 
-          <div>
-            <h3 className="text-2xl font-nunito-bold mb-6">Quick Links</h3>
-            <div className="flex flex-col gap-3">
-              {[
-                { to: "/", label: "Home" },
-                { to: "/shop", label: "Shop" },
-                { to: "/appointments", label: "Book Appointment" },
-                { to: "/grooming-boarding", label: "Grooming & Boarding" },
-              ].map((link) => (
-                <Link
-                  key={link.label}
-                  to={link.to}
-                  className="text-background/80 hover:text-background transition-colors inline-block"
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
+          {/* Quick Links section commented out for future reference */}
+          {/*
+             <h3 className="text-lg font-nunito-bold mb-6">Quick Links</h3>
+             <div className="flex flex-col gap-3 text-sm">
+               {[
+                 { to: "/", label: "Home" },
+                 { to: "/shop", label: "Shop" },
+                 { to: "/appointments", label: "Book Appointment" },
+                 { to: "/grooming-boarding", label: "Grooming & Boarding" },
+               ].map((link) => (
+                 <Link
+                   key={link.label}
+                   to={link.to}
+                   className="text-background/80 hover:text-background transition-colors inline-block"
+                 >
+                   {link.label}
+                 </Link>
+               ))}
+             </div>
+           */}
 
-          <div>
-            <h3 className="text-2xl font-nunito-bold mb-6">Business Hours</h3>
-            <div className="space-y-3">
+          <div className="text-center">
+            <h3 className="text-lg font-nunito-bold mb-6">Business Hours</h3>
+            <div className="space-y-3 text-sm inline-block text-left">
               <div className="flex items-center gap-2">
-                <FaClock className="text-background/60" />
+                <FaClock className="text-background/60 mt-5" />
                 <div>
                   <p className="text-background/80">Monday - Saturday</p>
                   <p className="text-background font-semibold">
@@ -129,7 +132,7 @@ const Footer = () => {
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <FaClock className="text-background/60" />
+                <FaClock className="text-background/60 mt-5" />
                 <div>
                   <p className="text-background/80">Sunday</p>
                   <p className="text-background font-semibold">
@@ -140,11 +143,11 @@ const Footer = () => {
             </div>
           </div>
 
-          <div>
-            <h3 className="text-2xl font-nunito-bold mb-6">Contact Us</h3>
-            <div className="space-y-4">
+          <div className="text-center">
+            <h3 className="text-lg font-nunito-bold mb-6">Contact Us</h3>
+            <div className="space-y-4 inline-block text-left">
               {locations.map((location) => (
-                <div key={location.name} className="space-y-2">
+                <div key={location.name} className="space-y-2 text-sm">
                   <div className="flex items-start gap-2">
                     <FaMapMarkerAlt className="text-background/60 mt-1" />
                     <div>
@@ -161,7 +164,7 @@ const Footer = () => {
               <div className="flex items-center gap-2">
                 <FaEnvelope className="text-background/60" />
                 <a
-                  href="mailto:info@petvibes.com"
+                  href="email"
                   className="text-background/80 hover:text-background transition-colors"
                 >
                   info@petvibes.com
@@ -174,8 +177,8 @@ const Footer = () => {
 
       <div className="border-t border-background/10">
         <div className="container mx-auto px-6 py-6">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-background/60 text-sm">
-            <p>© 2024 PetVibes. All rights reserved.</p>
+          <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-background/60 text-sm">
+            <p>© 2024 Highland Petvibes. All rights reserved.</p>
             <div className="flex gap-6">
               <Link
                 to="/privacy"
