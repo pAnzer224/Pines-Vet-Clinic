@@ -153,7 +153,7 @@ export default function Appointments() {
             <div className="mt-4 flex items-center gap-1">
               <TriangleAlert className="size-4 text-red/80 mb-[0.4px]" />
               <p className="tracking-wide text-xs text-primary/60">
-                Downpayment of $100 is required
+                Downpayment of ₱500 is required
               </p>
             </div>
           </div>

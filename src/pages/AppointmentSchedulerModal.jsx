@@ -1,11 +1,15 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Clock, ChevronRight, ChevronLeft, SquareX } from "lucide-react";
+import { useAuth } from "../hooks/useAuth";
+import PromptModal from "../components/promptModal";
 
 const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showPromptModal, setShowPromptModal] = useState(false);
   const modalRef = useRef();
+  const { currentUser } = useAuth();
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -103,6 +107,11 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   };
 
   const handleSchedule = () => {
+    if (!currentUser) {
+      setShowPromptModal(true);
+      return;
+    }
+
     if (selectedDay && selectedTime !== null) {
       const selectedDate = selectedDay.toLocaleDateString("en-US", {
         month: "short",
@@ -120,94 +129,117 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
+  const handleClosePromptModal = () => {
+    setShowPromptModal(false);
+  };
+
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div
-        ref={modalRef}
-        className="bg-background rounded-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
-      >
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold text-text">
-              Schedule Appointment
-            </h2>
-            <button onClick={onClose} className="text-green2 hover:text-green3">
-              <SquareX className="size-7" />
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2 mt-4 text-sm text-primary mb-6">
-            <span>CONSULTATION FOR 1 PET</span>
-            <ChevronRight className="size-5" />
-            <span>Date & Time</span>
-            <ChevronRight className="size-5" />
-            <span>Complete</span>
-          </div>
-
-          <div className="mb-8">
+    <>
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div
+          ref={modalRef}
+          className="bg-background rounded-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
+        >
+          <div className="p-6">
             <div className="flex justify-between items-center mb-4">
-              <h3 className="text-lg font-semibold text-text">{monthYear}</h3>
-              <div className="flex gap-2">
-                <button
-                  onClick={prevMonth}
-                  className="p-2 rounded-full hover:bg-green3/50"
-                >
-                  <ChevronLeft className="size-5" />
-                </button>
-                <button
-                  onClick={nextMonth}
-                  className="p-2 rounded-full hover:bg-green3/50"
-                >
-                  <ChevronRight className="size-5" />
-                </button>
+              <h2 className="text-2xl font-bold text-text">
+                Schedule Appointment
+              </h2>
+              <button
+                onClick={onClose}
+                className="text-green2 hover:text-green3"
+              >
+                <SquareX className="size-7" />
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 mt-4 text-sm text-primary mb-6">
+              <span>CONSULTATION FOR 1 PET</span>
+              <ChevronRight className="size-5" />
+              <span>Date & Time</span>
+              <ChevronRight className="size-5" />
+              <span>Complete</span>
+            </div>
+
+            <div className="mb-8">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-semibold text-text">{monthYear}</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={prevMonth}
+                    className="p-2 rounded-full hover:bg-green3/50"
+                  >
+                    <ChevronLeft className="size-5" />
+                  </button>
+                  <button
+                    onClick={nextMonth}
+                    className="p-2 rounded-full hover:bg-green3/50"
+                  >
+                    <ChevronRight className="size-5" />
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-7 gap-1">
+                {weekDays.map((day) => (
+                  <div
+                    key={day}
+                    className="p-3 text-center text-text/60 text-sm"
+                  >
+                    {day}
+                  </div>
+                ))}
+                {generateCalendarDays()}
               </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-1">
-              {weekDays.map((day) => (
-                <div key={day} className="p-3 text-center text-text/60 text-sm">
-                  {day}
-                </div>
-              ))}
-              {generateCalendarDays()}
+            <div className="flex items-center gap-2 text-sm text-text/80 mb-6">
+              <Clock size={16} />
+              <span>(UTC +08:00) China, Singapore, Philippines, Hong Kong</span>
             </div>
-          </div>
 
-          <div className="flex items-center gap-2 text-sm text-text/80 mb-6">
-            <Clock size={16} />
-            <span>(UTC +08:00) China, Singapore, Philippines, Hong Kong</span>
-          </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
+              {timeSlots.map((time, index) => (
+                <button
+                  key={index}
+                  onClick={() => setSelectedTime(index)}
+                  className={`p-3 text-center border-[1.6px] border-green2 rounded-2xl transition-colors text-text
+                    ${
+                      selectedTime === index
+                        ? "bg-green3"
+                        : "hover:bg-green3/10"
+                    }`}
+                >
+                  {time}
+                </button>
+              ))}
+            </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-            {timeSlots.map((time, index) => (
-              <button
-                key={index}
-                onClick={() => setSelectedTime(index)}
-                className={`p-3 text-center border-[1.6px] border-green2 rounded-2xl transition-colors text-text
-                  ${
-                    selectedTime === index ? "bg-green3" : "hover:bg-green3/10"
-                  }`}
-              >
-                {time}
-              </button>
-            ))}
+            <button
+              onClick={handleSchedule}
+              disabled={!selectedDay || selectedTime === null}
+              className={`mt-8 w-full px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors text-text
+                ${
+                  selectedDay && selectedTime !== null
+                    ? "bg-green3 hover:bg-green3/80"
+                    : "bg-gray-100 cursor-not-allowed"
+                }`}
+            >
+              Confirm Appointment
+            </button>
           </div>
-
-          <button
-            onClick={handleSchedule}
-            disabled={!selectedDay || selectedTime === null}
-            className={`mt-8 w-full px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors text-text
-              ${
-                selectedDay && selectedTime !== null
-                  ? "bg-green3 hover:bg-green3/80"
-                  : "bg-gray-100 cursor-not-allowed"
-              }`}
-          >
-            Confirm Appointment
-          </button>
         </div>
       </div>
-    </div>
+
+      {showPromptModal && (
+        <PromptModal
+          isOpen={showPromptModal}
+          onClose={() => setShowPromptModal(false)}
+          title="Authentication Required"
+          message="You need to be logged in to schedule an appointment. Please login or sign up to continue."
+        />
+      )}
+    </>
   );
 };
 

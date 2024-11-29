@@ -28,7 +28,7 @@ const Services = () => {
       <div className="container mx-auto px-6 pb-20  font-nunito-bold">
         <div className="max-w-5xl mx-auto sm:pt-20 lg:pt-0">
           <h1 className="text-4xl font-bold text-text mb-8 tracking-wide">
-            What Highland PetVibes has to offer
+            What Highland Petvibes has to offer
           </h1>
 
           <p className="text-text/80 mb-12 tracking-wide">

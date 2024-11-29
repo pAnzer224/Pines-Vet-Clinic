@@ -26,25 +26,25 @@ const ServiceSelectionModal = ({ isOpen, onClose, onSelectService }) => {
     {
       category: "Consultation",
       options: [
-        { name: "General Check-up", price: "$50", duration: "30 mins" },
-        { name: "Vaccination", price: "$75", duration: "45 mins" },
-        { name: "Medical Assessment", price: "$60", duration: "40 mins" },
+        { name: "General Check-up", price: "₱500", duration: "30 mins" },
+        { name: "Vaccination", price: "₱750", duration: "45 mins" },
+        { name: "Medical Assessment", price: "₱600", duration: "40 mins" },
       ],
     },
     {
       category: "Grooming",
       options: [
-        { name: "Basic Grooming", price: "$40", duration: "1 hour" },
-        { name: "Full Service Grooming", price: "$80", duration: "2 hours" },
-        { name: "Bath & Brush", price: "$35", duration: "45 mins" },
+        { name: "Basic Grooming", price: "₱400", duration: "1 hour" },
+        { name: "Full Service Grooming", price: "₱800", duration: "2 hours" },
+        { name: "Bath & Brush", price: "₱350", duration: "45 mins" },
       ],
     },
     {
       category: "Dental Care",
       options: [
-        { name: "Dental Check-up", price: "$45", duration: "30 mins" },
-        { name: "Teeth Cleaning", price: "$120", duration: "1 hour" },
-        { name: "Dental Surgery", price: "From $200", duration: "1-2 hours" },
+        { name: "Dental Check-up", price: "₱450", duration: "30 mins" },
+        { name: "Teeth Cleaning", price: "₱1,200", duration: "1 hour" },
+        { name: "Dental Surgery", price: "From ₱2,000", duration: "1-2 hours" },
       ],
     },
   ];

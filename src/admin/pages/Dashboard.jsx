@@ -33,7 +33,7 @@ const mockData = {
     },
     {
       title: "Revenue",
-      value: "$12,345",
+      value: "₱12,345",
       change: "+15%",
       icon: TrendingUp,
     },

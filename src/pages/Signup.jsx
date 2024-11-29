@@ -1,7 +1,9 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import InputField from "../components/InputField";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "../firebase-config";
 
 const SignUp = () => {
   const [formData, setFormData] = useState({
@@ -9,16 +11,33 @@ const SignUp = () => {
     password: "",
     confirmPassword: "",
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Sign Up submitted:", formData);
+    setLoading(true);
+    setError(null);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(
+        auth,
+        formData.email,
+        formData.password
+      );
+      navigate("/dashboard");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -32,10 +51,9 @@ const SignUp = () => {
   return (
     <motion.div
       className="min-h-screen bg-background relative"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
     >
       <div
@@ -56,37 +74,45 @@ const SignUp = () => {
             Sign up to access your Highland PetVibes account
           </p>
 
+          {error && (
+            <div className="text-red-500 text-sm text-center mb-4">{error}</div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6 mt-2">
             <InputField
               label="Email Address"
               type="email"
+              name="email"
               value={formData.email}
               onChange={handleChange}
-              id="email"
               required
             />
             <InputField
               label="Password"
               type="password"
+              name="password"
               value={formData.password}
               onChange={handleChange}
-              id="password"
               required
             />
             <InputField
               label="Confirm Password"
               type="password"
+              name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              id="confirmPassword"
               required
             />
 
             <button
               type="submit"
-              className="w-full px-6 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 hover:text-text/80"
+              disabled={loading}
+              className="w-full px-6 py-2 bg-green3 text-text rounded-full 
+                          hover:bg-green3/80 transition-colors 
+                          border-[1.6px] border-green2 
+                          hover:text-text/80 disabled:opacity-50"
             >
-              Sign Up
+              {loading ? "Creating Account..." : "Sign Up"}
             </button>
 
             <div className="text-center mt-6 text-sm">

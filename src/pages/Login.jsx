@@ -1,8 +1,10 @@
-import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import InputField from "../components/InputField";
+import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
+import { auth } from "../firebase-config";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,16 +12,24 @@ const Login = () => {
     email: "",
     password: "",
   });
+  const [rememberMe, setRememberMe] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const navigate = useNavigate();
 
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Login submitted:", formData);
+    setLoading(true);
+    setError(null);
+
+    try {
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      navigate("/home");
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e) => {
@@ -30,13 +40,22 @@ const Login = () => {
     }));
   };
 
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        navigate("/home");
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
   return (
     <motion.div
       className="min-h-screen bg-background relative"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
       transition={{ duration: 0.5 }}
     >
       <div
@@ -58,10 +77,15 @@ const Login = () => {
             Sign in to access your Highland PetVibes account
           </p>
 
+          {error && (
+            <div className="text-red-500 text-sm text-center mb-4">{error}</div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-6">
             <InputField
               label="Email Address"
               type="email"
+              name="email"
               value={formData.email}
               onChange={handleChange}
               id="email"
@@ -72,6 +96,7 @@ const Login = () => {
               <InputField
                 label="Password"
                 type={showPassword ? "text" : "password"}
+                name="password"
                 value={formData.password}
                 onChange={handleChange}
                 id="password"
@@ -96,6 +121,8 @@ const Login = () => {
                 <input
                   type="checkbox"
                   id="remember"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
                   className="rounded border-green2 text-green3 focus:ring-green3"
                 />
                 <label htmlFor="remember" className="ml-2 text-text/80 text-sm">
@@ -112,9 +139,10 @@ const Login = () => {
 
             <button
               type="submit"
-              className="w-full px-6 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 hover:text-text/80"
+              disabled={loading}
+              className="w-full px-6 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 hover:text-text/80 disabled:opacity-50"
             >
-              Sign In
+              {loading ? "Signing In..." : "Sign In"}
             </button>
 
             <div className="text-center mt-6 text-sm">

@@ -29,7 +29,6 @@ const PricingPage = () => {
         "Health screenings",
         "Dental cleaning",
         "Emergency care",
-        "24/7 phone support",
       ],
       highlighted: true,
     },

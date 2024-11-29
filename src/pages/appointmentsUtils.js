@@ -1,3 +1,4 @@
+//appointmentUtils.js
 export const getStoredAppointments = () => {
   const stored = localStorage.getItem("appointments");
   return stored ? JSON.parse(stored) : [];
