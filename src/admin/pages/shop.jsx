@@ -1,37 +1,40 @@
-import React, { useState } from "react";
-import { Package, PlusCircle, Edit, Trash2, ChevronDown } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { PlusCircle, Edit, Trash2, ChevronDown } from "lucide-react";
+import { db } from "../../firebase-config";
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  updateDoc,
+} from "firebase/firestore";
 
-const initialProducts = [
-  {
-    id: 1,
-    name: "Premium Dog Food",
-    category: "Food & Treats",
-    price: 100,
-    stock: 50,
-    status: "In Stock",
-  },
-  {
-    id: 2,
-    name: "Interactive Cat Wand",
-    category: "Toys",
-    price: 700,
-    stock: 30,
-    status: "Low Stock",
-  },
-  {
-    id: 3,
-    name: "Luxury Pet Bed",
-    category: "Beds & Furniture",
-    price: 1200,
-    stock: 15,
-    status: "Low Stock",
-  },
-];
+// Function to dynamically load all images from the shop-images folder
+function importAllImages(requireContext) {
+  return requireContext.keys().map(requireContext);
+}
 
 function Shop() {
-  const [products, setProducts] = useState(initialProducts);
+  const [products, setProducts] = useState([]);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [newProduct, setNewProduct] = useState({
+    name: "",
+    category: "",
+    description: "",
+    price: "",
+    stock: "",
+    image: "/images/shop-images/default-image.jpg",
+  });
+
+  // Load images dynamically
+  const shopImages = importAllImages(
+    require.context("/public/images/shop-images/", false, /\.(png|jpe?g|svg)$/)
+  );
 
   const categories = [
     "All Categories",
@@ -42,6 +45,82 @@ function Shop() {
     "Health & Wellness",
   ];
 
+  useEffect(() => {
+    if (selectedImage) {
+      setNewProduct((prev) => ({
+        ...prev,
+        image: selectedImage,
+      }));
+    }
+  }, [selectedImage]);
+
+  const handleAddProduct = async (e) => {
+    e.preventDefault();
+
+    try {
+      const productToAdd = {
+        ...newProduct,
+        price: Number(newProduct.price),
+        stock: Number(newProduct.stock),
+        status: Number(newProduct.stock) > 20 ? "In Stock" : "Low Stock",
+        image: selectedImage || newProduct.image,
+      };
+
+      if (isEditMode && editingProduct) {
+        await updateDoc(doc(db, "products", editingProduct.id), productToAdd);
+        setProducts(
+          products.map((p) =>
+            p.id === editingProduct.id
+              ? { ...productToAdd, id: editingProduct.id }
+              : p
+          )
+        );
+      } else {
+        const docRef = await addDoc(collection(db, "products"), productToAdd);
+        setProducts([...products, { id: docRef.id, ...productToAdd }]);
+      }
+
+      setIsModalOpen(false);
+      setNewProduct({
+        name: "",
+        category: "",
+        description: "",
+        price: "",
+        stock: "",
+        image: "/images/shop-images/default-image.jpg",
+      });
+      setSelectedImage(null);
+      setIsEditMode(false);
+      setEditingProduct(null);
+    } catch (e) {
+      console.error("Error adding/updating document: ", e);
+    }
+  };
+
+  const handleEdit = (product) => {
+    setIsEditMode(true);
+    setEditingProduct(product);
+    setNewProduct({
+      name: product.name,
+      category: product.category,
+      description: product.description,
+      price: product.price.toString(),
+      stock: product.stock.toString(),
+      image: product.image,
+    });
+    setSelectedImage(product.image);
+    setIsModalOpen(true);
+  };
+
+  const handleDeleteProduct = async (productId) => {
+    try {
+      await deleteDoc(doc(db, "products", productId));
+      setProducts(products.filter((product) => product.id !== productId));
+    } catch (e) {
+      console.error("Error removing document: ", e);
+    }
+  };
+
   const filteredProducts = products.filter(
     (product) =>
       selectedCategory === "All Categories" ||
@@ -49,24 +128,12 @@ function Shop() {
   );
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-nunito-bold text-green2">
-          Shop Management
-        </h1>
-        <div className="flex items-center mt-5">
-          <Package className="mr-2 text-primary size-7" />
-          <p className="text-xl text-primary font-nunito-bold tracking-wide">
-            Manage Your Product Inventory
-          </p>
-        </div>
-      </div>
-
+    <div className="space-y-6 mt-14">
       <div className="flex justify-between items-center">
         <div className="relative w-full md:w-64">
           <button
             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between font-nunito"
+            className="w-full px-4 py-2 bg-green3 text-text rounded-lg hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between font-nunito"
           >
             <span>{selectedCategory}</span>
             <ChevronDown className="w-4 h-4" />
@@ -90,18 +157,150 @@ function Shop() {
           )}
         </div>
 
-        <button className="flex items-center px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/80 transition-colors font-nunito">
+        <button
+          onClick={() => {
+            setIsEditMode(false);
+            setEditingProduct(null);
+            setNewProduct({
+              name: "",
+              category: "",
+              description: "",
+              price: "",
+              stock: "",
+              image: "/images/shop-images/default-image.jpg",
+            });
+            setSelectedImage(null);
+            setIsModalOpen(true);
+          }}
+          className="flex items-center px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito"
+        >
           <PlusCircle className="w-4 h-4 mr-2" />
           Add Product
         </button>
       </div>
 
-      <div className="overflow-x-auto">
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 font-nunito-medium tracking-wide text-sm">
+          <form
+            onSubmit={handleAddProduct}
+            className="bg-background p-8 rounded-2xl w-96 border-[1.6px] border-green2"
+          >
+            <input
+              type="text"
+              placeholder="Product Name"
+              value={newProduct.name}
+              onChange={(e) =>
+                setNewProduct({ ...newProduct, name: e.target.value })
+              }
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              required
+            />
+            {/* Image Selection Carousel */}
+            <div className="w-full mb-4">
+              <p className="text-sm text-text/70 mb-2">Select Product Image:</p>
+              <div className="flex space-x-2 overflow-x-auto pb-2">
+                {shopImages.map((image, index) => (
+                  <div
+                    key={index}
+                    onClick={() => setSelectedImage(image)}
+                    className={`
+                      w-24 h-24 flex-shrink-0 rounded-lg cursor-pointer 
+                      border-2 transition-all duration-200
+                      ${
+                        selectedImage === image
+                          ? "border-green2 ring-2 ring-green2/50"
+                          : "border-transparent hover:border-green2/50"
+                      }
+                    `}
+                  >
+                    <img
+                      src={image}
+                      alt={`Product option ${index + 1}`}
+                      className="w-full h-full object-cover rounded-lg"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <select
+              value={newProduct.category}
+              onChange={(e) =>
+                setNewProduct({ ...newProduct, category: e.target.value })
+              }
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              required
+            >
+              <option value="">Select Category</option>
+              {categories.slice(1).map((category) => (
+                <option key={category} value={category}>
+                  {category}
+                </option>
+              ))}
+            </select>
+            <textarea
+              placeholder="Description"
+              value={newProduct.description}
+              onChange={(e) =>
+                setNewProduct({ ...newProduct, description: e.target.value })
+              }
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              required
+              rows={3}
+            />
+            <div className="relative mb-2">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 font-nunito-bold text-primary/80">
+                ₱
+              </span>
+              <input
+                type="text"
+                placeholder="Price"
+                value={newProduct.price}
+                onChange={(e) => {
+                  const value = e.target.value.replace(/[^0-9.]/g, "");
+                  setNewProduct({ ...newProduct, price: value });
+                }}
+                className="w-full p-2 pl-7 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                required
+              />
+            </div>
+            <input
+              type="text"
+              placeholder="Stock"
+              value={newProduct.stock}
+              onChange={(e) => {
+                const value = e.target.value.replace(/[^0-9]/g, "");
+                setNewProduct({ ...newProduct, stock: value });
+              }}
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              required
+            />
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={() => setIsModalOpen(false)}
+                className="px-4 py-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors font-nunito"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito"
+              >
+                {isEditMode ? "Update Product" : "Add Product"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      <div className="overflow-x-auto rounded-xl border-[1.6px] border-green2">
         <table className="w-full bg-background border-collapse">
           <thead>
-            <tr className="bg-green3/20 font-nunito-bold text-primary">
+            <tr className="bg-green3/20 font-nunito-bold text-text">
               <th className="p-3 text-left">Product Name</th>
               <th className="p-3 text-left">Category</th>
+              <th className="p-3 text-left">Description</th>
               <th className="p-3 text-left">Price</th>
               <th className="p-3 text-left">Stock</th>
               <th className="p-3 text-left">Status</th>
@@ -112,10 +311,11 @@ function Shop() {
             {filteredProducts.map((product) => (
               <tr
                 key={product.id}
-                className="border-b border-green3/30 hover:bg-green3/10 font-nunito-bold-medium"
+                className="border-b border-green3/30 hover:bg-green3/10 font-nunito"
               >
                 <td className="p-3 font-nunito-bold">{product.name}</td>
                 <td className="p-3">{product.category}</td>
+                <td className="p-3">{product.description}</td>
                 <td className="p-3">₱{product.price}</td>
                 <td className="p-3">{product.stock}</td>
                 <td className="p-3">
@@ -133,10 +333,16 @@ function Shop() {
                   </span>
                 </td>
                 <td className="p-3 flex justify-center space-x-2">
-                  <button className="text-green2 hover:text-primary">
+                  <button
+                    onClick={() => handleEdit(product)}
+                    className="text-green2 hover:text-green2/80 transition-colors"
+                  >
                     <Edit size={18} />
                   </button>
-                  <button className="text-red-500 hover:text-red-700">
+                  <button
+                    onClick={() => handleDeleteProduct(product.id)}
+                    className="text-red-500 hover:text-red-700 transition-colors"
+                  >
                     <Trash2 size={18} />
                   </button>
                 </td>

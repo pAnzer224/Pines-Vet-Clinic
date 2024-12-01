@@ -5,7 +5,6 @@ import {
   UserCircle,
   PawPrint,
   Calendar,
-  MessageCircle,
   Menu,
   X,
   LogOut,

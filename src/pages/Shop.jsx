@@ -1,8 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ChevronDown, Search } from "lucide-react";
+import { collection, onSnapshot } from "firebase/firestore";
+import { db } from "../firebase-config";
 
 const Shop = () => {
+  const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -16,56 +19,19 @@ const Shop = () => {
     "Health & Wellness",
   ];
 
-  const products = [
-    {
-      id: 1,
-      name: "Premium Dog Food",
-      price: "₱100/kilo",
-      category: "Food & Treats",
-      image: "/images/dog_food.jpg",
-      description: "High-quality nutrition for your furry friend",
-    },
-    {
-      id: 2,
-      name: "Interactive Cat Wand",
-      price: "₱700",
-      category: "Toys",
-      image: "/images/cat_wand.jpg",
-      description: "Keep your cat entertained for hours",
-    },
-    {
-      id: 3,
-      name: "Luxury Pet Bed",
-      price: "₱1200",
-      category: "Beds & Furniture",
-      image: "/images/pet_bed.jpg",
-      description: "Comfortable and stylish rest for pets",
-    },
-    {
-      id: 4,
-      name: "Pet Vitamins",
-      price: "₱800",
-      category: "Health & Wellness",
-      image: "/images/pet_vitamins.jpg",
-      description: "Daily supplements for optimal health",
-    },
-    {
-      id: 5,
-      name: "Stylish Collar",
-      price: "₱450",
-      category: "Accessories",
-      image: "/images/pet_collar.jpg",
-      description: "Fashion meets function",
-    },
-    {
-      id: 6,
-      name: "Cat Treats",
-      price: "₱250",
-      category: "Food & Treats",
-      image: "/images/cat_treats.jpg",
-      description: "Irresistible treats your cat will love",
-    },
-  ];
+  useEffect(() => {
+    const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
+      setProducts(
+        snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          image: doc.data().image || "/images/shop-images/default-image.jpg",
+        }))
+      );
+    });
+
+    return () => unsubscribe();
+  }, []);
 
   const filterProducts = () => {
     return products.filter((product) => {
@@ -73,7 +39,10 @@ const Shop = () => {
         selectedCategory === "All" || product.category === selectedCategory;
       const matchesSearch =
         product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.description.toLowerCase().includes(searchQuery.toLowerCase());
+        (product.description &&
+          product.description
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
   };
@@ -98,7 +67,7 @@ const Shop = () => {
       variants={pageVariants}
       transition={{ duration: 0.5 }}
     >
-      <div className="container mx-auto px-6 pb-8  font-nunito-bold">
+      <div className="container mx-auto px-6 pb-8 font-nunito-bold">
         <h1 className="text-4xl font-bold text-text mb-2 tracking-wide text-center">
           Pet Shop
         </h1>
@@ -183,7 +152,7 @@ const Shop = () => {
                 </p>
 
                 <p className="text-lg font-semibold text-primary mb-4">
-                  {product.price}
+                  ₱{product.price}
                 </p>
 
                 <button className="w-full px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2">

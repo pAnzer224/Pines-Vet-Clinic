@@ -6,7 +6,7 @@ import {
   onAuthStateChanged,
 } from "firebase/auth";
 import { doc, setDoc } from "firebase/firestore";
-import { auth, firestore } from "../firebase-config";
+import { auth, db } from "../firebase-config";
 
 export const useAuth = () => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -33,7 +33,7 @@ export const useAuth = () => {
       const user = userCredential.user;
 
       // Create a user document in Firestore
-      await setDoc(doc(firestore, "users", user.uid), {
+      await setDoc(doc(db, "users", user.uid), {
         email: user.email,
         createdAt: new Date(),
         isActive: true,

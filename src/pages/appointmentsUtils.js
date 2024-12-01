@@ -1,12 +1,86 @@
-//appointmentUtils.js
-export const getStoredAppointments = () => {
-  const stored = localStorage.getItem("appointments");
-  return stored ? JSON.parse(stored) : [];
+import { db, auth } from "../firebase-config";
+import {
+  collection,
+  addDoc,
+  query,
+  where,
+  getDocs,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
+import { toast } from "react-toastify";
+
+export const storeAppointment = async (appointmentData) => {
+  try {
+    // Ensure user is authenticated
+    if (!auth.currentUser) {
+      toast.error("Please log in to book an appointment");
+      throw new Error("User not authenticated");
+    }
+
+    const userId = auth.currentUser.uid;
+    const appointmentWithUser = {
+      ...appointmentData,
+      userId: userId,
+      createdAt: new Date(),
+    };
+
+    const docRef = await addDoc(
+      collection(db, "appointments"),
+      appointmentWithUser
+    );
+
+    return {
+      ...appointmentWithUser,
+      id: docRef.id,
+    };
+  } catch (error) {
+    console.error("Error storing appointment:", error);
+    toast.error("Failed to book appointment. Please try again.");
+    throw error;
+  }
 };
 
-export const storeAppointment = (appointment) => {
-  const currentAppointments = getStoredAppointments();
-  const updatedAppointments = [...currentAppointments, appointment];
-  localStorage.setItem("appointments", JSON.stringify(updatedAppointments));
-  return updatedAppointments;
+export const getStoredAppointments = async () => {
+  try {
+    // Ensure user is authenticated
+    if (!auth.currentUser) {
+      return [];
+    }
+
+    const q = query(
+      collection(db, "appointments"),
+      where("userId", "==", auth.currentUser.uid)
+    );
+
+    const querySnapshot = await getDocs(q);
+
+    return querySnapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      // Ensure date is properly formatted
+      date: doc.data().date || "",
+    }));
+  } catch (error) {
+    console.error("Error fetching appointments:", error);
+    toast.error("Failed to fetch appointments. Please try again.");
+    return [];
+  }
+};
+
+export const cancelAppointment = async (appointmentId) => {
+  try {
+    // Ensure user is authenticated
+    if (!auth.currentUser) {
+      toast.error("Please log in to cancel an appointment");
+      return false;
+    }
+
+    await deleteDoc(doc(db, "appointments", appointmentId));
+    return true;
+  } catch (error) {
+    console.error("Error canceling appointment:", error);
+    toast.error("Failed to cancel appointment. Please try again.");
+    return false;
+  }
 };

@@ -1,6 +1,6 @@
+// src/pages/Appointments.js
 import React, { useState, useEffect } from "react";
 import {
-  Calendar,
   CreditCard,
   Wallet,
   TriangleAlert,
@@ -8,11 +8,14 @@ import {
   Info,
 } from "lucide-react";
 import {
-  getStoredAppointments,
   storeAppointment,
-} from "./appointmentsUtils.js";
-import AppointmentSchedulerModal from "./AppointmentSchedulerModal";
-import ServiceSelectionModal from "./ServiceSelectionModal";
+  getStoredAppointments,
+  cancelAppointment,
+} from "../pages/appointmentsUtils";
+import { useAuth } from "../hooks/useAuth";
+import AppointmentSchedulerModal from "../pages/AppointmentSchedulerModal";
+import ServiceSelectionModal from "../pages/ServiceSelectionModal";
+import { toast } from "react-toastify";
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState([]);
@@ -21,10 +24,28 @@ export default function Appointments() {
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [selectedServiceDetails, setSelectedServiceDetails] = useState(null);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    setAppointments(getStoredAppointments());
-  }, []);
+    const fetchAppointments = async () => {
+      if (currentUser) {
+        try {
+          const fetchedAppointments = await getStoredAppointments();
+          // Ensure fetchedAppointments is always an array
+          setAppointments(
+            Array.isArray(fetchedAppointments) ? fetchedAppointments : []
+          );
+        } catch (error) {
+          toast.error("Failed to fetch appointments");
+          setAppointments([]); // Fallback to empty array
+        }
+      } else {
+        setAppointments([]); // Clear appointments if no user
+      }
+    };
+
+    fetchAppointments();
+  }, [currentUser]);
 
   const handleServiceSelection = (serviceDetails) => {
     setSelectedServiceDetails(serviceDetails);
@@ -32,33 +53,54 @@ export default function Appointments() {
     setIsServiceModalOpen(false);
   };
 
-  const handleBookAppointment = (scheduledDateTime) => {
-    if (selectedService && selectedPayment && scheduledDateTime) {
-      const newAppointment = {
-        id: Date.now(),
-        service: selectedServiceDetails
-          ? `${selectedServiceDetails.category} - ${selectedServiceDetails.name}`
-          : selectedService,
-        date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
-        petName: "your Pet",
-        paymentMethod: selectedPayment,
-        price: selectedServiceDetails?.price || "Price varies",
-        duration: selectedServiceDetails?.duration || "Duration varies",
-      };
+  const handleBookAppointment = async (scheduledDateTime) => {
+    if (!currentUser) {
+      toast.error("Please log in to book an appointment");
+      return;
+    }
 
-      const updatedAppointments = storeAppointment(newAppointment);
-      setAppointments(updatedAppointments);
-      setSelectedService("");
-      setSelectedPayment("");
-      setSelectedServiceDetails(null);
-      setIsSchedulerOpen(false);
+    if (selectedService && selectedPayment && scheduledDateTime) {
+      try {
+        const newAppointment = {
+          service: selectedServiceDetails
+            ? `${selectedServiceDetails.category} - ${selectedServiceDetails.name}`
+            : selectedService,
+          date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
+          petName: "Your Pet",
+          paymentMethod: selectedPayment,
+          price: selectedServiceDetails?.price || "Price varies",
+          duration: selectedServiceDetails?.duration || "Duration varies",
+        };
+
+        const storedAppointment = await storeAppointment(newAppointment);
+
+        setAppointments((prev) => [...prev, storedAppointment]);
+
+        setSelectedService("");
+        setSelectedPayment("");
+        setSelectedServiceDetails(null);
+        setIsSchedulerOpen(false);
+
+        toast.success("Appointment booked successfully!");
+      } catch (error) {
+        toast.error("Failed to book appointment");
+      }
     }
   };
 
-  const handleCancelAppointment = (id) => {
-    const updatedAppointments = appointments.filter((apt) => apt.id !== id);
-    localStorage.setItem("appointments", JSON.stringify(updatedAppointments));
-    setAppointments(updatedAppointments);
+  const handleCancelAppointment = async (id) => {
+    try {
+      const success = await cancelAppointment(id);
+
+      if (success) {
+        setAppointments((prev) => prev.filter((apt) => apt.id !== id));
+        toast.success("Appointment canceled successfully");
+      } else {
+        toast.error("Failed to cancel appointment");
+      }
+    } catch (error) {
+      toast.error("An error occurred while canceling appointment");
+    }
   };
 
   return (
@@ -129,25 +171,28 @@ export default function Appointments() {
               </button>
               <button
                 className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                  selectedPayment === "PayPal"
+                  selectedPayment === "Cash"
                     ? "ring-2 ring-green3 bg-green3/60"
                     : ""
                 }`}
-                onClick={() => setSelectedPayment("PayPal")}
+                onClick={() => setSelectedPayment("Cash")}
               >
                 <Wallet className="mx-auto mb-2 text-text" />
-                <span className="text-text/80 text-sm">PayPal</span>
+                <span className="text-text/80 text-sm">Cash</span>
               </button>
               <button
                 className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                  selectedPayment === "Bank Transfer"
+                  selectedPayment === "Gcash"
                     ? "ring-2 ring-green3 bg-green3/60"
                     : ""
-                }`}
-                onClick={() => setSelectedPayment("Bank Transfer")}
+                } hover:bg-blue-100`}
+                onClick={() => setSelectedPayment("Gcash")}
               >
-                <Calendar className="mx-auto mb-2 text-text" />
-                <span className="text-text/80">Bank Transfer</span>
+                <img
+                  src="/images/gcash.svg"
+                  alt="Gcash Logo"
+                  className="mx-auto h-10"
+                />
               </button>
             </div>
             <div className="mt-4 flex items-center gap-1">
@@ -177,7 +222,7 @@ export default function Appointments() {
           <h2 className="text-lg font-bold text-text mb-8 tracking-wide">
             Upcoming Appointments
           </h2>
-          {appointments.length === 0 ? (
+          {!appointments || appointments.length === 0 ? (
             <div className="text-center text-text/80 py-8 tracking-wide">
               No appointments scheduled
             </div>
@@ -190,11 +235,14 @@ export default function Appointments() {
                 >
                   <div className="absolute left-[-6px] top-0 w-3 h-3 bg-green3 rounded-full border-[1.6px] border-green2" />
                   <p className="font-medium text-text tracking-wide">
-                    {apt.date}
+                    {apt.date || "No date specified"}
                   </p>
-                  <p className="text-text/80 tracking-wide">{`${apt.service} for ${apt.petName}`}</p>
+                  <p className="text-text/80 tracking-wide">
+                    {apt.service || "No service specified"} for{" "}
+                    {apt.petName || "Unknown Pet"}
+                  </p>
                   <p className="text-text/60 text-sm tracking-wide">
-                    Payment: {apt.paymentMethod}
+                    Payment: {apt.paymentMethod || "Not specified"}
                   </p>
                   {apt.price && (
                     <p className="text-text/60 text-sm tracking-wide">
