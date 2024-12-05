@@ -2,7 +2,6 @@ import React, { useState } from "react";
 import {
   PawPrint,
   FileText,
-  Image,
   ShoppingBag,
   Newspaper,
   ChevronDown,

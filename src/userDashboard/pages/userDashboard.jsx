@@ -9,15 +9,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
-import { auth, db } from "../../firebase-config";
-import {
-  doc,
-  getDoc,
-  collection,
-  query,
-  where,
-  getDocs,
-} from "firebase/firestore";
+import { useAuth } from "../../hooks/useAuth";
+import { getStoredAppointments } from "../../pages/appointmentsUtils";
+import { toast } from "react-toastify";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase-config";
 
 function WelcomeCard({ userData }) {
   return (
@@ -29,12 +25,18 @@ function WelcomeCard({ userData }) {
           </div>
           <div>
             <h1 className="text-lg font-nunito-bold text-green2">
-              Welcome to your dashboard, {userData?.name || "Pet Parent"}!
+              Welcome to your dashboard,
+              {userData?.fullName ? (
+                <span className="text-primary"> {userData.fullName}</span>
+              ) : (
+                "Pet Parent"
+              )}
+              !
             </h1>
-            <p className="text-sm font-nunito-medium text-primary/50">
-              Pet Parent since{" "}
-              {userData?.memberSince
-                ? new Date(userData.memberSince).getFullYear()
+            <p className="text-sm font-nunito-medium text-primary/70">
+              - Pet Parent since{" "}
+              {userData?.createdAt
+                ? new Date(userData.createdAt.toDate()).getFullYear()
                 : new Date().getFullYear()}
             </p>
           </div>
@@ -74,12 +76,10 @@ function AppointmentCard({ appointments }) {
               </div>
               <div>
                 <p className="text-sm font-nunito-bold text-green2">
-                  {appointment.petName} - {appointment.type}
+                  {appointment.petName} - {appointment.service}
                 </p>
                 <p className="text-sm font-nunito-medium text-primary/50">
-                  {new Date(
-                    appointment.date.seconds * 1000
-                  ).toLocaleDateString()}
+                  {appointment.date}
                 </p>
               </div>
             </div>
@@ -103,7 +103,6 @@ function AppointmentCard({ appointments }) {
 }
 
 function WellnessTipsCard() {
-  // Existing implementation remains the same
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <div className="flex items-center justify-between mb-4">
@@ -139,67 +138,47 @@ function WellnessTipsCard() {
 
 function UserDashboard() {
   const [userData, setUserData] = useState(null);
-  const [appointments, setAppointments] = useState([]);
+  const [upcomingAppointments, setUpcomingAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    const fetchUserData = async () => {
+    const fetchDashboardData = async () => {
+      if (!currentUser) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const user = auth.currentUser;
-        if (user) {
-          // Fetch user details from Firestore
-          const userDocRef = doc(db, "users", user.uid);
-          const userDoc = await getDoc(userDocRef);
+        // Fetch user details from Firestore
+        const userDocRef = doc(db, "users", currentUser.uid);
+        const userDoc = await getDoc(userDocRef);
 
-          if (userDoc.exists()) {
-            setUserData({
-              ...userDoc.data(),
-              uid: user.uid,
-            });
-          } else {
-            console.warn("No user document found");
-          }
-
-          // Fetch upcoming appointments
-          const appointmentsRef = collection(db, "appointments");
-          const q = query(
-            appointmentsRef,
-            where("userId", "==", user.uid),
-            where("date", ">=", new Date())
-          );
-
-          const querySnapshot = await getDocs(q);
-          const upcomingAppointments = querySnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          setAppointments(upcomingAppointments);
+        if (userDoc.exists()) {
+          setUserData(userDoc.data());
         }
+
+        // Fetch appointments using the same method as Appointments page
+        const appointments = await getStoredAppointments();
+
+        // Sort appointments by date (most recent first)
+        const sortedAppointments = appointments.sort(
+          (a, b) =>
+            new Date(b.createdAt.toDate()) - new Date(a.createdAt.toDate())
+        );
+
+        // Take first 2 appointments as upcoming
+        setUpcomingAppointments(sortedAppointments.slice(0, 2));
       } catch (error) {
-        console.error("Error fetching dashboard data:", error);
+        toast.error("Failed to fetch dashboard data");
+        console.error(error);
       } finally {
         setLoading(false);
       }
     };
 
-    // Add a check to ensure the user is authenticated
-    if (auth.currentUser) {
-      fetchUserData();
-    } else {
-      // If not authenticated, wait a moment and check again
-      const unsubscribe = auth.onAuthStateChanged((user) => {
-        if (user) {
-          fetchUserData();
-        } else {
-          setLoading(false);
-        }
-      });
-
-      // Cleanup subscription
-      return () => unsubscribe();
-    }
-  }, []);
+    fetchDashboardData();
+  }, [currentUser]);
 
   if (loading) {
     return (
@@ -224,7 +203,7 @@ function UserDashboard() {
       {userData && <WelcomeCard userData={userData} />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <AppointmentCard appointments={appointments} />
+        <AppointmentCard appointments={upcomingAppointments} />
         <WellnessTipsCard />
       </div>
     </div>

@@ -12,7 +12,6 @@ import { toast } from "react-toastify";
 
 export const storeAppointment = async (appointmentData) => {
   try {
-    // Ensure user is authenticated
     if (!auth.currentUser) {
       toast.error("Please log in to book an appointment");
       throw new Error("User not authenticated");
@@ -43,7 +42,6 @@ export const storeAppointment = async (appointmentData) => {
 
 export const getStoredAppointments = async () => {
   try {
-    // Ensure user is authenticated
     if (!auth.currentUser) {
       return [];
     }
@@ -58,8 +56,6 @@ export const getStoredAppointments = async () => {
     return querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
-      // Ensure date is properly formatted
-      date: doc.data().date || "",
     }));
   } catch (error) {
     console.error("Error fetching appointments:", error);
@@ -70,7 +66,6 @@ export const getStoredAppointments = async () => {
 
 export const cancelAppointment = async (appointmentId) => {
   try {
-    // Ensure user is authenticated
     if (!auth.currentUser) {
       toast.error("Please log in to cancel an appointment");
       return false;

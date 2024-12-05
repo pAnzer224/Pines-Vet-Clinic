@@ -1,40 +1,12 @@
-import React, { useState } from "react";
-import { ChevronDown, Users, UserPlus } from "lucide-react";
+import React, { useState, useEffect } from "react";
+import { ChevronDown, Users, UserPlus, PlusCircle } from "lucide-react";
+import { collection, query, where, getDocs } from "firebase/firestore";
+import { db } from "../../firebase-config";
+import { toast } from "react-toastify";
+import AddCustomerModal from "./AddCustomerModal";
+import PetAddModal from "../../components/PetAddModal";
 
-const mockCustomers = [
-  {
-    id: 1,
-    name: "Sarah Johnson",
-    email: "sarah.j@email.com",
-    phone: "+1 234-567-8901",
-    pets: [
-      { name: "Max", type: "Golden Retriever" },
-      { name: "Luna", type: "Persian Cat" },
-    ],
-    joinedDate: "Nov 10, 2024",
-    status: "Active",
-  },
-  {
-    id: 2,
-    name: "Mike Williams",
-    email: "mike.w@email.com",
-    phone: "+1 234-567-8902",
-    pets: [{ name: "Rocky", type: "German Shepherd" }],
-    joinedDate: "Nov 8, 2024",
-    status: "Active",
-  },
-  {
-    id: 3,
-    name: "Emma Davis",
-    email: "emma.d@email.com",
-    phone: "+1 234-567-8903",
-    pets: [{ name: "Bella", type: "Siamese Cat" }],
-    joinedDate: "Nov 5, 2024",
-    status: "Inactive",
-  },
-];
-
-function CustomerCard({ customer }) {
+function CustomerCard({ customer, onAddPet }) {
   const statusColors = {
     Active: "bg-green3/50 text-green-800",
     Inactive: "bg-primary/30 text-text/80",
@@ -48,7 +20,9 @@ function CustomerCard({ customer }) {
           <p className="font-nunito-bold text-xs text-text/60">
             {customer.email}
           </p>
-          <p className="font-nunito text-xs text-text/60">{customer.phone}</p>
+          {customer.phone && (
+            <p className="font-nunito text-xs text-text/60">{customer.phone}</p>
+          )}
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${
@@ -60,14 +34,30 @@ function CustomerCard({ customer }) {
       </div>
 
       <div className="space-y-2">
-        <div className="font-nunito-bold text-xs text-text/80">
+        <div className="font-nunito-bold text-xs text-text/80 flex items-center">
           <span className="font-nunito-bold text-text/80">Pets:</span>{" "}
-          {customer.pets.map((pet, index) => (
-            <span key={index}>
-              {pet.name} ({pet.type})
-              {index < customer.pets.length - 1 ? ", " : ""}
-            </span>
-          ))}
+          {customer.pets.length > 0 ? (
+            <div className="ml-2 flex items-center flex-wrap gap-2">
+              {customer.pets.map((pet, index) => (
+                <span
+                  key={index}
+                  className="bg-green3/30 px-2 py-1 rounded-full text-xs"
+                >
+                  {pet.name} ({pet.type})
+                </span>
+              ))}
+            </div>
+          ) : (
+            <div className="ml-2 flex items-center">
+              <span className="text-text/60 mr-2">No pets</span>
+              <button
+                onClick={() => onAddPet(customer.id)}
+                className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
+              >
+                <PlusCircle className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
         <div className="font-nunito text-sm text-text/60">
           Joined: {customer.joinedDate}
@@ -80,10 +70,122 @@ function CustomerCard({ customer }) {
 function Customers() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
+  const [customers, setCustomers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const statusOptions = ["All Status", "Active", "Inactive"];
 
+  useEffect(() => {
+    fetchCustomers();
+  }, []);
+
+  const fetchCustomers = async () => {
+    try {
+      const usersRef = collection(db, "users");
+      const petsRef = collection(db, "pets");
+
+      // Fetch all users
+      const usersSnapshot = await getDocs(usersRef);
+
+      const customerData = await Promise.all(
+        usersSnapshot.docs.map(async (userDoc) => {
+          const userData = userDoc.data();
+
+          // Fetch pets for this user
+          const petsQuery = query(petsRef, where("userId", "==", userDoc.id));
+          const petsSnapshot = await getDocs(petsQuery);
+
+          const userPets = petsSnapshot.docs.map((petDoc) => ({
+            name: petDoc.data().name,
+            type: `${petDoc.data().species} ${
+              petDoc.data().breed || ""
+            }`.trim(),
+          }));
+
+          return {
+            id: userDoc.id,
+            name: userData.fullName || "Unknown",
+            email: userData.email || "N/A",
+            phone: userData.phone || "",
+            pets: userPets,
+            joinedDate: userData.createdAt
+              ? new Date(userData.createdAt.toDate()).toLocaleDateString(
+                  "en-US",
+                  {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  }
+                )
+              : "Unknown",
+            status: userData.status || "Active",
+          };
+        })
+      );
+
+      setCustomers(customerData);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching customers:", error);
+      toast.error("Failed to load customers");
+      setLoading(false);
+    }
+  };
+
+  const handleAddPet = (customerId) => {
+    setSelectedCustomerId(customerId);
+    setIsPetModalOpen(true);
+  };
+
+  const handlePetAdded = (addedPet) => {
+    // Update the customers state to include the new pet
+    setCustomers((prevCustomers) =>
+      prevCustomers.map((customer) =>
+        customer.id === selectedCustomerId
+          ? {
+              ...customer,
+              pets: [
+                ...customer.pets,
+                {
+                  name: addedPet.name,
+                  type: `${addedPet.species} ${addedPet.breed || ""}`.trim(),
+                },
+              ],
+            }
+          : customer
+      )
+    );
+    setIsPetModalOpen(false);
+  };
+
+  // Filter customers based on selected status
+  const filteredCustomers =
+    selectedStatus === "All Status"
+      ? customers
+      : customers.filter((customer) => customer.status === selectedStatus);
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-12">
+      {/* Customer Modal */}
+      <AddCustomerModal
+        isOpen={isCustomerModalOpen}
+        onClose={() => setIsCustomerModalOpen(false)}
+        onCustomerAdded={fetchCustomers}
+      />
+
+      {/* Pet Modal */}
+      <PetAddModal
+        isOpen={isPetModalOpen}
+        onClose={() => {
+          setIsPetModalOpen(false);
+          setSelectedCustomerId(null);
+        }}
+        onPetAdded={handlePetAdded}
+        userId={selectedCustomerId}
+      />
+
       <div>
         <h1 className="text-2xl font-nunito-bold text-green2">Customers</h1>
         <div className="flex items-center mt-5">
@@ -122,17 +224,30 @@ function Customers() {
           )}
         </div>
 
-        <button className="hidden md:flex items-center px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/80 transition-colors font-nunito">
-          <UserPlus className="w-4 h-4 mr-2" />
+        <button
+          onClick={() => setIsCustomerModalOpen(true)}
+          className="hidden md:flex items-center px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/80 transition-colors font-nunito"
+        >
+          <UserPlus className="size-4 mr-2" />
           Add Customer
         </button>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {mockCustomers.map((customer) => (
-          <CustomerCard key={customer.id} customer={customer} />
-        ))}
-      </div>
+      {loading ? (
+        <div className="text-center text-text/60">Loading customers...</div>
+      ) : filteredCustomers.length === 0 ? (
+        <div className="text-center text-text/60">No customers found</div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredCustomers.map((customer) => (
+            <CustomerCard
+              key={customer.id}
+              customer={customer}
+              onAddPet={handleAddPet}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

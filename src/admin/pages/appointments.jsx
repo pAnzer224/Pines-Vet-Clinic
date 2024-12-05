@@ -1,38 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Calendar, ChevronDown, PawPrint } from "lucide-react";
-
-const mockAppointments = [
-  {
-    id: 1,
-    petName: "Max",
-    petType: "Golden Retriever",
-    ownerName: "Sarah Johnson",
-    service: "Basic Grooming",
-    date: "2024-11-14",
-    time: "10:00 AM",
-    status: "Confirmed",
-  },
-  {
-    id: 2,
-    petName: "Luna",
-    petType: "Persian Cat",
-    ownerName: "Mike Williams",
-    service: "Dental Check-up",
-    date: "2024-11-14",
-    time: "11:30 AM",
-    status: "Pending",
-  },
-  {
-    id: 3,
-    petName: "Luna",
-    petType: "Persian Cat",
-    ownerName: "Mike Williams",
-    service: "Dental Check-up",
-    date: "2024-11-14",
-    time: "11:30 AM",
-    status: "Cancelled",
-  },
-];
+import { getStoredAppointments } from "../../pages/appointmentsUtils";
+import { toast } from "react-toastify";
 
 function AppointmentCard({ appointment }) {
   const statusColors = {
@@ -46,24 +15,24 @@ function AppointmentCard({ appointment }) {
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-nunito-bold text-green2">
-            {appointment.petName}
+            {appointment.petName || "Unnamed Pet"}
           </h3>
           <p className="font-nunito-bold text-xs text-text/60">
-            {appointment.petType}
+            {appointment.service || "No service specified"}
           </p>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${
-            statusColors[appointment.status]
+            statusColors[appointment.status] || "bg-gray-100 text-gray-800"
           }`}
         >
-          {appointment.status}
+          {appointment.status || "Unknown"}
         </span>
       </div>
 
       <div className="flex items-center text-sm text-text/80 font-nunito">
         <Calendar size={16} className="mr-2" />
-        {appointment.date} at {appointment.time}
+        {appointment.date || "No date specified"}
       </div>
     </div>
   );
@@ -72,7 +41,26 @@ function AppointmentCard({ appointment }) {
 function Appointments() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
+  const [appointments, setAppointments] = useState([]);
   const statusOptions = ["All Status", "Confirmed", "Pending", "Cancelled"];
+
+  useEffect(() => {
+    const fetchAppointments = async () => {
+      try {
+        const fetchedAppointments = await getStoredAppointments();
+        setAppointments(fetchedAppointments);
+      } catch (error) {
+        toast.error("Failed to fetch appointments");
+      }
+    };
+
+    fetchAppointments();
+  }, []);
+
+  const filteredAppointments =
+    selectedStatus === "All Status"
+      ? appointments
+      : appointments.filter((apt) => apt.status === selectedStatus);
 
   return (
     <div className="space-y-6">
@@ -114,7 +102,7 @@ function Appointments() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {mockAppointments.map((appointment) => (
+        {filteredAppointments.map((appointment) => (
           <AppointmentCard key={appointment.id} appointment={appointment} />
         ))}
       </div>

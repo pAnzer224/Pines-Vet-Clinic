@@ -21,13 +21,22 @@ const Shop = () => {
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, "products"), (snapshot) => {
-      setProducts(
-        snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          image: doc.data().image || "/images/shop-images/default-image.jpg",
-        }))
-      );
+      const fetchedProducts = snapshot.docs
+        .map((doc) => {
+          const data = doc.data();
+          return {
+            id: doc.id,
+            name: String(data.name || ""),
+            category: String(data.category || ""),
+            description: String(data.description || ""),
+            price: Number(data.price || 0),
+            image: data.image || "/images/shop-images/default-image.jpg",
+          };
+        })
+        // Remove any products that couldn't be properly processed
+        .filter((product) => product.name !== "");
+
+      setProducts(fetchedProducts);
     });
 
     return () => unsubscribe();

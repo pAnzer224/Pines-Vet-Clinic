@@ -69,7 +69,7 @@ function MainHeader() {
               <img
                 src="/images/profile.svg"
                 alt="Profile"
-                className="h-6 w-6"
+                className="size-6 mb-[0.4px]"
               />
               <span>Profile</span>
             </Link>

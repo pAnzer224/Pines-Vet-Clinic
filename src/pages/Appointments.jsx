@@ -1,4 +1,3 @@
-// src/pages/Appointments.js
 import React, { useState, useEffect } from "react";
 import {
   CreditCard,
@@ -6,45 +5,64 @@ import {
   TriangleAlert,
   CalendarDays,
   Info,
+  PlusCircle,
 } from "lucide-react";
 import {
   storeAppointment,
   getStoredAppointments,
   cancelAppointment,
 } from "../pages/appointmentsUtils";
-import { useAuth } from "../hooks/useAuth";
+import { getPets } from "../pages/petsUtils";
+import { auth } from "../firebase-config";
+import { onAuthStateChanged } from "firebase/auth";
 import AppointmentSchedulerModal from "../pages/AppointmentSchedulerModal";
 import ServiceSelectionModal from "../pages/ServiceSelectionModal";
+import PetAddModal from "../components/PetAddModal";
 import { toast } from "react-toastify";
 
 export default function Appointments() {
   const [appointments, setAppointments] = useState([]);
+  const [pets, setPets] = useState([]);
+  const [selectedPet, setSelectedPet] = useState(null);
   const [selectedService, setSelectedService] = useState("");
   const [selectedPayment, setSelectedPayment] = useState("");
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const [selectedServiceDetails, setSelectedServiceDetails] = useState(null);
-  const { currentUser } = useAuth();
+  const [currentUser, setCurrentUser] = useState(null);
 
   useEffect(() => {
-    const fetchAppointments = async () => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
       if (currentUser) {
         try {
           const fetchedAppointments = await getStoredAppointments();
-          // Ensure fetchedAppointments is always an array
+          const fetchedPets = await getPets();
+
           setAppointments(
             Array.isArray(fetchedAppointments) ? fetchedAppointments : []
           );
+          setPets(Array.isArray(fetchedPets) ? fetchedPets : []);
         } catch (error) {
-          toast.error("Failed to fetch appointments");
-          setAppointments([]); // Fallback to empty array
+          toast.error("Failed to fetch data");
+          setAppointments([]);
+          setPets([]);
         }
       } else {
-        setAppointments([]); // Clear appointments if no user
+        setAppointments([]);
+        setPets([]);
       }
     };
 
-    fetchAppointments();
+    fetchData();
   }, [currentUser]);
 
   const handleServiceSelection = (serviceDetails) => {
@@ -53,20 +71,36 @@ export default function Appointments() {
     setIsServiceModalOpen(false);
   };
 
+  const handlePetAdded = async (newPet) => {
+    if (currentUser) {
+      setPets((prevPets) => [...prevPets, newPet]);
+      setSelectedPet(newPet);
+      setIsPetModalOpen(false);
+    } else {
+      toast.error("Please log in to add a pet");
+    }
+  };
+
   const handleBookAppointment = async (scheduledDateTime) => {
     if (!currentUser) {
       toast.error("Please log in to book an appointment");
       return;
     }
 
-    if (selectedService && selectedPayment && scheduledDateTime) {
+    if (
+      selectedService &&
+      selectedPayment &&
+      scheduledDateTime &&
+      selectedPet
+    ) {
       try {
         const newAppointment = {
           service: selectedServiceDetails
             ? `${selectedServiceDetails.category} - ${selectedServiceDetails.name}`
             : selectedService,
           date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
-          petName: "Your Pet",
+          petName: selectedPet.name, // Use petName from selected pet
+          petId: selectedPet.id,
           paymentMethod: selectedPayment,
           price: selectedServiceDetails?.price || "Price varies",
           duration: selectedServiceDetails?.duration || "Duration varies",
@@ -79,12 +113,15 @@ export default function Appointments() {
         setSelectedService("");
         setSelectedPayment("");
         setSelectedServiceDetails(null);
+        setSelectedPet(null);
         setIsSchedulerOpen(false);
 
         toast.success("Appointment booked successfully!");
       } catch (error) {
         toast.error("Failed to book appointment");
       }
+    } else {
+      toast.error("Please complete all required fields");
     }
   };
 
@@ -105,52 +142,68 @@ export default function Appointments() {
 
   return (
     <div className="container mx-auto px-6 pb-20 font-nunito-bold">
-      <div className="max-w-5xl mx-auto mb-8 bg-green3/30 rounded-2xl p-6 border-[1.6px] border-green2">
-        <div className="flex items-start gap-3">
-          <Info className="size-5 text-primary mt-1 flex-shrink-0" />
-          <div>
-            <h2 className="text-lg font-nunito-bold text-primary mb-2 tracking-wide">
-              Find the right veterinary care for your pet
-            </h2>
-            <p className="text-text/75 text-sm">
-              Browse our full range of services, including prices and
-              appointment lengths, by clicking{" "}
-              <span className="text-primary font-nunito-bold tracking-wide">
-                'Choose a Service'
-              </span>
-              . Take your time reviewing our treatment options before scheduling
-              your appointment.
-            </p>
-          </div>
-        </div>
-      </div>
-
+      {/* Rest of the component remains same */}
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
         <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
           <h2 className="text-lg font-bold text-text mb-8 tracking-wide">
             Schedule New Appointment
           </h2>
 
-          <div className="mb-8">
-            <label className="text-md font-medium text-text/80 mb-2 block">
-              Select Service
-            </label>
-            <button
-              onClick={() => setIsServiceModalOpen(true)}
-              className="w-full px-6 py-2 rounded-full border-[1.6px] border-green2 hover:bg-green3/80 transition-colors text-text"
-            >
-              {selectedServiceDetails ? (
-                <span>{`${selectedServiceDetails.category} - ${selectedServiceDetails.name}`}</span>
-              ) : (
-                "Choose a Service"
+          <div className="mb-8 flex items-center gap-4">
+            <div className="flex-grow">
+              <label className="text-md font-medium text-text/80 mb-2 block">
+                Select Service
+              </label>
+              <button
+                onClick={() => setIsServiceModalOpen(true)}
+                className="w-full px-6 py-2 rounded-full border-[1.6px] border-green2 hover:bg-green3/80 transition-colors text-text text-sm"
+              >
+                {selectedServiceDetails ? (
+                  <span>{`${selectedServiceDetails.category} - ${selectedServiceDetails.name}`}</span>
+                ) : (
+                  "Choose a Service"
+                )}
+              </button>
+              {selectedServiceDetails && (
+                <div className="mt-2 text-sm text-text/60">
+                  <p>Price: {selectedServiceDetails.price}</p>
+                  <p>Duration: {selectedServiceDetails.duration}</p>
+                </div>
               )}
-            </button>
-            {selectedServiceDetails && (
-              <div className="mt-2 text-sm text-text/60">
-                <p>Price: {selectedServiceDetails.price}</p>
-                <p>Duration: {selectedServiceDetails.duration}</p>
+            </div>
+            <div>
+              <label className="text-md font-medium text-text/80 mb-2 block">
+                Select Pet
+              </label>
+              <div className="flex items-center gap-2">
+                {pets.length > 0 ? (
+                  <select
+                    value={selectedPet?.id || ""}
+                    onChange={(e) => {
+                      const pet = pets.find((p) => p.id === e.target.value);
+                      setSelectedPet(pet);
+                    }}
+                    className="px-4 py-2 border-[1.6px] border-green2 rounded-2xl"
+                  >
+                    <option value="">Select Pet</option>
+                    {pets.map((pet) => (
+                      <option key={pet.id} value={pet.id}>
+                        {pet.name} ({pet.species})
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <span className="text-text/60 text-sm">No pets added</span>
+                )}
+
+                <button
+                  onClick={() => setIsPetModalOpen(true)}
+                  className="text-green2 hover:text-green3"
+                >
+                  <PlusCircle className="size-5" />
+                </button>
               </div>
-            )}
+            </div>
           </div>
 
           <div className="mb-8">
@@ -205,13 +258,13 @@ export default function Appointments() {
 
           <button
             onClick={() => setIsSchedulerOpen(true)}
-            disabled={!selectedService || !selectedPayment}
+            disabled={!selectedService || !selectedPayment || !selectedPet}
             className={`w-full px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors text-text flex items-center justify-center space-x-2 group
-              ${
-                selectedService && selectedPayment
-                  ? "bg-green3 hover:bg-green3/80 hover:text-text/80"
-                  : "bg-text/10 cursor-not-allowed text-text/40"
-              }`}
+                ${
+                  selectedService && selectedPayment && selectedPet
+                    ? "bg-green3 hover:bg-green3/80 hover:text-text/80"
+                    : "bg-text/10 cursor-not-allowed text-text/40"
+                }`}
           >
             <CalendarDays className="size-5 mb-1 text-text transition-colors group-hover:text-text/80" />
             <span>Check Availability</span>
@@ -277,6 +330,12 @@ export default function Appointments() {
         isOpen={isSchedulerOpen}
         onClose={() => setIsSchedulerOpen(false)}
         onSchedule={handleBookAppointment}
+      />
+
+      <PetAddModal
+        isOpen={isPetModalOpen}
+        onClose={() => setIsPetModalOpen(false)}
+        onPetAdded={handlePetAdded}
       />
     </div>
   );

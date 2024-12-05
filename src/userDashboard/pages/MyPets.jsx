@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   PawPrint,
   Download,
@@ -7,9 +7,13 @@ import {
   FileText,
   Building2,
   User,
+  Plus,
 } from "lucide-react";
+import { getPets } from "../../pages/petsUtils";
+import PetAddModal from "../../components/PetAddModal";
+import { auth } from "../../firebase-config";
 
-function PetCard({ name, species, age, weight }) {
+function PetCard({ name, species, breed, age }) {
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <div className="h-48 bg-green3/10 rounded-lg flex items-center justify-center mb-4">
@@ -19,8 +23,8 @@ function PetCard({ name, species, age, weight }) {
         <h3 className="text-lg font-nunito-bold text-green2">{name}</h3>
         <div className="text-sm font-nunito-medium text-primary/50 space-y-1">
           <p>Species: {species}</p>
+          <p>Breed: {breed}</p>
           <p>Age: {age} years old</p>
-          <p>Weight: {weight} kg</p>
         </div>
         <button className="w-full mt-4 px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30">
           View Profile
@@ -89,24 +93,10 @@ function MedicalRecord({ clinic, doctor, date, expanded, onToggle }) {
 }
 
 function MyPets() {
-  const [expandedRecord, setExpandedRecord] = React.useState("record-1");
-
-  const pets = [
-    {
-      id: 1,
-      name: "Max",
-      species: "Golden Retriever",
-      age: 3,
-      weight: 32.5,
-    },
-    {
-      id: 2,
-      name: "Bella",
-      species: "Persian Cat",
-      age: 2,
-      weight: 4.2,
-    },
-  ];
+  const [pets, setPets] = useState([]);
+  const [expandedRecord, setExpandedRecord] = useState("record-1");
+  const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   const medicalRecords = [
     {
@@ -123,6 +113,37 @@ function MyPets() {
     },
   ];
 
+  useEffect(() => {
+    const fetchPets = async () => {
+      if (auth.currentUser) {
+        try {
+          const userPets = await getPets();
+          setPets(userPets);
+        } catch (error) {
+          console.error("Error fetching pets:", error);
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setIsLoading(false);
+      }
+    };
+
+    fetchPets();
+  }, []);
+
+  const handlePetAdded = (newPet) => {
+    setPets([...pets, newPet]);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-full">
+        Loading pets...
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6 mt-14">
       <div>
@@ -133,6 +154,17 @@ function MyPets() {
             Manage your pets' profiles and medical records
           </p>
         </div>
+      </div>
+
+      <div className="flex items-center justify-between mb-4">
+        <h2 className="text-lg font-nunito-bold text-green2">My Pets</h2>
+        <button
+          onClick={() => setIsAddPetModalOpen(true)}
+          className="flex items-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30"
+        >
+          <Plus size={16} className="mr-2" />
+          Add Pet
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -167,6 +199,13 @@ function MyPets() {
           ))}
         </div>
       </div>
+
+      <PetAddModal
+        isOpen={isAddPetModalOpen}
+        onClose={() => setIsAddPetModalOpen(false)}
+        onPetAdded={handlePetAdded}
+        userId={auth.currentUser?.uid}
+      />
     </div>
   );
 }
