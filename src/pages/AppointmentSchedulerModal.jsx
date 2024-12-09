@@ -52,7 +52,6 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
     const { daysInMonth, startingDay } = getDaysInMonth(currentMonth);
     const days = [];
 
-    // Add empty cells for days before the first day of the month
     for (let i = 0; i < startingDay; i++) {
       days.push(<div key={`empty-${i}`} className="p-3"></div>);
     }

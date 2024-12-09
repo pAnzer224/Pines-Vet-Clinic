@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
-import {
-  CreditCard,
-  Wallet,
-  TriangleAlert,
-  CalendarDays,
-  Info,
-  PlusCircle,
-} from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { CreditCard, Wallet, CalendarDays, PlusCircle } from "lucide-react";
 import {
   storeAppointment,
   getStoredAppointments,
@@ -18,6 +12,7 @@ import { onAuthStateChanged } from "firebase/auth";
 import AppointmentSchedulerModal from "../pages/AppointmentSchedulerModal";
 import ServiceSelectionModal from "../pages/ServiceSelectionModal";
 import PetAddModal from "../components/PetAddModal";
+import PromptModal from "../components/promptModal";
 import { toast } from "react-toastify";
 
 export default function Appointments() {
@@ -29,6 +24,7 @@ export default function Appointments() {
   const [isSchedulerOpen, setIsSchedulerOpen] = useState(false);
   const [isServiceModalOpen, setIsServiceModalOpen] = useState(false);
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
+  const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
   const [selectedServiceDetails, setSelectedServiceDetails] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
 
@@ -77,13 +73,13 @@ export default function Appointments() {
       setSelectedPet(newPet);
       setIsPetModalOpen(false);
     } else {
-      toast.error("Please log in to add a pet");
+      setIsAuthPromptOpen(true);
     }
   };
 
   const handleBookAppointment = async (scheduledDateTime) => {
     if (!currentUser) {
-      toast.error("Please log in to book an appointment");
+      setIsAuthPromptOpen(true);
       return;
     }
 
@@ -99,7 +95,7 @@ export default function Appointments() {
             ? `${selectedServiceDetails.category} - ${selectedServiceDetails.name}`
             : selectedService,
           date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
-          petName: selectedPet.name, // Use petName from selected pet
+          petName: selectedPet.name,
           petId: selectedPet.id,
           paymentMethod: selectedPayment,
           price: selectedServiceDetails?.price || "Price varies",
@@ -108,15 +104,21 @@ export default function Appointments() {
 
         const storedAppointment = await storeAppointment(newAppointment);
 
-        setAppointments((prev) => [...prev, storedAppointment]);
+        if (storedAppointment) {
+          setAppointments((prev) => [...prev, storedAppointment]);
 
-        setSelectedService("");
-        setSelectedPayment("");
-        setSelectedServiceDetails(null);
-        setSelectedPet(null);
-        setIsSchedulerOpen(false);
+          setSelectedService("");
+          setSelectedPayment("");
+          setSelectedServiceDetails(null);
+          setSelectedPet(null);
+          setIsSchedulerOpen(false);
 
-        toast.success("Appointment booked successfully!");
+          toast.success("Appointment booked successfully!");
+        } else {
+          toast.error(
+            "This time slot is already booked. Please choose another."
+          );
+        }
       } catch (error) {
         toast.error("Failed to book appointment");
       }
@@ -140,38 +142,50 @@ export default function Appointments() {
     }
   };
 
+  const handleAddPetClick = () => {
+    if (currentUser) {
+      setIsPetModalOpen(true);
+    } else {
+      setIsAuthPromptOpen(true);
+    }
+  };
+
   return (
     <div className="container mx-auto px-6 pb-20 font-nunito-bold">
-      {/* Rest of the component remains same */}
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
         <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
           <h2 className="text-lg font-bold text-text mb-8 tracking-wide">
             Schedule New Appointment
           </h2>
 
-          <div className="mb-8 flex items-center gap-4">
-            <div className="flex-grow">
+          <div className="mb-8 grid md:grid-cols-2 gap-4">
+            <div className="flex flex-col">
               <label className="text-md font-medium text-text/80 mb-2 block">
                 Select Service
               </label>
-              <button
-                onClick={() => setIsServiceModalOpen(true)}
-                className="w-full px-6 py-2 rounded-full border-[1.6px] border-green2 hover:bg-green3/80 transition-colors text-text text-sm"
-              >
-                {selectedServiceDetails ? (
-                  <span>{`${selectedServiceDetails.category} - ${selectedServiceDetails.name}`}</span>
-                ) : (
-                  "Choose a Service"
+              <div className="h-[100px]">
+                <button
+                  onClick={() => setIsServiceModalOpen(true)}
+                  className="w-full px-6 py-2 rounded-full border-[1.6px] border-green2 hover:bg-green3/80 transition-colors text-text text-sm truncate"
+                >
+                  {selectedServiceDetails
+                    ? `${selectedServiceDetails.category} - ${selectedServiceDetails.name}`
+                    : "Choose a Service"}
+                </button>
+                {selectedServiceDetails && (
+                  <div className="mt-2 text-sm text-text/60 h-[48px]">
+                    <p className="truncate">
+                      Price: {selectedServiceDetails.price}
+                    </p>
+                    <p className="truncate">
+                      Duration: {selectedServiceDetails.duration}
+                    </p>
+                  </div>
                 )}
-              </button>
-              {selectedServiceDetails && (
-                <div className="mt-2 text-sm text-text/60">
-                  <p>Price: {selectedServiceDetails.price}</p>
-                  <p>Duration: {selectedServiceDetails.duration}</p>
-                </div>
-              )}
+              </div>
             </div>
-            <div>
+
+            <div className="flex flex-col">
               <label className="text-md font-medium text-text/80 mb-2 block">
                 Select Pet
               </label>
@@ -183,21 +197,22 @@ export default function Appointments() {
                       const pet = pets.find((p) => p.id === e.target.value);
                       setSelectedPet(pet);
                     }}
-                    className="px-4 py-2 border-[1.6px] border-green2 rounded-2xl"
+                    className="flex-grow px-4 py-2 border-[1.6px] border-green2 rounded-2xl text-sm truncate"
                   >
                     <option value="">Select Pet</option>
                     {pets.map((pet) => (
-                      <option key={pet.id} value={pet.id}>
+                      <option key={pet.id} value={pet.id} className="truncate">
                         {pet.name} ({pet.species})
                       </option>
                     ))}
                   </select>
                 ) : (
-                  <span className="text-text/60 text-sm">No pets added</span>
+                  <span className="text-text/60 text-sm flex-grow">
+                    No pets added
+                  </span>
                 )}
-
                 <button
-                  onClick={() => setIsPetModalOpen(true)}
+                  onClick={handleAddPetClick}
                   className="text-green2 hover:text-green3"
                 >
                   <PlusCircle className="size-5" />
@@ -206,55 +221,59 @@ export default function Appointments() {
             </div>
           </div>
 
-          <div className="mb-8">
-            <h3 className="text-md font-nunito-bold text-text/80 mb-2">
-              Select Payment Method
-            </h3>
-            <div className="flex gap-4 text-sm">
-              <button
-                className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                  selectedPayment === "Credit Card"
-                    ? "ring-2 ring-green3 bg-green3/60"
-                    : ""
-                }`}
-                onClick={() => setSelectedPayment("Credit Card")}
+          <AnimatePresence>
+            {(selectedServiceDetails || selectedService) && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3 }}
+                className="mb-8 overflow-hidden"
               >
-                <CreditCard className="mx-auto mb-2 text-text" />
-                <span className="text-text/80">Credit Card</span>
-              </button>
-              <button
-                className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                  selectedPayment === "Cash"
-                    ? "ring-2 ring-green3 bg-green3/60"
-                    : ""
-                }`}
-                onClick={() => setSelectedPayment("Cash")}
-              >
-                <Wallet className="mx-auto mb-2 text-text" />
-                <span className="text-text/80 text-sm">Cash</span>
-              </button>
-              <button
-                className={`flex-1 border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                  selectedPayment === "Gcash"
-                    ? "ring-2 ring-green3 bg-green3/60"
-                    : ""
-                } hover:bg-blue-100`}
-                onClick={() => setSelectedPayment("Gcash")}
-              >
-                <img
-                  src="/images/gcash.svg"
-                  alt="Gcash Logo"
-                  className="mx-auto h-10"
-                />
-              </button>
-            </div>
-            <div className="mt-4 flex items-center gap-1">
-              <TriangleAlert className="size-4 text-red/80 mb-[0.4px]" />
-              <p className="tracking-wide text-xs text-primary/60">
-                Downpayment of ₱500 is required
-              </p>
-            </div>
-          </div>
+                <h3 className="text-md font-nunito-bold text-text/80 mb-2">
+                  Select Payment Method
+                </h3>
+                <div className="grid grid-cols-3 gap-4 text-sm">
+                  <button
+                    className={`border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
+                      selectedPayment === "Credit Card"
+                        ? "ring-2 ring-green3 bg-green3/60"
+                        : ""
+                    }`}
+                    onClick={() => setSelectedPayment("Credit Card")}
+                  >
+                    <CreditCard className="mx-auto mb-2 text-text" />
+                    <span className="text-text/80 text-xs">Credit Card</span>
+                  </button>
+                  <button
+                    className={`border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
+                      selectedPayment === "Cash"
+                        ? "ring-2 ring-green3 bg-green3/60"
+                        : ""
+                    }`}
+                    onClick={() => setSelectedPayment("Cash")}
+                  >
+                    <Wallet className="mx-auto mb-2 text-text" />
+                    <span className="text-text/80 text-xs">Cash</span>
+                  </button>
+                  <button
+                    className={`border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
+                      selectedPayment === "Gcash"
+                        ? "ring-2 ring-green3 bg-green3/60"
+                        : ""
+                    } hover:bg-blue-100`}
+                    onClick={() => setSelectedPayment("Gcash")}
+                  >
+                    <img
+                      src="/images/gcash.svg"
+                      alt="Gcash Logo"
+                      className="mx-auto h-10"
+                    />
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           <button
             onClick={() => setIsSchedulerOpen(true)}
@@ -336,6 +355,13 @@ export default function Appointments() {
         isOpen={isPetModalOpen}
         onClose={() => setIsPetModalOpen(false)}
         onPetAdded={handlePetAdded}
+      />
+
+      <PromptModal
+        isOpen={isAuthPromptOpen}
+        onClose={() => setIsAuthPromptOpen(false)}
+        title="Authentication Required"
+        message="You need to be logged in to perform this action. Please login or sign up to continue."
       />
     </div>
   );

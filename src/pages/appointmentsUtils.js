@@ -17,10 +17,21 @@ export const storeAppointment = async (appointmentData) => {
       throw new Error("User not authenticated");
     }
 
-    const userId = auth.currentUser.uid;
+    // Check for existing appointments with same date and time
+    const q = query(
+      collection(db, "appointments"),
+      where("userId", "==", auth.currentUser.uid),
+      where("date", "==", appointmentData.date)
+    );
+
+    const existingAppointments = await getDocs(q);
+    if (!existingAppointments.empty) {
+      return null; // Indicates a duplicate appointment
+    }
+
     const appointmentWithUser = {
       ...appointmentData,
-      userId: userId,
+      userId: auth.currentUser.uid,
       createdAt: new Date(),
     };
 
