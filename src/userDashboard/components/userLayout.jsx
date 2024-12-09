@@ -11,10 +11,10 @@ import {
 } from "lucide-react";
 
 // Import your page components
-import Dashboard from "../pages/userDashboard";
-import Profile from "../pages/MyProfile";
-import Pets from "../pages/MyPets";
-import Appointments from "../pages/Appointments";
+import Dashboard from "../pages/UserDashboard";
+import Profile from "../pages/UserProfile";
+import Pets from "../pages/UserPets";
+import Appointments from "../pages/UserAppointments";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/user" },

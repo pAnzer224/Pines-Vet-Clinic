@@ -1,3 +1,4 @@
+// App.js
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -11,7 +12,6 @@ import MainHeader from "./components/MainHeader";
 import SubHeader from "./components/SubHeader";
 import Footer from "./components/Footer";
 
-// Pages for the public website
 import Home from "./pages/Home";
 import Shop from "./pages/Shop";
 import Services from "./pages/Services";
@@ -20,14 +20,28 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Pricing from "./pages/Pricing";
 
-// Pages for the admin panel
+import UserDashboard from "./userDashboard/pages/UserDashboard";
+import UserProfile from "./userDashboard/pages/UserProfile";
+import UserPets from "./userDashboard/pages/UserPets";
+import UserAppointments from "./userDashboard/pages/UserAppointments";
+
+import AdminLogin from "./admin/pages/AdminLogin";
+import AdminDashboard from "./admin/pages/AdminDashboard";
+import AdminAppointments from "./admin/pages/AdminAppointments";
+import AdminShop from "./admin/pages/AdminShop";
+import AdminCustomers from "./admin/pages/AdminCustomers";
+import AdminContent from "./admin/pages/AdminContent";
+import AdminReports from "./admin/pages/AdminReports";
+import AdminSettings from "./admin/pages/AdminSettings";
+
 import UserLayout from "./userDashboard/components/userLayout";
-// Pages for the admin panel
-import AdminLayout from "./admin/components/Layout";
+import AdminLayout from "./admin/components/adminLayout";
 
 function AppContent() {
   const location = useLocation();
   const isHomePage = location.pathname === "/home";
+  const isUserDashboard = location.pathname.startsWith("/user");
+  const isAdminPage = location.pathname.startsWith("/admin");
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -39,27 +53,52 @@ function AppContent() {
           />
         )}
 
-        <div className="relative z-20">
-          <MainHeader />
-          <div className={`${!isHomePage ? "pt-20" : ""} mb-20`}>
-            <SubHeader />
+        {!isUserDashboard && !isAdminPage && (
+          <div className="relative z-20">
+            <MainHeader />
+            <div className={`${!isHomePage ? "pt-20" : ""} mb-20`}>
+              <SubHeader />
+            </div>
           </div>
+        )}
 
-          <AnimatePresence mode="wait">
-            <Routes location={location} key={location.pathname}>
-              <Route path="/" element={<Navigate to="/home" replace />} />
-              <Route path="/home" element={<Home />} />
-              <Route path="/shop" element={<Shop />} />
-              <Route path="/services" element={<Services />} />
-              <Route path="/pricing" element={<Pricing />} />
-              <Route path="/appointments" element={<Appointments />} />
-              <Route path="/signup" element={<Signup />} />
-              <Route path="/login" element={<Login />} />
-            </Routes>
-          </AnimatePresence>
-        </div>
+        <AnimatePresence mode="wait">
+          <Routes location={location} key={location.pathname}>
+            <Route path="/" element={<Navigate to="/home" replace />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/services" element={<Services />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/appointments" element={<Appointments />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/login" element={<Login />} />
+
+            <Route path="/user" element={<UserLayout />}>
+              <Route index element={<Navigate to="dashboard" replace />} />
+              <Route path="dashboard" element={<UserDashboard />} />
+              <Route path="profile" element={<UserProfile />} />
+              <Route path="pets" element={<UserPets />} />
+              <Route path="appointments" element={<UserAppointments />} />
+            </Route>
+
+            <Route path="/admin">
+              <Route path="login" element={<AdminLogin />} />
+              <Route element={<AdminLayout />}>
+                <Route index element={<Navigate to="dashboard" replace />} />
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="appointments" element={<AdminAppointments />} />
+                <Route path="shop" element={<AdminShop />} />
+                <Route path="customers" element={<AdminCustomers />} />
+                <Route path="content" element={<AdminContent />} />
+                <Route path="reports" element={<AdminReports />} />
+                <Route path="settings" element={<AdminSettings />} />
+              </Route>
+            </Route>
+          </Routes>
+        </AnimatePresence>
       </div>
-      <Footer />
+
+      {!isUserDashboard && !isAdminPage && <Footer />}
     </div>
   );
 }
@@ -67,16 +106,7 @@ function AppContent() {
 function App() {
   return (
     <Router>
-      <Routes>
-        {/* Standalone userDashboard route */}
-        <Route path="/user/*" element={<UserLayout />} />
-
-        {/* Standalone admin route */}
-        <Route path="/admin/*" element={<AdminLayout />} />
-
-        {/* Public routes */}
-        <Route path="/*" element={<AppContent />} />
-      </Routes>
+      <AppContent />
     </Router>
   );
 }
