@@ -8,6 +8,7 @@ import {
   deleteDoc,
   doc,
   serverTimestamp,
+  orderBy,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 
@@ -55,13 +56,10 @@ export const storeAppointment = async (appointmentData) => {
 
 export const getStoredAppointments = async () => {
   try {
-    if (!auth.currentUser) {
-      return [];
-    }
-
+    // Fetch all appointments regardless of user authentication
     const q = query(
       collection(db, "appointments"),
-      where("userId", "==", auth.currentUser.uid)
+      orderBy("createdAt", "desc")
     );
 
     const querySnapshot = await getDocs(q);
