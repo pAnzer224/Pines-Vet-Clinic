@@ -7,6 +7,7 @@ import {
   getDocs,
   deleteDoc,
   doc,
+  serverTimestamp,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 
@@ -32,7 +33,8 @@ export const storeAppointment = async (appointmentData) => {
     const appointmentWithUser = {
       ...appointmentData,
       userId: auth.currentUser.uid,
-      createdAt: new Date(),
+      userName: auth.currentUser.displayName || auth.currentUser.email,
+      createdAt: serverTimestamp(),
     };
 
     const docRef = await addDoc(

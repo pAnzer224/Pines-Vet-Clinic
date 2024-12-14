@@ -100,6 +100,8 @@ export default function Appointments() {
           paymentMethod: selectedPayment,
           price: selectedServiceDetails?.price || "Price varies",
           duration: selectedServiceDetails?.duration || "Duration varies",
+          userName: currentUser.displayName || "Unknown User",
+          status: "Pending",
         };
 
         const storedAppointment = await storeAppointment(newAppointment);

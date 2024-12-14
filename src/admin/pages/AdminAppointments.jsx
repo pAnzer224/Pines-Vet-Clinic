@@ -20,6 +20,9 @@ function AppointmentCard({ appointment }) {
           <p className="font-nunito-bold text-xs text-text/60">
             {appointment.service || "No service specified"}
           </p>
+          <p className="font-nunito-bold text-xs text-text/80">
+            Scheduled by: {appointment.userName || "Unknown User"}
+          </p>
         </div>
         <span
           className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${

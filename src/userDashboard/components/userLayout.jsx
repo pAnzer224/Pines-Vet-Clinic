@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -10,7 +10,9 @@ import {
   LogOut,
 } from "lucide-react";
 
-// Import your page components
+import { auth } from "../../firebase-config";
+import PromptModal from "../../components/promptModal";
+
 import Dashboard from "../pages/UserDashboard";
 import Profile from "../pages/UserProfile";
 import Pets from "../pages/UserPets";
@@ -25,11 +27,46 @@ const sidebarItems = [
 
 function UserLayout() {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isPromptOpen, setIsPromptOpen] = useState(false);
   const location = useLocation();
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        setIsAuthenticated(true);
+      } else {
+        setIsAuthenticated(false);
+        setIsPromptOpen(true);
+      }
+    });
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
+  // If not authenticated, show prompt modal
+  if (!isAuthenticated) {
+    return (
+      <PromptModal
+        isOpen={isPromptOpen}
+        onClose={() => setIsPromptOpen(false)}
+        title="Access Restricted"
+        message="You must be logged in to access this page."
+      />
+    );
+  }
+
+  const firstName = auth.currentUser?.displayName
+    ? auth.currentUser.displayName.split(" ")[0]
+    : "User";
+
+  const handleLogout = () => {
+    auth.signOut();
+  };
 
   return (
     <div className="min-h-screen bg-background font-nunito">
-      {/* Sidebar Section */}
       <aside
         className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -66,7 +103,6 @@ function UserLayout() {
         </nav>
       </aside>
 
-      {/* Main Content Section */}
       <div className="md:ml-64">
         <header className="fixed top-0 right-0 z-30 w-full md:w-[calc(100%-16rem)] bg-background border-b-2 border-green3/30 h-[60px]">
           <div className="flex items-center justify-between px-6 h-full">
@@ -79,20 +115,19 @@ function UserLayout() {
 
             <div className="flex items-center gap-5">
               <span className="text-sm font-nunito-bold tracking-wide text-green2">
-                User Name
+                {firstName}
               </span>
-              <Link
-                to="/"
+              <button
+                onClick={handleLogout}
                 className="text-sm text-background hover:text-primary flex items-center gap-1 border px-5 py-2 rounded-md bg-green3 hover:bg-green3/80 font-nunito-bold"
               >
                 <LogOut size={18} />
                 <span>Log out</span>
-              </Link>
+              </button>
             </div>
           </div>
         </header>
 
-        {/* Main Content Area for each page */}
         <main className="pt-[60px] p-4 md:p-6">
           {location.pathname === "/user" && <Dashboard />}
           {location.pathname === "/user/profile" && <Profile />}
@@ -101,7 +136,6 @@ function UserLayout() {
         </main>
       </div>
 
-      {/* Overlay for when the sidebar is open */}
       {isSidebarOpen && (
         <div
           className="fixed inset-0 z-30 bg-text/50 md:hidden"

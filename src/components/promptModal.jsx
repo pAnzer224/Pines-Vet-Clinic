@@ -30,19 +30,19 @@ const PromptModal = ({ isOpen, onClose, title, message, actionButtons }) => {
             ))}
           </div>
         ) : (
-          <div className="flex items-center justify-center gap-4">
+          <div className="flex items-center justify-center gap-4 font-nunito-bold text-text/80">
             <Link
               to="/login"
               onClick={onClose}
-              className="px-6 py-2 text-center rounded-full border-[1.6px] border-green2 bg-green3 hover:bg-green3/80 transition-colors text-text"
+              className="px-6 py-2 text-center rounded-full border-[1.6px] border-green2 bg-green3 hover:bg-green3/80 transition-colors"
             >
-              Login
+              Log in
             </Link>
             <span className="text-text/60">or</span>
             <Link
               to="/signup"
               onClick={onClose}
-              className="px-6 py-2 text-center rounded-full border-[1.6px] border-green2 bg-green3 hover:bg-green3/80 transition-colors text-text"
+              className="px-6 py-2 text-center rounded-full border-[1.6px] border-green2 bg-green3 hover:bg-green3/80 transition-colors"
             >
               Sign Up
             </Link>

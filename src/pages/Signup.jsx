@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import InputField from "../components/InputField";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase-config";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { doc, setDoc } from "firebase/firestore";
@@ -54,6 +54,7 @@ const SignUp = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
 
     try {
       if (formData.password !== formData.confirmPassword) {
@@ -66,6 +67,11 @@ const SignUp = () => {
         formData.email,
         formData.password
       );
+
+      // Update user profile with full name
+      await updateProfile(userCredential.user, {
+        displayName: formData.fullName,
+      });
 
       await setDoc(doc(db, "users", userCredential.user.uid), {
         email: formData.email,
