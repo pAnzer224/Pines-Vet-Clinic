@@ -34,7 +34,8 @@ export const storeAppointment = async (appointmentData) => {
     const appointmentWithUser = {
       ...appointmentData,
       userId: auth.currentUser.uid,
-      userName: auth.currentUser.displayName || auth.currentUser.email,
+      userName:
+        auth.currentUser.displayName || auth.currentUser.email.split("@")[0],
       createdAt: serverTimestamp(),
     };
 
@@ -56,9 +57,32 @@ export const storeAppointment = async (appointmentData) => {
 
 export const getStoredAppointments = async () => {
   try {
-    // Fetch all appointments regardless of user authentication
+    // Check if admin is authenticated via local storage
+    const isAdminAuthenticated =
+      localStorage.getItem("adminAuthenticated") === "true";
+
+    if (isAdminAuthenticated) {
+      // For admin, fetch all appointments
+      const q = query(
+        collection(db, "appointments"),
+        orderBy("createdAt", "desc")
+      );
+      const querySnapshot = await getDocs(q);
+      return querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+    }
+
+    // If no user is logged in, return empty array
+    if (!auth.currentUser) {
+      return [];
+    }
+
+    // For regular users, fetch only their own appointments
     const q = query(
       collection(db, "appointments"),
+      where("userId", "==", auth.currentUser.uid),
       orderBy("createdAt", "desc")
     );
 

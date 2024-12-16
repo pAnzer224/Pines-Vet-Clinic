@@ -41,11 +41,15 @@ export default function Appointments() {
       if (currentUser) {
         try {
           const fetchedAppointments = await getStoredAppointments();
+
+          // Filter appointments for the current user
+          const userAppointments = fetchedAppointments.filter(
+            (apt) => apt.userId === currentUser.uid
+          );
+
           const fetchedPets = await getPets();
 
-          setAppointments(
-            Array.isArray(fetchedAppointments) ? fetchedAppointments : []
-          );
+          setAppointments(userAppointments);
           setPets(Array.isArray(fetchedPets) ? fetchedPets : []);
         } catch (error) {
           toast.error("Failed to fetch data");

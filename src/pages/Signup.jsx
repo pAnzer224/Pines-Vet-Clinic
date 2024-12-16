@@ -20,18 +20,6 @@ const SignUp = () => {
   const [showProceed, setShowProceed] = useState(false);
   const navigate = useNavigate();
 
-  const pageVariants = {
-    initial: { opacity: 0, x: "10%" },
-    in: { opacity: 1, x: 0 },
-    out: { opacity: 0, x: "-10%" },
-  };
-
-  const pageTransition = {
-    type: "tween",
-    ease: "anticipate",
-    duration: 1,
-  };
-
   const handleChange = (e) => {
     const { name, value } = e.target;
     setFormData((prevState) => ({
@@ -89,13 +77,7 @@ const SignUp = () => {
   };
 
   return (
-    <motion.div
-      className="min-h-screen bg-background relative"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="min-h-screen bg-background relative">
       <div
         className="h-full w-full bg-cover bg-no-repeat absolute top-[-50px] left-0 z-0"
         style={{
@@ -104,7 +86,14 @@ const SignUp = () => {
           backgroundPosition: "top",
         }}
       />
-      <div className="relative z-10 container mx-auto px-6 py-10 font-nunito-bold mt-20">
+
+      <motion.div
+        className="relative z-10 container mx-auto px-6 py-10 font-nunito-bold mt-20"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="max-w-md mx-auto bg-background/95 p-8 rounded-2xl border-[1.6px] border-green2 shadow-lg backdrop-blur-sm">
           <h1 className="text-3xl font-bold text-text mb-6 tracking-wide text-center">
             Create Account
@@ -120,7 +109,15 @@ const SignUp = () => {
 
           <AnimatePresence mode="wait">
             {step === 1 && (
-              <form onSubmit={handleProceed} className="space-y-6 mt-2">
+              <motion.form
+                key="step1"
+                onSubmit={handleProceed}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                className="space-y-6 mt-2"
+              >
                 <InputField
                   label="Email Address"
                   type="email"
@@ -172,18 +169,17 @@ const SignUp = () => {
                     Log in
                   </Link>
                 </div>
-              </form>
+              </motion.form>
             )}
 
             {step === 2 && (
               <motion.form
                 key="step2"
                 onSubmit={handleSubmit}
-                initial="initial"
-                animate="in"
-                exit="out"
-                variants={pageVariants}
-                transition={pageTransition}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
                 className="space-y-6 mt-2"
               >
                 <h2 className="text-lg font-nunito-medium text-text/80 mb-4 text-left">
@@ -222,8 +218,8 @@ const SignUp = () => {
             )}
           </AnimatePresence>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 

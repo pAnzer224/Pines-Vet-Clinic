@@ -20,7 +20,7 @@ function AppointmentCard({ appointment }) {
           <p className="font-nunito-bold text-xs text-text/60">
             {appointment.service || "No service specified"}
           </p>
-          <p className="font-nunito-bold text-xs text-text/80">
+          <p className="font-nunito-bold text-xs text-text/80 pt-1">
             Scheduled by: {appointment.userName || "Unknown User"}
           </p>
         </div>

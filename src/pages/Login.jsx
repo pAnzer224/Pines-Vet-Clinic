@@ -51,13 +51,7 @@ const Login = () => {
   }, [navigate]);
 
   return (
-    <motion.div
-      className="min-h-screen bg-background relative"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -20 }}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="min-h-screen bg-background relative">
       <div
         className="h-full w-full bg-cover bg-no-repeat absolute top-[-50px] left-0 z-0"
         style={{
@@ -67,7 +61,13 @@ const Login = () => {
         }}
       />
 
-      <div className="relative z-10 container mx-auto px-6 py-10 font-nunito-bold mt-20">
+      <motion.div
+        className="relative z-10 container mx-auto px-6 py-10 font-nunito-bold mt-20"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        exit={{ opacity: 0, y: -20 }}
+        transition={{ duration: 0.5 }}
+      >
         <div className="max-w-md mx-auto bg-background/95 p-8 rounded-2xl border-[1.6px] border-green2 shadow-lg backdrop-blur-sm">
           <h1 className="text-3xl font-bold text-text mb-6 tracking-wide text-center">
             Welcome Back
@@ -156,8 +156,8 @@ const Login = () => {
             </div>
           </form>
         </div>
-      </div>
-    </motion.div>
+      </motion.div>
+    </div>
   );
 };
 
