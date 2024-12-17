@@ -1,36 +1,72 @@
 import React, { useState, useEffect } from "react";
-import { ChevronDown, Users, UserPlus, PlusCircle } from "lucide-react";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { Users, UserPlus, PlusCircle, Edit, Trash2 } from "lucide-react";
+import {
+  collection,
+  query,
+  where,
+  getDocs,
+  doc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+} from "firebase/firestore";
 import { db } from "../../firebase-config";
 import { toast } from "react-toastify";
-import AddCustomerModal from "./AddCustomerModal";
+import StatusDropdown from "../../components/StatusDropdown";
+import AddCustomerModal from "../components/AddCustomerModal";
+import EditCustomerModal from "../components/EditCustomerModal";
 import PetAddModal from "../../components/PetAddModal";
+import CustomerDetailsModal from "../components/CustomerDetailsModal";
 
-function CustomerCard({ customer, onAddPet }) {
+function CustomerCard({
+  customer,
+  onAddPet,
+  onEditCustomer,
+  onDeleteCustomer,
+  onViewDetails,
+}) {
   const statusColors = {
     Active: "bg-green3/50 text-green-800",
     Inactive: "bg-primary/30 text-text/80",
   };
 
   return (
-    <div className="bg-background p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors">
+    <div
+      className="bg-background p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group"
+      onClick={() => onViewDetails(customer)}
+    >
+      <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onEditCustomer(customer);
+          }}
+          className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
+        >
+          <Edit className="size-5" />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onDeleteCustomer(customer.id);
+          }}
+          className="text-primary hover:bg-red-100 rounded-full p-1 transition-colors"
+        >
+          <Trash2 className="size-5 text-red" />
+        </button>
+      </div>
+
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-nunito-bold text-green2">{customer.name}</h3>
-          <p className="font-nunito-bold text-xs text-text/60">
-            {customer.email}
-          </p>
-          {customer.phone && (
-            <p className="font-nunito text-xs text-text/60">{customer.phone}</p>
-          )}
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${
+              statusColors[customer.status]
+            }`}
+          >
+            {customer.status}
+          </span>
         </div>
-        <span
-          className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${
-            statusColors[customer.status]
-          }`}
-        >
-          {customer.status}
-        </span>
       </div>
 
       <div className="space-y-2">
@@ -51,7 +87,10 @@ function CustomerCard({ customer, onAddPet }) {
             <div className="ml-2 flex items-center">
               <span className="text-text/60 mr-2">No pets</span>
               <button
-                onClick={() => onAddPet(customer.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onAddPet(customer.id);
+                }}
                 className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
               >
                 <PlusCircle className="w-5 h-5" />
@@ -59,80 +98,87 @@ function CustomerCard({ customer, onAddPet }) {
             </div>
           )}
         </div>
-        <div className="font-nunito text-sm text-text/60">
-          Joined: {customer.joinedDate}
-        </div>
       </div>
     </div>
   );
 }
 
 function Customers() {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
+  const [isEditCustomerModalOpen, setIsEditCustomerModalOpen] = useState(false);
+  const [isCustomerDetailsModalOpen, setIsCustomerDetailsModalOpen] =
+    useState(false);
   const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
+  const [selectedCustomerForEdit, setSelectedCustomerForEdit] = useState(null);
+  const [selectedCustomerForDetails, setSelectedCustomerForDetails] =
+    useState(null);
   const statusOptions = ["All Status", "Active", "Inactive"];
 
   useEffect(() => {
-    fetchCustomers();
+    const usersRef = collection(db, "users");
+    const petsRef = collection(db, "pets");
+
+    // Real-time listener for users and pets
+    const unsubscribe = onSnapshot(
+      usersRef,
+      async (usersSnapshot) => {
+        try {
+          const customerData = await Promise.all(
+            usersSnapshot.docs.map(async (userDoc) => {
+              const userData = userDoc.data();
+
+              const petsQuery = query(
+                petsRef,
+                where("userId", "==", userDoc.id)
+              );
+              const petsSnapshot = await getDocs(petsQuery);
+
+              const userPets = petsSnapshot.docs.map((petDoc) => ({
+                name: petDoc.data().name,
+                type: `${petDoc.data().species} ${
+                  petDoc.data().breed || ""
+                }`.trim(),
+              }));
+
+              return {
+                id: userDoc.id,
+                name: userData.fullName || "Unknown",
+                email: userData.email || "N/A",
+                phone: userData.phone || "",
+                pets: userPets,
+                joinedDate: userData.createdAt
+                  ? new Date(userData.createdAt.toDate()).toLocaleDateString(
+                      "en-US",
+                      {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      }
+                    )
+                  : "Unknown",
+                status: userData.status || "Active",
+              };
+            })
+          );
+
+          setCustomers(customerData);
+        } catch (error) {
+          console.error("Error fetching customers:", error);
+          toast.error("Failed to load customers");
+        }
+      },
+      (error) => {
+        console.error("Error in customers listener:", error);
+        toast.error("Failed to listen to customers");
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
-
-  const fetchCustomers = async () => {
-    try {
-      const usersRef = collection(db, "users");
-      const petsRef = collection(db, "pets");
-
-      // Fetch all users
-      const usersSnapshot = await getDocs(usersRef);
-
-      const customerData = await Promise.all(
-        usersSnapshot.docs.map(async (userDoc) => {
-          const userData = userDoc.data();
-
-          // Fetch pets for this user
-          const petsQuery = query(petsRef, where("userId", "==", userDoc.id));
-          const petsSnapshot = await getDocs(petsQuery);
-
-          const userPets = petsSnapshot.docs.map((petDoc) => ({
-            name: petDoc.data().name,
-            type: `${petDoc.data().species} ${
-              petDoc.data().breed || ""
-            }`.trim(),
-          }));
-
-          return {
-            id: userDoc.id,
-            name: userData.fullName || "Unknown",
-            email: userData.email || "N/A",
-            phone: userData.phone || "",
-            pets: userPets,
-            joinedDate: userData.createdAt
-              ? new Date(userData.createdAt.toDate()).toLocaleDateString(
-                  "en-US",
-                  {
-                    month: "short",
-                    day: "numeric",
-                    year: "numeric",
-                  }
-                )
-              : "Unknown",
-            status: userData.status || "Active",
-          };
-        })
-      );
-
-      setCustomers(customerData);
-      setLoading(false);
-    } catch (error) {
-      console.error("Error fetching customers:", error);
-      toast.error("Failed to load customers");
-      setLoading(false);
-    }
-  };
 
   const handleAddPet = (customerId) => {
     setSelectedCustomerId(customerId);
@@ -140,7 +186,6 @@ function Customers() {
   };
 
   const handlePetAdded = (addedPet) => {
-    // Update the customers state to include the new pet
     setCustomers((prevCustomers) =>
       prevCustomers.map((customer) =>
         customer.id === selectedCustomerId
@@ -160,7 +205,56 @@ function Customers() {
     setIsPetModalOpen(false);
   };
 
-  // Filter customers based on selected status
+  const handleEditCustomer = (customer) => {
+    setSelectedCustomerForEdit(customer);
+    setIsEditCustomerModalOpen(true);
+  };
+
+  const handleUpdateCustomer = async (updatedCustomerData) => {
+    try {
+      const customerRef = doc(db, "users", updatedCustomerData.id);
+      await updateDoc(customerRef, {
+        fullName: updatedCustomerData.name,
+        email: updatedCustomerData.email,
+        phone: updatedCustomerData.phone,
+        status: updatedCustomerData.status,
+      });
+
+      toast.success("Customer updated successfully");
+      setIsEditCustomerModalOpen(false);
+    } catch (error) {
+      console.error("Error updating customer:", error);
+      toast.error("Failed to update customer");
+    }
+  };
+
+  const handleDeleteCustomer = async (customerId) => {
+    try {
+      const customerRef = doc(db, "users", customerId);
+      await deleteDoc(customerRef);
+
+      const petsRef = collection(db, "pets");
+      const petsQuery = query(petsRef, where("userId", "==", customerId));
+      const petsSnapshot = await getDocs(petsQuery);
+
+      const deletePromises = petsSnapshot.docs.map((petDoc) =>
+        deleteDoc(petDoc.ref)
+      );
+
+      await Promise.all(deletePromises);
+
+      toast.success("Customer and associated pets deleted successfully");
+    } catch (error) {
+      console.error("Error deleting customer:", error);
+      toast.error("Failed to delete customer");
+    }
+  };
+
+  const handleViewCustomerDetails = (customer) => {
+    setSelectedCustomerForDetails(customer);
+    setIsCustomerDetailsModalOpen(true);
+  };
+
   const filteredCustomers =
     selectedStatus === "All Status"
       ? customers
@@ -168,14 +262,24 @@ function Customers() {
 
   return (
     <div className="space-y-6 mt-12">
-      {/* Customer Modal */}
       <AddCustomerModal
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
-        onCustomerAdded={fetchCustomers}
+        onCustomerAdded={() => {}} // No need for manual refresh with real-time listener
       />
 
-      {/* Pet Modal */}
+      {selectedCustomerForEdit && (
+        <EditCustomerModal
+          isOpen={isEditCustomerModalOpen}
+          onClose={() => {
+            setIsEditCustomerModalOpen(false);
+            setSelectedCustomerForEdit(null);
+          }}
+          customer={selectedCustomerForEdit}
+          onUpdateCustomer={handleUpdateCustomer}
+        />
+      )}
+
       <PetAddModal
         isOpen={isPetModalOpen}
         onClose={() => {
@@ -185,6 +289,19 @@ function Customers() {
         onPetAdded={handlePetAdded}
         userId={selectedCustomerId}
       />
+
+      {selectedCustomerForDetails && (
+        <CustomerDetailsModal
+          isOpen={isCustomerDetailsModalOpen}
+          onClose={() => {
+            setIsCustomerDetailsModalOpen(false);
+            setSelectedCustomerForDetails(null);
+          }}
+          customer={selectedCustomerForDetails}
+          onEditCustomer={handleEditCustomer}
+          onDeleteCustomer={handleDeleteCustomer}
+        />
+      )}
 
       <div>
         <h1 className="text-2xl font-nunito-bold text-green2">Customers</h1>
@@ -197,32 +314,11 @@ function Customers() {
       </div>
 
       <div className="flex justify-between items-center">
-        <div className="relative w-full md:w-64">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between font-nunito"
-          >
-            <span>{selectedStatus}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-
-          {isDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 border-[1.6px] border-green2 rounded-xl shadow-lg z-50">
-              {statusOptions.map((status) => (
-                <button
-                  key={status}
-                  onClick={() => {
-                    setSelectedStatus(status);
-                    setIsDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left hover:bg-green3/20 text-text transition-colors first:rounded-t-xl last:rounded-b-xl font-nunito"
-                >
-                  {status}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <StatusDropdown
+          statusOptions={statusOptions}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+        />
 
         <button
           onClick={() => setIsCustomerModalOpen(true)}
@@ -233,9 +329,7 @@ function Customers() {
         </button>
       </div>
 
-      {loading ? (
-        <div className="text-center text-text/60">Loading customers...</div>
-      ) : filteredCustomers.length === 0 ? (
+      {filteredCustomers.length === 0 ? (
         <div className="text-center text-text/60">No customers found</div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -244,6 +338,9 @@ function Customers() {
               key={customer.id}
               customer={customer}
               onAddPet={handleAddPet}
+              onEditCustomer={handleEditCustomer}
+              onDeleteCustomer={handleDeleteCustomer}
+              onViewDetails={handleViewCustomerDetails}
             />
           ))}
         </div>

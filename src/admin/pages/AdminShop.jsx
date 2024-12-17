@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { PlusCircle, Edit, Trash2, ChevronDown } from "lucide-react";
+import { PlusCircle, Edit, Trash2 } from "lucide-react";
 import { db } from "../../firebase-config";
+import StatusDropdown from "../../components/StatusDropdown";
 import {
   collection,
   addDoc,
   deleteDoc,
   doc,
   updateDoc,
+  onSnapshot,
+  query,
 } from "firebase/firestore";
 
 // Function to dynamically load all images from the shop-images folder
@@ -16,7 +19,6 @@ function importAllImages(requireContext) {
 
 function Shop() {
   const [products, setProducts] = useState([]);
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -45,6 +47,27 @@ function Shop() {
     "Health & Wellness",
   ];
 
+  // Real-time listener for products
+  useEffect(() => {
+    const productsCollectionRef = collection(db, "products");
+    const unsubscribe = onSnapshot(
+      query(productsCollectionRef),
+      (snapshot) => {
+        const fetchedProducts = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setProducts(fetchedProducts);
+      },
+      (error) => {
+        console.error("Error fetching products: ", error);
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
+
   useEffect(() => {
     if (selectedImage) {
       setNewProduct((prev) => ({
@@ -68,16 +91,8 @@ function Shop() {
 
       if (isEditMode && editingProduct) {
         await updateDoc(doc(db, "products", editingProduct.id), productToAdd);
-        setProducts(
-          products.map((p) =>
-            p.id === editingProduct.id
-              ? { ...productToAdd, id: editingProduct.id }
-              : p
-          )
-        );
       } else {
-        const docRef = await addDoc(collection(db, "products"), productToAdd);
-        setProducts([...products, { id: docRef.id, ...productToAdd }]);
+        await addDoc(collection(db, "products"), productToAdd);
       }
 
       setIsModalOpen(false);
@@ -115,7 +130,6 @@ function Shop() {
   const handleDeleteProduct = async (productId) => {
     try {
       await deleteDoc(doc(db, "products", productId));
-      setProducts(products.filter((product) => product.id !== productId));
     } catch (e) {
       console.error("Error removing document: ", e);
     }
@@ -130,32 +144,11 @@ function Shop() {
   return (
     <div className="space-y-6 mt-14">
       <div className="flex justify-between items-center">
-        <div className="relative w-full md:w-64">
-          <button
-            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-            className="w-full px-4 py-2 bg-green3 text-text rounded-lg hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between font-nunito"
-          >
-            <span>{selectedCategory}</span>
-            <ChevronDown className="w-4 h-4" />
-          </button>
-
-          {isDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 border-[1.6px] border-green2 rounded-xl shadow-lg z-50">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => {
-                    setSelectedCategory(category);
-                    setIsDropdownOpen(false);
-                  }}
-                  className="w-full px-4 py-2 text-left hover:bg-green3/20 text-text transition-colors first:rounded-t-xl last:rounded-b-xl font-nunito"
-                >
-                  {category}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        <StatusDropdown
+          statusOptions={categories}
+          selectedStatus={selectedCategory}
+          onStatusChange={setSelectedCategory}
+        />
 
         <button
           onClick={() => {
@@ -195,7 +188,6 @@ function Shop() {
               className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
               required
             />
-            {/* Image Selection Carousel */}
             <div className="w-full mb-4">
               <p className="text-sm text-text/70 mb-2">Select Product Image:</p>
               <div className="flex space-x-2 overflow-x-auto pb-2">

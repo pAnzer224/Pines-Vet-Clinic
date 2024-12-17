@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, ChevronDown, PawPrint } from "lucide-react";
-import { getStoredAppointments } from "../../pages/appointmentsUtils";
+import { Calendar, PawPrint } from "lucide-react";
 import { toast } from "react-toastify";
+import StatusDropdown from "../../components/StatusDropdown";
+import { db } from "../../firebase-config";
+import { collection, onSnapshot, query } from "firebase/firestore";
 
 function AppointmentCard({ appointment }) {
   const statusColors = {
@@ -42,22 +44,36 @@ function AppointmentCard({ appointment }) {
 }
 
 function Appointments() {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [appointments, setAppointments] = useState([]);
   const statusOptions = ["All Status", "Confirmed", "Pending", "Cancelled"];
 
+  // Real-time listener for appointments
   useEffect(() => {
-    const fetchAppointments = async () => {
-      try {
-        const fetchedAppointments = await getStoredAppointments();
-        setAppointments(fetchedAppointments);
-      } catch (error) {
-        toast.error("Failed to fetch appointments");
-      }
-    };
+    const appointmentsCollectionRef = collection(db, "appointments");
 
-    fetchAppointments();
+    const unsubscribe = onSnapshot(
+      query(appointmentsCollectionRef),
+      (snapshot) => {
+        try {
+          const fetchedAppointments = snapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+          setAppointments(fetchedAppointments);
+        } catch (error) {
+          toast.error("Failed to fetch appointments");
+          console.error("Appointments fetch error:", error);
+        }
+      },
+      (error) => {
+        toast.error("Error listening to appointments");
+        console.error("Appointments listener error:", error);
+      }
+    );
+
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
   }, []);
 
   const filteredAppointments =
@@ -77,32 +93,11 @@ function Appointments() {
         </div>
       </div>
 
-      <div className="relative w-full md:w-64 font-nunito-bold">
-        <button
-          onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-          className="w-full px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between font-nunito"
-        >
-          <span>{selectedStatus}</span>
-          <ChevronDown className="w-4 h-4" />
-        </button>
-
-        {isDropdownOpen && (
-          <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 border-[1.6px] border-green2 rounded-xl shadow-lg z-50">
-            {statusOptions.map((status) => (
-              <button
-                key={status}
-                onClick={() => {
-                  setSelectedStatus(status);
-                  setIsDropdownOpen(false);
-                }}
-                className="w-full px-4 py-2 text-left hover:bg-green3/20 text-text transition-colors first:rounded-t-xl last:rounded-b-xl font-nunito"
-              >
-                {status}
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <StatusDropdown
+        statusOptions={statusOptions}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
         {filteredAppointments.map((appointment) => (

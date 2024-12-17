@@ -26,10 +26,13 @@ function AppointmentCard({ appointment }) {
           {appointment.date}
         </p>
       </div>
-      <button className="flex items-center text-sm font-nunito-bold text-green2 hover:text-green2/80">
+      <Link
+        to="/appointments"
+        className="flex items-center text-sm font-nunito-bold text-green2 hover:text-green2/80"
+      >
         <span>View</span>
         <ChevronRight size={16} className="ml-1" />
-      </button>
+      </Link>
     </div>
   );
 }
@@ -65,10 +68,15 @@ function Appointments() {
       if (!currentUser) return;
 
       try {
-        const appointments = await getStoredAppointments();
+        const allAppointments = await getStoredAppointments();
+
+        // Filter appointments for the current user
+        const userAppointments = allAppointments.filter(
+          (apt) => apt.userId === currentUser.uid
+        );
 
         // Sort appointments by date (most recent first)
-        const sortedAppointments = appointments.sort(
+        const sortedAppointments = userAppointments.sort(
           (a, b) =>
             new Date(b.createdAt.toDate()) - new Date(a.createdAt.toDate())
         );
