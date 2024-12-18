@@ -60,7 +60,14 @@ function Appointments() {
             id: doc.id,
             ...doc.data(),
           }));
-          setAppointments(fetchedAppointments);
+
+          // Sort appointments from newest to oldest
+          const sortedAppointments = fetchedAppointments.sort((a, b) => {
+            // Convert dates and sort from closest to farthest
+            return new Date(a.date) - new Date(b.date);
+          });
+
+          setAppointments(sortedAppointments);
         } catch (error) {
           toast.error("Failed to fetch appointments");
           console.error("Appointments fetch error:", error);
