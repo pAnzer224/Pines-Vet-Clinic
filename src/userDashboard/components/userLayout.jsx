@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, Routes, Route } from "react-router-dom";
 import {
   LayoutDashboard,
   UserCircle,
@@ -8,6 +8,7 @@ import {
   Menu,
   X,
   LogOut,
+  ShoppingBag,
 } from "lucide-react";
 
 import { auth } from "../../firebase-config";
@@ -17,12 +18,14 @@ import Dashboard from "../pages/UserDashboard";
 import Profile from "../pages/UserProfile";
 import Pets from "../pages/UserPets";
 import Appointments from "../pages/UserAppointments";
+import Orders from "../pages/UserOrders";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/user" },
-  { icon: UserCircle, label: "My Profile", path: "/user/profile" },
-  { icon: PawPrint, label: "My Pets", path: "/user/pets" },
   { icon: Calendar, label: "Appointments", path: "/user/appointments" },
+  { icon: PawPrint, label: "My Pets", path: "/user/pets" },
+  { icon: ShoppingBag, label: "My Orders", path: "/user/orders" },
+  { icon: UserCircle, label: "Profile", path: "/user/profile" },
 ];
 
 function UserLayout() {
@@ -41,11 +44,9 @@ function UserLayout() {
       }
     });
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
-  // If not authenticated, show prompt modal
   if (!isAuthenticated) {
     return (
       <PromptModal
@@ -129,10 +130,13 @@ function UserLayout() {
         </header>
 
         <main className="pt-[60px] p-4 md:p-6">
-          {location.pathname === "/user" && <Dashboard />}
-          {location.pathname === "/user/profile" && <Profile />}
-          {location.pathname === "/user/pets" && <Pets />}
-          {location.pathname === "/user/appointments" && <Appointments />}
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/pets" element={<Pets />} />
+            <Route path="/appointments" element={<Appointments />} />
+            <Route path="/orders" element={<Orders />} />
+          </Routes>
         </main>
       </div>
 

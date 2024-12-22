@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -10,27 +10,27 @@ import {
   Cell,
   ResponsiveContainer,
 } from "recharts";
-import { BarChart2, TrendingUp, Users, ShoppingBag } from "lucide-react";
+import {
+  BarChart2,
+  TrendingUp,
+  Users,
+  ShoppingBag,
+  ChevronDown,
+  ChevronUp,
+  Info,
+} from "lucide-react";
+import { collection, query, getDocs, where } from "firebase/firestore";
+import { db } from "../../firebase-config";
 
-// Sample data for monthly revenue
-const revenueData = [
-  { month: "Jan", revenue: 4000 },
-  { month: "Feb", revenue: 3000 },
-  { month: "Mar", revenue: 5000 },
-  { month: "Apr", revenue: 4500 },
-  { month: "May", revenue: 6000 },
+const COLORS = ["#235840", "#5B9279", "#8FCB9B", "#D1E8D5"];
+
+const serviceBreakdown = [
+  { name: "Veterinary Consultations", value: 40 },
+  { name: "Grooming", value: 30 },
+  { name: "Dental Care", value: 20 },
+  { name: "Vaccinations", value: 10 },
 ];
 
-// Sample data for products sold
-const productSoldData = [
-  { month: "Jan", products: 800 },
-  { month: "Feb", products: 950 },
-  { month: "Mar", products: 1100 },
-  { month: "Apr", products: 1250 },
-  { month: "May", products: 1400 },
-];
-
-// Sample data for services
 const servicesData = [
   { month: "Jan", services: 200 },
   { month: "Feb", services: 250 },
@@ -39,18 +39,6 @@ const servicesData = [
   { month: "May", services: 400 },
 ];
 
-// Sample data for service breakdown
-const serviceBreakdown = [
-  { name: "Veterinary Consultations", value: 40 },
-  { name: "Grooming", value: 30 },
-  { name: "Dental Care", value: 20 },
-  { name: "Vaccinations", value: 10 },
-];
-
-// Color palette matching the provided color scheme
-const COLORS = ["#235840", "#5B9279", "#8FCB9B", "#D1E8D5"];
-
-// Component for displaying metric cards (e.g., Total Revenue, Customers, Products)
 function MetricCard({ title, value, icon: Icon }) {
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
@@ -67,11 +55,185 @@ function MetricCard({ title, value, icon: Icon }) {
   );
 }
 
-// Main Reports component
+function OrderAccordion({ order, isOpen, onToggle }) {
+  return (
+    <div className="border-2 border-green3/60 rounded-lg mb-2">
+      <button
+        onClick={onToggle}
+        className="w-full px-4 py-3 flex items-center justify-between bg-green3/10 rounded-t-lg"
+      >
+        <div className="flex items-center gap-4 flex-wrap">
+          <span className="font-nunito-bold text-green2 max-w-[18ch] truncate">
+            Order #{order.orderId}
+          </span>
+          <div className="flex items-center">
+            <span className="font-nunito-bold text-primary mr-2">
+              {order.userName}
+            </span>
+            <div className="group relative">
+              <Info className="w-4 h-4 text-green2" />
+              <div className="text-xs font-nunito-bold text-primary/80 tracking-wider absolute hidden group-hover:block bg-background border-2 border-green3/60 p-2 rounded-md z-10 top-full left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                User ID: {order.userId}
+              </div>
+            </div>
+          </div>
+          <span className="font-nunito-medium text-primary">
+            Total: ₱{order.total.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-text/60 hidden sm:inline text-sm">
+            {new Date(order.date).toLocaleDateString()}
+          </span>
+          {isOpen ? (
+            <ChevronUp className="text-green2" />
+          ) : (
+            <ChevronDown className="text-green2" />
+          )}
+        </div>
+      </button>
+      {isOpen && (
+        <div className="p-4 space-y-2">
+          <div className="sm:hidden mb-2 text-text/60">
+            {new Date(order.date).toLocaleDateString()}
+          </div>
+          {order.items.map((item, index) => (
+            <div
+              key={index}
+              className="flex items-center justify-between py-2 border-b border-green3/30 last:border-0"
+            >
+              <div className="flex items-center gap-3">
+                <img
+                  src={item.productImage}
+                  alt={item.productName}
+                  className="w-12 h-12 object-cover rounded-lg"
+                />
+                <div>
+                  <p className="font-nunito-medium text-text">
+                    {item.productName}
+                  </p>
+                  <p className="text-sm text-text/60">
+                    Quantity: {item.quantity}
+                  </p>
+                </div>
+              </div>
+              <p className="font-nunito-medium text-primary">
+                ₱{(item.price * item.quantity).toLocaleString()}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Reports() {
+  const [metrics, setMetrics] = useState({
+    totalRevenue: 0,
+    totalCustomers: 0,
+    totalProducts: 0,
+    monthlyRevenue: [],
+    monthlyProducts: [],
+  });
+  const [orders, setOrders] = useState([]);
+  const [openOrderId, setOpenOrderId] = useState(null);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      const monthNames = [
+        "Jan",
+        "Feb",
+        "Mar",
+        "Apr",
+        "May",
+        "Jun",
+        "Jul",
+        "Aug",
+        "Sep",
+        "Oct",
+        "Nov",
+        "Dec",
+      ];
+
+      const ordersQuery = query(
+        collection(db, "orders"),
+        where("status", "in", ["Confirmed", "Received"])
+      );
+      const ordersSnapshot = await getDocs(ordersQuery);
+
+      const orderGroups = {};
+      let totalRevenue = 0;
+      let totalProducts = 0;
+      const monthlyData = {};
+      const productMonthlyData = {};
+
+      ordersSnapshot.docs.forEach((doc) => {
+        const data = doc.data();
+        const timestamp = data.createdAt?.seconds * 1000;
+        const orderDate = new Date(timestamp);
+        const monthKey = monthNames[orderDate.getMonth()];
+        const orderTotal = data.price * data.quantity;
+
+        const groupKey = `${data.userId}_${timestamp}`;
+        if (!orderGroups[groupKey]) {
+          orderGroups[groupKey] = {
+            orderId: groupKey,
+            userId: data.userId,
+            userName: data.userName,
+            date: orderDate,
+            items: [],
+            total: 0,
+          };
+        }
+
+        orderGroups[groupKey].items.push({
+          productId: data.productId,
+          productName: data.productName,
+          productImage: data.productImage,
+          price: data.price,
+          quantity: data.quantity,
+        });
+        orderGroups[groupKey].total += orderTotal;
+
+        totalRevenue += orderTotal;
+        totalProducts += data.quantity;
+        monthlyData[monthKey] = (monthlyData[monthKey] || 0) + orderTotal;
+        productMonthlyData[monthKey] =
+          (productMonthlyData[monthKey] || 0) + data.quantity;
+      });
+
+      const revenueData = Object.entries(monthlyData)
+        .map(([month, revenue]) => ({ month, revenue }))
+        .sort(
+          (a, b) => monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
+        );
+
+      const productsData = Object.entries(productMonthlyData)
+        .map(([month, products]) => ({ month, products }))
+        .sort(
+          (a, b) => monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
+        );
+
+      const usersQuery = query(collection(db, "users"));
+      const usersSnapshot = await getDocs(usersQuery);
+
+      setMetrics({
+        totalRevenue,
+        totalCustomers: usersSnapshot.size,
+        totalProducts,
+        monthlyRevenue: revenueData,
+        monthlyProducts: productsData,
+      });
+
+      setOrders(Object.values(orderGroups).sort((a, b) => b.date - a.date));
+    };
+
+    fetchData();
+  }, []);
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 mt-12">
-      {/* Header section */}
       <div>
         <h1 className="text-2xl font-nunito-bold text-green2">
           Business Reports
@@ -84,26 +246,49 @@ function Reports() {
         </div>
       </div>
 
-      {/* Metrics cards grid - responsive for all screen sizes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <MetricCard title="Total Revenue" value="₱85,000" icon={TrendingUp} />
-        <MetricCard title="Total Customers" value="342" icon={Users} />
+        <MetricCard
+          title="Total Revenue"
+          value={`₱${metrics.totalRevenue.toLocaleString()}`}
+          icon={TrendingUp}
+        />
+        <MetricCard
+          title="Total Customers"
+          value={metrics.totalCustomers.toLocaleString()}
+          icon={Users}
+        />
         <MetricCard
           title="Total Products Sold"
-          value="1,248"
+          value={metrics.totalProducts.toLocaleString()}
           icon={ShoppingBag}
         />
       </div>
 
-      {/* Charts grid - responsive layout */}
+      <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
+        <h3 className="font-nunito-bold text-green2 mb-4">Order History</h3>
+        <div className="space-y-2">
+          {orders.map((order) => (
+            <OrderAccordion
+              key={order.orderId}
+              order={order}
+              isOpen={openOrderId === order.orderId}
+              onToggle={() =>
+                setOpenOrderId(
+                  openOrderId === order.orderId ? null : order.orderId
+                )
+              }
+            />
+          ))}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {/* Line Chart for Monthly Revenue */}
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <h3 className="font-nunito-bold text-green2 mb-6">Monthly Revenue</h3>
           <div className="w-full h-[300px] min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={revenueData}
+                data={metrics.monthlyRevenue}
                 margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
                 <XAxis dataKey="month" stroke="#5B9279" />
@@ -125,7 +310,6 @@ function Reports() {
           </div>
         </div>
 
-        {/* Pie Chart section */}
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <h3 className="font-nunito-bold text-green2 mb-6">
             Service Breakdown
@@ -162,15 +346,13 @@ function Reports() {
         </div>
       </div>
 
-      {/* New Line Charts for Products Sold and Services */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        {/* Line Chart for Products Sold */}
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <h3 className="font-nunito-bold text-green2 mb-6">Products Sold</h3>
           <div className="w-full h-[300px] min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={productSoldData}
+                data={metrics.monthlyProducts}
                 margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
                 <XAxis dataKey="month" stroke="#5B9279" />
@@ -192,7 +374,6 @@ function Reports() {
           </div>
         </div>
 
-        {/* Line Chart for Services */}
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <h3 className="font-nunito-bold text-green2 mb-6">
             Services Performed

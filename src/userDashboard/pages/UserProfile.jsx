@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import {
   PawPrint,
-  Upload,
   User,
   Mail,
   Phone,
@@ -26,20 +25,6 @@ import {
 } from "firebase/auth";
 import { db, auth } from "../../firebase-config";
 import { toast } from "react-toastify";
-
-function ProfilePicture() {
-  return (
-    <div className="flex flex-col items-center bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <div className="h-32 w-32 bg-green3/10 rounded-full flex items-center justify-center mb-4">
-        <User size={64} className="text-green2" />
-      </div>
-      <button className="flex items-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30">
-        <Upload size={16} className="mr-2" />
-        Upload Photo
-      </button>
-    </div>
-  );
-}
 
 function PersonalInformation() {
   const [isEditing, setIsEditing] = useState(false);
@@ -106,14 +91,12 @@ function PersonalInformation() {
       if (user) {
         const userDocRef = doc(db, "users", user.uid);
 
-        // Update Firestore document
         await updateDoc(userDocRef, {
           fullName:
             editedData.fullName === "Add Now" ? "" : editedData.fullName,
           phone: editedData.phone === "Add Now" ? "" : editedData.phone,
         });
 
-        // Update Firebase Auth email if changed
         if (
           editedData.email !== userData.email &&
           editedData.email !== "Add Now"
@@ -121,13 +104,11 @@ function PersonalInformation() {
           await updateEmail(user, editedData.email);
         }
 
-        // Update user profile display name
         await updateProfile(user, {
           displayName:
             editedData.fullName === "Add Now" ? "" : editedData.fullName,
         });
 
-        // Update local state
         setUserData({
           fullName: editedData.fullName,
           email: editedData.email,
@@ -147,7 +128,6 @@ function PersonalInformation() {
     try {
       const user = auth.currentUser;
       if (user) {
-        // Validate password inputs
         if (
           !passwordData.currentPassword ||
           !passwordData.newPassword ||
@@ -167,14 +147,12 @@ function PersonalInformation() {
           return;
         }
 
-        // Re-authenticate user
         const credential = EmailAuthProvider.credential(
           user.email,
           passwordData.currentPassword
         );
 
         try {
-          // Attempt to re-authenticate
           await reauthenticateWithCredential(user, credential);
         } catch (reauthError) {
           console.error("Re-authentication error:", reauthError);
@@ -183,10 +161,8 @@ function PersonalInformation() {
         }
 
         try {
-          // Update password
           await updatePassword(user, passwordData.newPassword);
 
-          // Reset password fields
           setPasswordData({
             currentPassword: "",
             newPassword: "",
@@ -224,332 +200,356 @@ function PersonalInformation() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-lg font-nunito-bold text-green2">
-            Personal Information
-          </h2>
-          {!isEditing ? (
-            <button
-              onClick={() => setIsEditing(true)}
-              className="flex items-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30"
-            >
-              <Edit size={16} className="mr-2" />
-              Edit Details
-            </button>
-          ) : (
-            <div className="flex space-x-2">
-              <button
-                onClick={handleSaveProfile}
-                className="flex items-center px-4 py-2 text-sm font-nunito-bold text-background bg-green2 rounded-md hover:bg-green2/80"
-              >
-                <Save size={16} className="mr-2" />
-                Save
-              </button>
-              <button
-                onClick={() => {
-                  setIsEditing(false);
-                  setEditedData(userData);
-                }}
-                className="flex items-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30"
-              >
-                Cancel
-              </button>
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
+      {/* Left Column - Personal Info & Password */}
+      <div className="h-full">
+        <div className="bg-green2/70 p-6 rounded-lg shadow-sm border-2 border-green3/60 h-full flex flex-col">
+          {/* Personal Information Section */}
+          <div className="flex-1">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-xl font-nunito-bold text-background">
+                Personal Information
+              </h2>
+              {!isEditing ? (
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="flex items-center px-4 py-2 text-sm font-nunito-bold text-background bg-background/20 rounded-md hover:bg-background/30"
+                >
+                  <Edit size={16} className="mr-2" />
+                  Edit Details
+                </button>
+              ) : (
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleSaveProfile}
+                    className="flex items-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-background rounded-md hover:bg-background/80"
+                  >
+                    <Save size={16} className="mr-2" />
+                    Save
+                  </button>
+                  <button
+                    onClick={() => {
+                      setIsEditing(false);
+                      setEditedData(userData);
+                    }}
+                    className="flex items-center px-4 py-2 text-sm font-nunito-bold text-background bg-background/20 rounded-md hover:bg-background/30"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {isEditing ? (
-            <>
-              <div className="flex flex-col">
-                <label className="text-sm text-primary/50 font-nunito-medium mb-1">
-                  Full Name
-                </label>
-                <input
-                  type="text"
-                  value={editedData.fullName}
-                  onChange={(e) =>
-                    setEditedData((prev) => ({
-                      ...prev,
-                      fullName: e.target.value,
-                    }))
-                  }
-                  className="border border-green3/60 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green2"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label className="text-sm text-primary/50 font-nunito-medium mb-1">
-                  Email
-                </label>
-                <input
-                  type="email"
-                  value={editedData.email}
-                  onChange={(e) =>
-                    setEditedData((prev) => ({
-                      ...prev,
-                      email: e.target.value,
-                    }))
-                  }
-                  className="border border-green3/60 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green2"
-                />
-              </div>
-              <div className="flex flex-col">
-                <label className="text-sm text-primary/50 font-nunito-medium mb-1">
-                  Phone
-                </label>
-                <input
-                  type="tel"
-                  value={editedData.phone}
-                  onChange={(e) =>
-                    setEditedData((prev) => ({
-                      ...prev,
-                      phone: e.target.value,
-                    }))
-                  }
-                  className="border border-green3/60 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green2"
-                />
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="flex items-center space-x-3 h-10">
-                <User className="text-green2" size={20} />
-                <div>
-                  <p className="text-sm text-primary/50 font-nunito-medium">
-                    Name
-                  </p>
-                  <p
-                    className={`text-base font-nunito-bold text-green2 ${
-                      userData.fullName === "Add Now"
-                        ? "text-primary/50 font-nunito-medium"
-                        : ""
-                    }`}
-                  >
-                    {userData.fullName}
-                  </p>
-                </div>
-              </div>
+            <div className="space-y-4">
+              {isEditing ? (
+                <>
+                  <div className="flex flex-col">
+                    <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                      Full Name
+                    </label>
+                    <input
+                      type="text"
+                      value={editedData.fullName}
+                      onChange={(e) =>
+                        setEditedData((prev) => ({
+                          ...prev,
+                          fullName: e.target.value,
+                        }))
+                      }
+                      className="border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                      Email
+                    </label>
+                    <input
+                      type="email"
+                      value={editedData.email}
+                      onChange={(e) =>
+                        setEditedData((prev) => ({
+                          ...prev,
+                          email: e.target.value,
+                        }))
+                      }
+                      className="border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                      Phone
+                    </label>
+                    <input
+                      type="tel"
+                      value={editedData.phone}
+                      onChange={(e) =>
+                        setEditedData((prev) => ({
+                          ...prev,
+                          phone: e.target.value,
+                        }))
+                      }
+                      className="border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center space-x-3 h-10">
+                    <User className="text-background" size={20} />
+                    <div>
+                      <p className="text-sm text-background font-nunito-bold">
+                        Name
+                      </p>
+                      <p
+                        className={`text-base font-nunito-bold text-background ${
+                          userData.fullName === "Add Now"
+                            ? "text-background/50 font-nunito-medium"
+                            : ""
+                        }`}
+                      >
+                        {userData.fullName}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center space-x-3 h-10">
-                <Mail className="text-green2" size={20} />
-                <div>
-                  <p className="text-sm text-primary/50 font-nunito-medium">
-                    Email
-                  </p>
-                  <p
-                    className={`text-base font-nunito-bold text-green2 ${
-                      userData.email === "Add Now"
-                        ? "text-primary/50 font-nunito-medium"
-                        : ""
-                    }`}
-                  >
-                    {userData.email}
-                  </p>
-                </div>
-              </div>
+                  <div className="flex items-center space-x-3 h-10">
+                    <Mail className="text-background" size={20} />
+                    <div>
+                      <p className="text-sm text-background font-nunito-bold">
+                        Email
+                      </p>
+                      <p
+                        className={`text-base font-nunito-bold text-background ${
+                          userData.email === "Add Now"
+                            ? "text-background/50 font-nunito-medium"
+                            : ""
+                        }`}
+                      >
+                        {userData.email}
+                      </p>
+                    </div>
+                  </div>
 
-              <div className="flex items-center space-x-3 h-10">
-                <Phone className="text-green2" size={20} />
-                <div>
-                  <p className="text-sm text-primary/50 font-nunito-medium">
-                    Phone
-                  </p>
-                  <p
-                    className={`text-base font-nunito-bold text-green2 ${
-                      userData.phone === "Add Now"
-                        ? "text-primary/50 font-nunito-medium"
-                        : ""
-                    }`}
-                  >
-                    {userData.phone}
-                  </p>
-                </div>
-              </div>
-            </>
-          )}
-        </div>
-      </div>
-
-      <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-        <h2 className="text-lg font-nunito-bold text-green2 mb-6">
-          Change Password
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="flex flex-col">
-            <label className="text-sm text-primary/50 font-nunito-medium mb-1">
-              Current Password
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                value={passwordData.currentPassword}
-                onChange={(e) =>
-                  setPasswordData((prev) => ({
-                    ...prev,
-                    currentPassword: e.target.value,
-                  }))
-                }
-                className="w-full border border-green3/60 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green2"
-              />
-              <Lock className="absolute right-3 top-3 text-green2" size={16} />
+                  <div className="flex items-center space-x-3 h-10">
+                    <Phone className="text-background" size={20} />
+                    <div>
+                      <p className="text-sm text-background font-nunito-bold">
+                        Phone
+                      </p>
+                      <p
+                        className={`text-base font-nunito-bold text-background ${
+                          userData.phone === "Add Now"
+                            ? "text-background/50 font-nunito-medium"
+                            : ""
+                        }`}
+                      >
+                        {userData.phone}
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
-          <div className="flex flex-col">
-            <label className="text-sm text-primary/50 font-nunito-medium mb-1">
-              New Password
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                value={passwordData.newPassword}
-                onChange={(e) =>
-                  setPasswordData((prev) => ({
-                    ...prev,
-                    newPassword: e.target.value,
-                  }))
-                }
-                className="w-full border border-green3/60 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green2"
-              />
-              <Lock className="absolute right-3 top-3 text-green2" size={16} />
-            </div>
-          </div>
-          <div className="flex flex-col">
-            <label className="text-sm text-primary/50 font-nunito-medium mb-1">
-              Confirm New Password
-            </label>
-            <div className="relative">
-              <input
-                type="password"
-                value={passwordData.confirmPassword}
-                onChange={(e) =>
-                  setPasswordData((prev) => ({
-                    ...prev,
-                    confirmPassword: e.target.value,
-                  }))
-                }
-                className="w-full border border-green3/60 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green2"
-              />
-              <Lock className="absolute right-3 top-3 text-green2" size={16} />
-            </div>
-          </div>
-          <div className="md:col-span-3 mt-2">
-            <button
-              onClick={handleChangePassword}
-              className="px-4 py-2 bg-green2 text-background rounded-md hover:bg-green2/80 font-nunito-bold"
-            >
+
+          {/* Divider */}
+          <div className="border-t border-background/40 my-12"></div>
+
+          {/* Change Password Section */}
+          <div className="flex-1">
+            <h2 className="text-lg font-nunito-bold text-background mb-6">
               Change Password
-            </button>
+            </h2>
+            <div className="space-y-4">
+              <div className="flex flex-col">
+                <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                  Current Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={passwordData.currentPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        currentPassword: e.target.value,
+                      }))
+                    }
+                    className="w-full border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                  />
+                  <Lock
+                    className="absolute right-3 top-3 text-background"
+                    size={16}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                  New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={passwordData.newPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        newPassword: e.target.value,
+                      }))
+                    }
+                    className="w-full border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                  />
+                  <Lock
+                    className="absolute right-3 top-3 text-background"
+                    size={16}
+                  />
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                  Confirm New Password
+                </label>
+                <div className="relative">
+                  <input
+                    type="password"
+                    value={passwordData.confirmPassword}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
+                    className="w-full border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                  />
+                  <Lock
+                    className="absolute right-3 top-3 text-background"
+                    size={16}
+                  />
+                </div>
+              </div>
+              <div className="mt-2">
+                <button
+                  onClick={handleChangePassword}
+                  className="px-4 py-2 bg-background text-green2 rounded-md hover:bg-background/80 font-nunito-bold"
+                >
+                  Change Password
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-        <h2 className="text-lg font-nunito-bold text-green2 mb-6">
-          Clinic Preferences
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex items-center space-x-3">
-            <Building2 className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Preferred Branch
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.preferredBranch}
-              </p>
+      {/* Right Column - Settings */}
+      <div className="space-y-6 h-full flex flex-col">
+        {/* Clinic Preferences */}
+        <div className="flex-1 bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
+          <h2 className="text-lg font-nunito-bold text-green2 mb-6">
+            Clinic Preferences
+          </h2>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="flex items-center space-x-3">
+              <Building2 className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Preferred Branch
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.preferredBranch}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <User className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Preferred Veterinarian
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.preferredVet}
-              </p>
+            <div className="flex items-center space-x-3">
+              <User className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Preferred Veterinarian
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.preferredVet}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <CreditCard className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Payment Method
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.paymentMethod}
-              </p>
+            <div className="flex items-center space-x-3">
+              <CreditCard className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Payment Method
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.paymentMethod}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <Calendar className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Last Visit
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.lastVisit}
-              </p>
+            <div className="flex items-center space-x-3">
+              <Calendar className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Last Visit
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.lastVisit}
+                </p>
+              </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-        <h2 className="text-lg font-nunito-bold text-green2 mb-6">
-          Account Settings
-        </h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="flex items-center space-x-3">
-            <Bell className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Notification Preferences
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.notificationPreferences}
-              </p>
+        {/* Account Settings */}
+        <div className="flex-1 bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
+          <h2 className="text-lg font-nunito-bold text-green2 mb-6">
+            Account Settings
+          </h2>
+          <div className="grid grid-cols-1 gap-6">
+            <div className="flex items-center space-x-3">
+              <Bell className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Notification Preferences
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.notificationPreferences}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <Clock className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Appointment Reminders
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.appointmentReminders}
-              </p>
+            <div className="flex items-center space-x-3">
+              <Clock className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Appointment Reminders
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.appointmentReminders}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <Shield className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Care Plan Level
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.careLevel}
-              </p>
+            <div className="flex items-center space-x-3">
+              <Shield className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Care Plan Level
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.careLevel}
+                </p>
+              </div>
             </div>
-          </div>
 
-          <div className="flex items-center space-x-3">
-            <Settings className="text-green2" size={20} />
-            <div>
-              <p className="text-sm text-primary/50 font-nunito-medium">
-                Member Since
-              </p>
-              <p className="text-base font-nunito-bold text-green2">
-                {userInfo.memberSince}
-              </p>
+            <div className="flex items-center space-x-3">
+              <Settings className="text-green2" size={20} />
+              <div>
+                <p className="text-sm text-primary/50 font-nunito-medium">
+                  Member Since
+                </p>
+                <p className="text-base font-nunito-bold text-green2">
+                  {userInfo.memberSince}
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -572,15 +572,7 @@ function MyProfile() {
           </p>
         </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-1">
-          <ProfilePicture />
-        </div>
-        <div className="md:col-span-2">
-          <PersonalInformation />
-        </div>
-      </div>
+      <PersonalInformation />
     </div>
   );
 }

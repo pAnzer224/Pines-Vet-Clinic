@@ -66,9 +66,9 @@ function AppointmentCard({ appointments }) {
       </div>
       <div className="space-y-4">
         {appointments.length > 0 ? (
-          appointments.map((appointment, index) => (
+          appointments.map((appointment) => (
             <div
-              key={index}
+              key={appointment.id}
               className="flex items-start space-x-4 p-4 bg-green3/10 rounded-lg"
             >
               <div className="p-2 rounded-full bg-green3/20 text-green2">
@@ -158,14 +158,24 @@ function UserDashboard() {
           setUserData(userDoc.data());
         }
 
-        // Fetch appointments using the same method as Appointments page
-        const appointments = await getStoredAppointments();
+        // Fetch all appointments
+        const allAppointments = await getStoredAppointments();
+
+        // Filter appointments for current user
+        const userAppointments = allAppointments.filter(
+          (apt) => apt.userId === currentUser.uid
+        );
 
         // Sort appointments by date (most recent first)
-        const sortedAppointments = appointments.sort(
-          (a, b) =>
-            new Date(b.createdAt.toDate()) - new Date(a.createdAt.toDate())
-        );
+        const sortedAppointments = userAppointments.sort((a, b) => {
+          const dateA = a.createdAt
+            ? new Date(a.createdAt.toDate())
+            : new Date(0);
+          const dateB = b.createdAt
+            ? new Date(b.createdAt.toDate())
+            : new Date(0);
+          return dateB - dateA;
+        });
 
         // Take first 2 appointments as upcoming
         setUpcomingAppointments(sortedAppointments.slice(0, 2));

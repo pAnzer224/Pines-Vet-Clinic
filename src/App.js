@@ -1,4 +1,3 @@
-// App.js
 import React from "react";
 import {
   BrowserRouter as Router,
@@ -24,6 +23,7 @@ import UserDashboard from "./userDashboard/pages/UserDashboard";
 import UserProfile from "./userDashboard/pages/UserProfile";
 import UserPets from "./userDashboard/pages/UserPets";
 import UserAppointments from "./userDashboard/pages/UserAppointments";
+import UserOrders from "./userDashboard/pages/UserOrders";
 
 import AdminLogin from "./admin/pages/AdminLogin";
 import AdminDashboard from "./admin/pages/AdminDashboard";
@@ -79,6 +79,7 @@ function AppContent() {
               <Route path="profile" element={<UserProfile />} />
               <Route path="pets" element={<UserPets />} />
               <Route path="appointments" element={<UserAppointments />} />
+              <Route path="orders" element={<UserOrders />} />
             </Route>
 
             <Route path="/admin">

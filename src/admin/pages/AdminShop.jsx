@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { PlusCircle, Edit, Trash2 } from "lucide-react";
+import { PlusCircle, Edit, Trash2, CheckCircle } from "lucide-react";
 import { db } from "../../firebase-config";
 import StatusDropdown from "../../components/StatusDropdown";
 import {
@@ -12,13 +12,13 @@ import {
   query,
 } from "firebase/firestore";
 
-// Function to dynamically load all images from the shop-images folder
 function importAllImages(requireContext) {
   return requireContext.keys().map(requireContext);
 }
 
-function Shop() {
+function AdminShop() {
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -33,7 +33,6 @@ function Shop() {
     image: "/images/shop-images/default-image.jpg",
   });
 
-  // Load images dynamically
   const shopImages = importAllImages(
     require.context("/public/images/shop-images/", false, /\.(png|jpe?g|svg)$/)
   );
@@ -47,10 +46,11 @@ function Shop() {
     "Health & Wellness",
   ];
 
-  // Real-time listener for products
   useEffect(() => {
     const productsCollectionRef = collection(db, "products");
-    const unsubscribe = onSnapshot(
+    const ordersCollectionRef = collection(db, "orders");
+
+    const unsubscribeProducts = onSnapshot(
       query(productsCollectionRef),
       (snapshot) => {
         const fetchedProducts = snapshot.docs.map((doc) => ({
@@ -64,8 +64,24 @@ function Shop() {
       }
     );
 
-    // Cleanup subscription on unmount
-    return () => unsubscribe();
+    const unsubscribeOrders = onSnapshot(
+      query(ordersCollectionRef),
+      (snapshot) => {
+        const fetchedOrders = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setOrders(fetchedOrders);
+      },
+      (error) => {
+        console.error("Error fetching orders: ", error);
+      }
+    );
+
+    return () => {
+      unsubscribeProducts();
+      unsubscribeOrders();
+    };
   }, []);
 
   useEffect(() => {
@@ -135,6 +151,26 @@ function Shop() {
     }
   };
 
+  const handleConfirmOrder = async (orderId) => {
+    try {
+      await updateDoc(doc(db, "orders", orderId), {
+        status: "Confirmed",
+      });
+    } catch (e) {
+      console.error("Error confirming order: ", e);
+    }
+  };
+
+  const handleReceiveOrder = async (orderId) => {
+    try {
+      await updateDoc(doc(db, "orders", orderId), {
+        status: "Received",
+      });
+    } catch (e) {
+      console.error("Error marking order as received: ", e);
+    }
+  };
+
   const filteredProducts = products.filter(
     (product) =>
       selectedCategory === "All Categories" ||
@@ -173,7 +209,7 @@ function Shop() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 font-nunito-medium tracking-wide text-sm">
+        <div className="fixed inset-0 flex items-center justify-center z-50 font-nunito-medium tracking-wide text-sm">
           <form
             onSubmit={handleAddProduct}
             className="bg-background p-8 rounded-2xl w-96 border-[1.6px] border-green2"
@@ -343,8 +379,77 @@ function Shop() {
           </tbody>
         </table>
       </div>
+
+      {/* Order History Section */}
+      <div className="mt-12">
+        <h2 className="text-2xl font-bold text-green2 mb-6">Order History</h2>
+        <div className="grid gap-4">
+          {orders.map((order) => (
+            <div
+              key={order.id}
+              className="bg-background/95 p-6 rounded-xl border-[1.6px] border-green2 shadow-lg"
+            >
+              <div className="flex justify-between items-start">
+                <div>
+                  <h3 className="text-lg font-semibold text-text">
+                    {order.userName}
+                  </h3>
+                  <p className="text-sm text-text/60">
+                    User ID: {order.userId}
+                  </p>
+                  <p className="text-primary font-medium mt-2">
+                    ₱{order.price * order.quantity}
+                  </p>
+                  <div className="mt-2">
+                    <span className="text-sm text-text/60">
+                      Order Date:{" "}
+                      {order.createdAt
+                        ? new Date(
+                            order.createdAt.seconds * 1000
+                          ).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "long",
+                            day: "numeric",
+                          })
+                        : "Date not available"}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  {order.status !== "Confirmed" &&
+                    order.status !== "Received" && (
+                      <button
+                        onClick={() => handleConfirmOrder(order.id)}
+                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2"
+                      >
+                        <CheckCircle size={18} />
+                        Confirm
+                      </button>
+                    )}
+                  {order.status === "Confirmed" &&
+                    order.status !== "Received" && (
+                      <button
+                        onClick={() => handleReceiveOrder(order.id)}
+                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2"
+                      >
+                        <CheckCircle size={18} />
+                        Received
+                      </button>
+                    )}
+                  {order.status === "Received" && (
+                    <span className="px-4 py-2 bg-green3/30 text-text rounded-full border-[1.6px] border-green2 flex items-center gap-2">
+                      <CheckCircle size={18} />
+                      Completed
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
 
-export default Shop;
+export default AdminShop;
