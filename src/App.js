@@ -30,7 +30,6 @@ import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminAppointments from "./admin/pages/AdminAppointments";
 import AdminShop from "./admin/pages/AdminShop";
 import AdminCustomers from "./admin/pages/AdminCustomers";
-import AdminContent from "./admin/pages/AdminContent";
 import AdminReports from "./admin/pages/AdminReports";
 import AdminSettings from "./admin/pages/AdminSettings";
 
@@ -90,7 +89,6 @@ function AppContent() {
                 <Route path="appointments" element={<AdminAppointments />} />
                 <Route path="shop" element={<AdminShop />} />
                 <Route path="customers" element={<AdminCustomers />} />
-                <Route path="content" element={<AdminContent />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="settings" element={<AdminSettings />} />
               </Route>

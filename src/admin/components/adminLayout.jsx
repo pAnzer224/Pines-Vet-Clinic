@@ -22,7 +22,6 @@ const sidebarItems = [
   },
   { icon: Store, label: "Shop", path: "/admin/shop" },
   { icon: Users, label: "Customers", path: "/admin/customers" },
-  { icon: FileText, label: "Content", path: "/admin/content" },
   { icon: BarChart, label: "Reports", path: "/admin/reports" },
   { icon: Settings, label: "Settings", path: "/admin/settings" },
 ];

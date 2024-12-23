@@ -327,7 +327,7 @@ function Customers() {
               placeholder="Search customers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-green3/50 rounded-lg focus:outline-none focus:border-primary"
+              className="w-full pl-10 pr-4 py-2 border-2 border-green3/50 rounded-lg focus:outline-none focus:border-green2 font-nunito-bold"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text/60 size-5" />
           </div>
