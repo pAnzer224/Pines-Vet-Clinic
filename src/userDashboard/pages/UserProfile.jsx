@@ -203,17 +203,17 @@ function PersonalInformation() {
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 h-full">
       {/* Left Column - Personal Info & Password */}
       <div className="h-full">
-        <div className="bg-green2/70 p-6 rounded-lg shadow-sm border-2 border-green3/60 h-full flex flex-col">
+        <div className="bg-green3/40 p-6 rounded-lg shadow-sm border-2 border-green3/60 h-full flex flex-col">
           {/* Personal Information Section */}
           <div className="flex-1">
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-nunito-bold text-background">
+              <h2 className="text-xl font-nunito-bold text-primary">
                 Personal Information
               </h2>
               {!isEditing ? (
                 <button
                   onClick={() => setIsEditing(true)}
-                  className="flex items-center px-4 py-2 text-sm font-nunito-bold text-background bg-background/20 rounded-md hover:bg-background/30"
+                  className="flex items-center px-4 py-2 text-sm font-nunito-bold text-primary bg-primary/20 rounded-md hover:bg-primary/30"
                 >
                   <Edit size={16} className="mr-2" />
                   Edit Details
@@ -222,7 +222,7 @@ function PersonalInformation() {
                 <div className="flex space-x-2">
                   <button
                     onClick={handleSaveProfile}
-                    className="flex items-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-background rounded-md hover:bg-background/80"
+                    className="flex items-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-background rounded-md hover:bg-primary/70 hover:text-background/90"
                   >
                     <Save size={16} className="mr-2" />
                     Save
@@ -232,7 +232,7 @@ function PersonalInformation() {
                       setIsEditing(false);
                       setEditedData(userData);
                     }}
-                    className="flex items-center px-4 py-2 text-sm font-nunito-bold text-background bg-background/20 rounded-md hover:bg-background/30"
+                    className="flex items-center px-4 py-2 text-sm font-nunito-bold text-primary bg-primary/20 rounded-md hover:bg-primary/30"
                   >
                     Cancel
                   </button>
@@ -244,7 +244,7 @@ function PersonalInformation() {
               {isEditing ? (
                 <>
                   <div className="flex flex-col">
-                    <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                    <label className="text-sm text-primary/80 font-nunito-semibold mb-1">
                       Full Name
                     </label>
                     <input
@@ -256,11 +256,11 @@ function PersonalInformation() {
                           fullName: e.target.value,
                         }))
                       }
-                      className="border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                      className="w-full border border-primary/20 bg-background/90 text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                    <label className="text-sm text-primary/80 font-nunito-semibold mb-1">
                       Email
                     </label>
                     <input
@@ -272,11 +272,11 @@ function PersonalInformation() {
                           email: e.target.value,
                         }))
                       }
-                      className="border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                      className="w-full border border-primary/20 bg-background/90 text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background"
                     />
                   </div>
                   <div className="flex flex-col">
-                    <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                    <label className="text-sm text-primary/80 font-nunito-semibold mb-1">
                       Phone
                     </label>
                     <input
@@ -288,22 +288,22 @@ function PersonalInformation() {
                           phone: e.target.value,
                         }))
                       }
-                      className="border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                      className="w-full border border-primary/20 bg-background/90 text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background"
                     />
                   </div>
                 </>
               ) : (
                 <>
                   <div className="flex items-center space-x-3 h-10">
-                    <User className="text-background" size={20} />
+                    <User className="text-primary" size={20} />
                     <div>
-                      <p className="text-sm text-background font-nunito-bold">
+                      <p className="text-sm text-primary font-nunito-bold">
                         Name
                       </p>
                       <p
-                        className={`text-base font-nunito-bold text-background ${
+                        className={`text-base font-nunito-bold text-text ${
                           userData.fullName === "Add Now"
-                            ? "text-background/50 font-nunito-medium"
+                            ? "text-primary/50 font-nunito-semibold"
                             : ""
                         }`}
                       >
@@ -313,15 +313,15 @@ function PersonalInformation() {
                   </div>
 
                   <div className="flex items-center space-x-3 h-10">
-                    <Mail className="text-background" size={20} />
+                    <Mail className="text-primary" size={20} />
                     <div>
-                      <p className="text-sm text-background font-nunito-bold">
+                      <p className="text-sm text-primary font-nunito-bold">
                         Email
                       </p>
                       <p
-                        className={`text-base font-nunito-bold text-background ${
+                        className={`text-base font-nunito-bold text-text/80 ${
                           userData.email === "Add Now"
-                            ? "text-background/50 font-nunito-medium"
+                            ? "text-primary/50 font-nunito-semibold"
                             : ""
                         }`}
                       >
@@ -331,15 +331,15 @@ function PersonalInformation() {
                   </div>
 
                   <div className="flex items-center space-x-3 h-10">
-                    <Phone className="text-background" size={20} />
+                    <Phone className="text-primary" size={20} />
                     <div>
-                      <p className="text-sm text-background font-nunito-bold">
+                      <p className="text-sm text-primary font-nunito-bold">
                         Phone
                       </p>
                       <p
-                        className={`text-base font-nunito-bold text-background ${
+                        className={`text-base font-nunito-bold text-text/80 ${
                           userData.phone === "Add Now"
-                            ? "text-background/50 font-nunito-medium"
+                            ? "text-primary/50 font-nunito-semibold"
                             : ""
                         }`}
                       >
@@ -353,16 +353,16 @@ function PersonalInformation() {
           </div>
 
           {/* Divider */}
-          <div className="border-t border-background/40 my-12"></div>
+          <div className="border-t border-primary/40 my-12"></div>
 
           {/* Change Password Section */}
           <div className="flex-1">
-            <h2 className="text-lg font-nunito-bold text-background mb-6">
+            <h2 className="text-lg font-nunito-bold text-primary mb-6">
               Change Password
             </h2>
             <div className="space-y-4">
               <div className="flex flex-col">
-                <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                <label className="text-sm text-primary/80 font-nunito-semibold mb-1">
                   Current Password
                 </label>
                 <div className="relative">
@@ -375,16 +375,16 @@ function PersonalInformation() {
                         currentPassword: e.target.value,
                       }))
                     }
-                    className="w-full border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                    className="w-full border border-primary/20 bg-background/90 text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background"
                   />
                   <Lock
-                    className="absolute right-3 top-3 text-background"
+                    className="absolute right-3 top-3 text-primary"
                     size={16}
                   />
                 </div>
               </div>
               <div className="flex flex-col">
-                <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                <label className="text-sm text-primary/80 font-nunito-semibold mb-1">
                   New Password
                 </label>
                 <div className="relative">
@@ -397,16 +397,16 @@ function PersonalInformation() {
                         newPassword: e.target.value,
                       }))
                     }
-                    className="w-full border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                    className="w-full border border-primary/20 bg-background/90 text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background"
                   />
                   <Lock
-                    className="absolute right-3 top-3 text-background"
+                    className="absolute right-3 top-3 text-primary"
                     size={16}
                   />
                 </div>
               </div>
               <div className="flex flex-col">
-                <label className="text-sm text-background/80 font-nunito-medium mb-1">
+                <label className="text-sm text-primary/80 font-nunito-semibold mb-1">
                   Confirm New Password
                 </label>
                 <div className="relative">
@@ -419,10 +419,10 @@ function PersonalInformation() {
                         confirmPassword: e.target.value,
                       }))
                     }
-                    className="w-full border border-background/20 bg-background/10 text-background rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-background"
+                    className="w-full border border-primary/20 bg-background/90 text-primary rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary focus:bg-background"
                   />
                   <Lock
-                    className="absolute right-3 top-3 text-background"
+                    className="absolute right-3 top-3 text-primary"
                     size={16}
                   />
                 </div>
@@ -451,7 +451,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <Building2 className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Preferred Branch
                 </p>
                 <p className="text-base font-nunito-bold text-green2">
@@ -463,7 +463,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <User className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Preferred Veterinarian
                 </p>
                 <p className="text-base font-nunito-bold text-green2">
@@ -475,7 +475,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <CreditCard className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Payment Method
                 </p>
                 <p className="text-base font-nunito-bold text-green2">
@@ -487,7 +487,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <Calendar className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Last Visit
                 </p>
                 <p className="text-base font-nunito-bold text-green2">
@@ -507,7 +507,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <Bell className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Notification Preferences
                 </p>
                 <p className="text-base font-nunito-bold text-green2">
@@ -519,7 +519,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <Clock className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Appointment Reminders
                 </p>
                 <p className="text-base font-nunito-bold text-green2">
@@ -531,7 +531,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <Shield className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Care Plan Level
                 </p>
                 <p className="text-base font-nunito-bold text-green2">
@@ -543,7 +543,7 @@ function PersonalInformation() {
             <div className="flex items-center space-x-3">
               <Settings className="text-green2" size={20} />
               <div>
-                <p className="text-sm text-primary/50 font-nunito-medium">
+                <p className="text-sm text-primary/50 font-nunito-semibold">
                   Member Since
                 </p>
                 <p className="text-base font-nunito-bold text-green2">

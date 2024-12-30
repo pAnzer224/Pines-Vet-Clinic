@@ -10,11 +10,24 @@ function AdminLogin() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // Check if already authenticated
+    // Check if already authenticated and within session timeout
     const isAuthenticated =
       localStorage.getItem("adminAuthenticated") === "true";
     if (isAuthenticated) {
-      navigate("/admin/dashboard");
+      const authTime = parseInt(localStorage.getItem("adminAuthTime") || "0");
+      const timeoutMinutes = parseInt(
+        localStorage.getItem("sessionTimeout") || "30"
+      );
+      const currentTime = new Date().getTime();
+
+      if (currentTime - authTime < timeoutMinutes * 60 * 1000) {
+        // Session is still valid
+        navigate("/admin/dashboard");
+      } else {
+        // Session has expired
+        localStorage.removeItem("adminAuthenticated");
+        localStorage.removeItem("adminAuthTime");
+      }
     }
   }, [navigate]);
 
@@ -22,10 +35,14 @@ function AdminLogin() {
     e.preventDefault();
     setError(""); // Clear any previous errors
 
-    // Hardcoded admin credentials (change if needed)
-    if (adminId === "admin123" && password === "password123") {
+    const savedAdminId = localStorage.getItem("adminId") || "admin123";
+    const savedPassword =
+      localStorage.getItem("adminPassword") || "password123";
+
+    if (adminId === savedAdminId && password === savedPassword) {
       // Set authentication in local storage
       localStorage.setItem("adminAuthenticated", "true");
+      localStorage.setItem("adminAuthTime", new Date().getTime().toString());
 
       // Navigate to dashboard after log in
       navigate("/admin/dashboard");
@@ -56,7 +73,7 @@ function AdminLogin() {
           <div>
             <label
               htmlFor="adminId"
-              className="block text-sm font-nunito-medium text-green2"
+              className="block text-sm font-nunito-semibold text-green2"
             >
               Admin ID
             </label>
@@ -65,7 +82,7 @@ function AdminLogin() {
               id="adminId"
               value={adminId}
               onChange={(e) => setAdminId(e.target.value)}
-              className="mt-1 block w-full px-3 py-2 border border-green3/60 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green3 focus:border-green3 text-primary font-nunito-medium"
+              className="mt-1 block w-full px-3 py-2 border border-green3/60 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green3 focus:border-green3 text-primary font-nunito-semibold"
               required
             />
           </div>
@@ -73,7 +90,7 @@ function AdminLogin() {
           <div className="relative">
             <label
               htmlFor="password"
-              className="block text-sm font-nunito-medium text-green2"
+              className="block text-sm font-nunito-semibold text-green2"
             >
               Password
             </label>
@@ -83,7 +100,7 @@ function AdminLogin() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 pr-10 border border-green3/60 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green3 focus:border-green3 text-primary font-nunito-medium"
+                className="mt-1 block w-full px-3 py-2 pr-10 border border-green3/60 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green3 focus:border-green3 text-primary font-nunito-semibold"
                 required
               />
               <button
@@ -97,7 +114,7 @@ function AdminLogin() {
           </div>
 
           {error && (
-            <p className="text-red-500 text-sm text-center font-nunito-medium">
+            <p className="text-red/90 text-sm text-center font-nunito-semibold tracking-wide">
               {error}
             </p>
           )}
@@ -110,7 +127,7 @@ function AdminLogin() {
           </button>
         </form>
 
-        <div className="text-center mt-4 text-sm text-green2 font-nunito-medium">
+        <div className="text-center mt-4 text-sm text-green2 font-nunito-semibold">
           <Link
             to="/"
             className="hover:underline hover:text-primary tracking-wide"

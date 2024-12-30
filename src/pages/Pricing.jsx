@@ -57,7 +57,7 @@ const PricingPage = () => {
           <h1 className="text-4xl font-bold text-text mb-2 tracking-wide text-center">
             Simple, Transparent Pricing
           </h1>
-          <p className="text-text/80 mb-12 tracking-wide font-nunito-medium text-center max-w-2xl mx-auto">
+          <p className="text-text/80 mb-12 tracking-wide font-nunito-semibold text-center max-w-2xl mx-auto">
             Choose the perfect care package for your beloved pet. All plans
             include our commitment to exceptional veterinary care.
           </p>

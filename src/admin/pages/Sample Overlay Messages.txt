@@ -1,0 +1,11 @@
+For Appointments:
+      title: "Appointments Unavailable"
+      message: "We are currently not accepting any appointments at this time. Please check back later."
+
+For Shop
+      title: "Shop Temporarily Closed"
+      message: "Our online shop is currently under maintenance. We apologize for any inconvenience."
+
+For Signup
+      title: "Registration Closed"
+      message: "New user registration is temporarily disabled. Please try again later."

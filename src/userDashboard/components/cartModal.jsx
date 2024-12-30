@@ -10,10 +10,11 @@ import {
   addDoc,
   serverTimestamp,
   writeBatch,
+  updateDoc,
 } from "firebase/firestore";
 import { db } from "../../firebase-config";
 import { useAuth } from "../../hooks/useAuth";
-import { ShoppingBag, X, Trash } from "lucide-react";
+import { ShoppingBag, X, Trash, Plus, Minus } from "lucide-react";
 import { toast } from "react-toastify";
 
 const CartModal = ({ isOpen, onClose }) => {
@@ -44,6 +45,21 @@ const CartModal = ({ isOpen, onClose }) => {
 
     return () => unsubscribe();
   }, [currentUser]);
+
+  const updateQuantity = async (itemId, newQuantity) => {
+    if (newQuantity < 1) return;
+
+    try {
+      const cartItemRef = doc(db, "cart", itemId);
+      await updateDoc(cartItemRef, {
+        quantity: newQuantity,
+      });
+      toast.success("Quantity updated");
+    } catch (error) {
+      console.error("Error updating quantity:", error);
+      toast.error("Failed to update quantity");
+    }
+  };
 
   const placeOrder = async () => {
     if (cartItems.length === 0) {
@@ -143,12 +159,30 @@ const CartModal = ({ isOpen, onClose }) => {
                         <h3 className="text-sm font-semibold text-text">
                           {item.productName}
                         </h3>
-                        <p className="text-primary font-medium">
+                        <p className="text-primary font-nunito-semibold">
                           ₱{item.price}
                         </p>
-                        <p className="text-sm text-text/60">
-                          Quantity: {item.quantity}
-                        </p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity - 1)
+                            }
+                            className="p-1 rounded-full bg-green2/10 hover:bg-green2/20 text-green2 transition-colors"
+                          >
+                            <Minus size={14} />
+                          </button>
+                          <span className="text-sm text-text min-w-8 text-center">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() =>
+                              updateQuantity(item.id, item.quantity + 1)
+                            }
+                            className="p-1 rounded-full bg-green2/10 hover:bg-green2/20 text-green2 transition-colors"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
                       </div>
                       <button
                         onClick={() => removeFromCart(item.id)}

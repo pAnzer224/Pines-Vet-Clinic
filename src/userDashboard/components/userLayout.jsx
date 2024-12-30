@@ -91,7 +91,7 @@ function UserLayout() {
               key={item.path}
               to={item.path}
               onClick={() => setIsSidebarOpen(false)}
-              className={`flex items-center space-x-3 px-4 py-2 rounded-md transition-colors font-nunito-medium tracking-wide ${
+              className={`flex items-center space-x-3 px-4 py-2 rounded-md transition-colors font-nunito-semibold tracking-wide ${
                 location.pathname === item.path
                   ? "bg-green3 text-background"
                   : "text-green2 hover:text-primary"

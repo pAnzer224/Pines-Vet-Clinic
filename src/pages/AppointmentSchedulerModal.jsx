@@ -2,14 +2,34 @@ import React, { useState, useRef, useEffect } from "react";
 import { Clock, ChevronRight, ChevronLeft, SquareX } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import PromptModal from "../components/promptModal";
+import { db } from "../firebase-config";
+import { collection, getDocs } from "firebase/firestore";
 
 const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   const [selectedDay, setSelectedDay] = useState(null);
   const [selectedTime, setSelectedTime] = useState(null);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showPromptModal, setShowPromptModal] = useState(false);
+  const [timeSlots, setTimeSlots] = useState([]);
   const modalRef = useRef();
   const { currentUser } = useAuth();
+
+  useEffect(() => {
+    const fetchTimeSlots = async () => {
+      try {
+        const timeSlotsRef = collection(db, "timeSlots");
+        const snapshot = await getDocs(timeSlotsRef);
+        const slots = snapshot.docs.map((doc) => doc.data().time);
+        setTimeSlots(slots.sort((a, b) => a.localeCompare(b)));
+      } catch (error) {
+        console.error("Error fetching time slots:", error);
+      }
+    };
+
+    if (isOpen) {
+      fetchTimeSlots();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -29,15 +49,6 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
 
   if (!isOpen) return null;
 
-  const timeSlots = [
-    "10:00 AM",
-    "10:30 AM",
-    "11:00 AM",
-    "02:00 PM",
-    "02:30 PM",
-    "03:00 PM",
-  ];
-
   const getDaysInMonth = (date) => {
     const year = date.getFullYear();
     const month = date.getMonth();
@@ -56,7 +67,6 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
       days.push(<div key={`empty-${i}`} className="p-3"></div>);
     }
 
-    // Add the days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(
         currentMonth.getFullYear(),
@@ -127,10 +137,6 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   });
 
   const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  const handleClosePromptModal = () => {
-    setShowPromptModal(false);
-  };
 
   return (
     <>

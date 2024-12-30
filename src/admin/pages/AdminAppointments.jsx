@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import StatusDropdown from "../../components/StatusDropdown";
 import { db } from "../../firebase-config";
 import { collection, onSnapshot, query } from "firebase/firestore";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 function AppointmentCard({ appointment }) {
   const statusColors = {
@@ -35,7 +36,7 @@ function AppointmentCard({ appointment }) {
         </span>
       </div>
 
-      <div className="flex items-center text-sm text-text/80 font-nunito">
+      <div className="flex items-center text-sm text-text/80 font-nunito-semibold">
         <Calendar size={16} className="mr-2" />
         {appointment.date || "No date specified"}
       </div>
@@ -44,11 +45,11 @@ function AppointmentCard({ appointment }) {
 }
 
 function Appointments() {
+  const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [appointments, setAppointments] = useState([]);
   const statusOptions = ["All Status", "Confirmed", "Pending", "Cancelled"];
 
-  // Real-time listener for appointments
   useEffect(() => {
     const appointmentsCollectionRef = collection(db, "appointments");
 
@@ -56,14 +57,13 @@ function Appointments() {
       query(appointmentsCollectionRef),
       (snapshot) => {
         try {
+          setLoading(true);
           const fetchedAppointments = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }));
 
-          // Sort appointments from newest to oldest
           const sortedAppointments = fetchedAppointments.sort((a, b) => {
-            // Convert dates and sort from closest to farthest
             return new Date(a.date) - new Date(b.date);
           });
 
@@ -71,15 +71,17 @@ function Appointments() {
         } catch (error) {
           toast.error("Failed to fetch appointments");
           console.error("Appointments fetch error:", error);
+        } finally {
+          setLoading(false);
         }
       },
       (error) => {
         toast.error("Error listening to appointments");
         console.error("Appointments listener error:", error);
+        setLoading(false);
       }
     );
 
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -106,11 +108,15 @@ function Appointments() {
         onStatusChange={setSelectedStatus}
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-        {filteredAppointments.map((appointment) => (
-          <AppointmentCard key={appointment.id} appointment={appointment} />
-        ))}
-      </div>
+      {loading ? (
+        <LoadingSpinner />
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredAppointments.map((appointment) => (
+            <AppointmentCard key={appointment.id} appointment={appointment} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

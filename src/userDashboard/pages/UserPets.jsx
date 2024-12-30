@@ -21,7 +21,7 @@ function PetCard({ name, species, breed, age }) {
       </div>
       <div className="space-y-2">
         <h3 className="text-lg font-nunito-bold text-green2">{name}</h3>
-        <div className="text-sm font-nunito-medium text-primary/50 space-y-1">
+        <div className="text-sm font-nunito-semibold text-primary/50 space-y-1">
           <p>Species: {species}</p>
           <p>Breed: {breed}</p>
           <p>Age: {age} years old</p>
@@ -48,13 +48,13 @@ function MedicalRecord({ clinic, doctor, date, expanded, onToggle }) {
           </div>
           <div className="flex items-center gap-2">
             <User size={20} className="text-green2" />
-            <p className="text-sm font-nunito-medium text-primary/50">
+            <p className="text-sm font-nunito-semibold text-primary/50">
               {doctor}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm font-nunito-medium text-primary/50">
+          <span className="text-sm font-nunito-semibold text-primary/50">
             {date}
           </span>
           {expanded ? (

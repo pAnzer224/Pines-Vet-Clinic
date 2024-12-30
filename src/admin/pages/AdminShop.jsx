@@ -209,7 +209,7 @@ function AdminShop() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 font-nunito-medium tracking-wide text-sm">
+        <div className="fixed inset-0 flex items-center justify-center z-50 font-nunito-semibold tracking-wide text-sm">
           <form
             onSubmit={handleAddProduct}
             className="bg-background p-8 rounded-2xl w-96 border-[1.6px] border-green2"
@@ -313,7 +313,7 @@ function AdminShop() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito"
+                className="px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
               >
                 {isEditMode ? "Update Product" : "Add Product"}
               </button>
@@ -339,7 +339,7 @@ function AdminShop() {
             {filteredProducts.map((product) => (
               <tr
                 key={product.id}
-                className="border-b border-green3/30 hover:bg-green3/10 font-nunito"
+                className="border-b border-green3/30 hover:bg-green3/10 font-nunito-semibold text-text/80"
               >
                 <td className="p-3 font-nunito-bold">{product.name}</td>
                 <td className="p-3">{product.category}</td>
@@ -369,7 +369,7 @@ function AdminShop() {
                   </button>
                   <button
                     onClick={() => handleDeleteProduct(product.id)}
-                    className="text-red-500 hover:text-red-700 transition-colors"
+                    className="text-red/80 hover:text-red transition-colors"
                   >
                     <Trash2 size={18} />
                   </button>
@@ -382,7 +382,9 @@ function AdminShop() {
 
       {/* Order History Section */}
       <div className="mt-12">
-        <h2 className="text-2xl font-bold text-green2 mb-6">Order History</h2>
+        <h2 className="text-2xl font-nunito-bold text-green2 mb-6">
+          Order History
+        </h2>
         <div className="grid gap-4">
           {orders.map((order) => (
             <div
@@ -391,17 +393,22 @@ function AdminShop() {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-semibold text-text">
+                  <h3 className="text-lg font-nunito-bold text-primary">
                     {order.userName}
                   </h3>
-                  <p className="text-sm text-text/60">
-                    User ID: {order.userId}
+                  <p className="text-sm">
+                    <span className="font-nunito-semibold text-green2">
+                      Product:
+                    </span>{" "}
+                    <span className="text-text/80 font-nunito-semibold">
+                      {order.productName}
+                    </span>
                   </p>
-                  <p className="text-primary font-medium mt-2">
+                  <p className="text-primary font-nunito-semibold mt-2">
                     ₱{order.price * order.quantity}
                   </p>
                   <div className="mt-2">
-                    <span className="text-sm text-text/60">
+                    <span className="text-sm text-text/60 font-nunito-semibold">
                       Order Date:{" "}
                       {order.createdAt
                         ? new Date(

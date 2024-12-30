@@ -22,7 +22,7 @@ function AppointmentCard({ appointment }) {
         <h3 className="text-sm font-nunito-bold text-green2">
           {appointment.petName} - {appointment.service}
         </h3>
-        <p className="text-sm font-nunito-medium text-primary/50 mt-1">
+        <p className="text-sm font-nunito-semibold text-primary/50 mt-1">
           {appointment.date}
         </p>
       </div>
@@ -47,10 +47,10 @@ function ActivityCard({ activity }) {
         <h3 className="text-sm font-nunito-bold text-green2">
           {activity.type}
         </h3>
-        <p className="text-sm font-nunito-medium text-primary/50 mt-1">
+        <p className="text-sm font-nunito-semibold text-primary/50 mt-1">
           {activity.description}
         </p>
-        <p className="text-xs font-nunito-medium text-primary/40 mt-1">
+        <p className="text-xs font-nunito-semibold text-primary/40 mt-1">
           {activity.time}
         </p>
       </div>

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ChevronDown, Search, ShoppingCart } from "lucide-react";
+import React, { useState, useEffect, useMemo } from "react";
+import { motion } from "framer-motion";
+import { Search, ShoppingCart } from "lucide-react";
 import {
   collection,
   onSnapshot,
@@ -11,74 +11,147 @@ import {
   where,
   updateDoc,
   doc,
+  limit,
+  startAfter,
+  orderBy,
 } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { useAuth } from "../hooks/useAuth";
 import { toast } from "react-toastify";
 import CartModal from "../userDashboard/components/cartModal";
+import StatusDropdown from "../components/StatusDropdown";
+import LoadingSpinner from "../components/LoadingSpinner";
+import FeatureOverlay from "../components/FeauterOverlay";
+
+const PRODUCTS_PER_PAGE = 12;
 
 const Shop = () => {
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [isCartOpen, setIsCartOpen] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [lastProduct, setLastProduct] = useState(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const { currentUser } = useAuth();
-
-  const categories = [
-    "All",
-    "Food & Treats",
-    "Toys",
-    "Beds & Furniture",
-    "Accessories",
-    "Health & Wellness",
-  ];
+  const [overlaySettings, setOverlaySettings] = useState({
+    isEnabled: false,
+    title: "",
+    message: "",
+  });
 
   useEffect(() => {
-    const unsubscribeProducts = onSnapshot(
-      collection(db, "products"),
-      (snapshot) => {
-        const fetchedProducts = snapshot.docs
-          .map((doc) => {
-            const data = doc.data();
-            return {
-              id: doc.id,
-              name: String(data.name || ""),
-              category: String(data.category || ""),
-              description: String(data.description || ""),
-              price: Number(data.price || 0),
-              image: data.image || "/images/shop-images/default-image.jpg",
-            };
-          })
-          .filter((product) => product.name !== "");
-
-        setProducts(fetchedProducts);
+    const savedOverlaySettings = localStorage.getItem("overlaySettings");
+    if (savedOverlaySettings) {
+      const settings = JSON.parse(savedOverlaySettings);
+      if (settings.shop) {
+        setOverlaySettings(settings.shop);
+        setShowTooltip(!settings.shop.isEnabled);
       }
+    } else {
+      setShowTooltip(true);
+    }
+  }, []);
+
+  const categories = useMemo(
+    () => [
+      "All",
+      "Food & Treats",
+      "Toys",
+      "Beds & Furniture",
+      "Accessories",
+      "Health & Wellness",
+    ],
+    []
+  );
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (!overlaySettings.isEnabled) {
+        setShowTooltip(true);
+      }
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [overlaySettings.isEnabled]);
+
+  useEffect(() => {
+    const initialQuery = query(
+      collection(db, "products"),
+      orderBy("name"),
+      limit(PRODUCTS_PER_PAGE)
     );
 
-    let unsubscribeCart = () => {};
-    if (currentUser) {
-      const cartQuery = query(
-        collection(db, "cart"),
-        where("userId", "==", currentUser.uid)
-      );
+    const unsubscribe = onSnapshot(initialQuery, (snapshot) => {
+      const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+      setLastProduct(lastVisible);
 
-      unsubscribeCart = onSnapshot(cartQuery, (snapshot) => {
-        const items = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setCartItems(items);
-      });
-    }
+      const fetchedProducts = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+        name: String(doc.data().name || ""),
+        category: String(doc.data().category || ""),
+        description: String(doc.data().description || ""),
+        price: Number(doc.data().price || 0),
+        image: doc.data().image || "/images/shop-images/default-image.jpg",
+      }));
 
-    return () => {
-      unsubscribeProducts();
-      unsubscribeCart();
-    };
+      setProducts(fetchedProducts);
+      setInitialLoading(false);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const cartQuery = query(
+      collection(db, "cart"),
+      where("userId", "==", currentUser.uid)
+    );
+
+    const unsubscribe = onSnapshot(cartQuery, (snapshot) => {
+      const items = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCartItems(items);
+    });
+
+    return () => unsubscribe();
   }, [currentUser]);
+
+  const loadMoreProducts = async () => {
+    if (loadingMore || !lastProduct) return;
+
+    setLoadingMore(true);
+    const nextQuery = query(
+      collection(db, "products"),
+      orderBy("name"),
+      startAfter(lastProduct),
+      limit(PRODUCTS_PER_PAGE)
+    );
+
+    const snapshot = await getDocs(nextQuery);
+    const lastVisible = snapshot.docs[snapshot.docs.length - 1];
+    setLastProduct(lastVisible);
+
+    const newProducts = snapshot.docs.map((doc) => ({
+      id: doc.id,
+      ...doc.data(),
+      name: String(doc.data().name || ""),
+      category: String(doc.data().category || ""),
+      description: String(doc.data().description || ""),
+      price: Number(doc.data().price || 0),
+      image: doc.data().image || "/images/shop-images/default-image.jpg",
+    }));
+
+    setProducts((prev) => [...prev, ...newProducts]);
+    setLoadingMore(false);
+  };
 
   const handleAddToCart = async (product) => {
     if (!currentUser) {
@@ -125,7 +198,7 @@ const Shop = () => {
     }
   };
 
-  const filterProducts = () => {
+  const filteredProducts = useMemo(() => {
     return products.filter((product) => {
       const matchesCategory =
         selectedCategory === "All" || product.category === selectedCategory;
@@ -137,101 +210,96 @@ const Shop = () => {
             .includes(searchQuery.toLowerCase()));
       return matchesCategory && matchesSearch;
     });
-  };
-
-  const pageVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
-    exit: { opacity: 0, y: -20 },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0 },
-  };
+  }, [products, selectedCategory, searchQuery]);
 
   return (
-    <motion.div
-      className="min-h-screen bg-background/40"
-      initial="initial"
-      animate="animate"
-      exit="exit"
-      variants={pageVariants}
-      transition={{ duration: 0.5 }}
-    >
+    <div className="min-h-screen bg-background/40">
+      <FeatureOverlay
+        isEnabled={overlaySettings.isEnabled}
+        title={overlaySettings.title}
+        message={overlaySettings.message}
+      />
+
       <div className="container mx-auto px-6 pb-8 font-nunito-bold">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-text mb-2 tracking-wide">
             Pet Shop
           </h1>
-          <p className="text-text/80 tracking-wide font-nunito-medium max-w-2xl mx-auto">
+          <p className="text-text/80 tracking-wide font-nunito-semibold max-w-2xl mx-auto">
             Everything your pet needs, from nutrition to comfort, all in one
             place.
           </p>
         </div>
 
-        <div className="flex flex-col md:flex-row gap-4 mb-8 justify-center items-center relative">
-          <div className="relative w-full md:w-96">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green2/60 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 rounded-full border-[1.6px] border-green2 bg-background/95 focus:outline-none focus:border-primary text-text"
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 relative max-w-7xl mx-auto">
+          <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+            <div className="relative w-full sm:w-96">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green2/60 w-5 h-5" />
+              <input
+                type="text"
+                placeholder="Search products..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 rounded-full border-[1.6px] border-green2 bg-background/95 focus:outline-none focus:border-primary text-text"
+              />
+            </div>
+
+            <StatusDropdown
+              statusOptions={categories}
+              selectedStatus={selectedCategory}
+              onStatusChange={setSelectedCategory}
             />
           </div>
 
-          <div className="relative w-full md:w-64">
+          <div className="relative self-end sm:self-auto">
             <button
-              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-              className="w-full px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between"
+              onClick={() => {
+                setIsCartOpen(true);
+                setShowTooltip(false);
+              }}
+              className={`p-2 text-green2 hover:text-primary rounded-full transition-all relative z-50 ${
+                showTooltip
+                  ? "bg-background shadow-[0_0_35px_15px_rgba(255,255,255,0.95)]"
+                  : ""
+              }`}
             >
-              <span>{selectedCategory}</span>
-              <ChevronDown className="w-4 h-4" />
+              <ShoppingCart size={24} />
+              {cartItems.length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {cartItems.length}
+                </span>
+              )}
             </button>
 
-            {isDropdownOpen && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 border-[1.6px] border-green2 rounded-xl shadow-lg z-50">
-                {categories.map((category) => (
-                  <button
-                    key={category}
-                    onClick={() => {
-                      setSelectedCategory(category);
-                      setIsDropdownOpen(false);
-                    }}
-                    className="w-full px-4 py-2 text-left hover:bg-green3/20 text-text transition-colors first:rounded-t-xl last:rounded-b-xl"
-                  >
-                    {category}
-                  </button>
-                ))}
-              </div>
+            {showTooltip && (
+              <>
+                <div
+                  className="fixed inset-0 bg-text/60 z-40"
+                  onClick={() => setShowTooltip(false)}
+                />
+                <div className="absolute right-0 mt-3 z-50">
+                  <div className="relative bg-white p-4 rounded-lg shadow-lg border-2 border-green2 w-64">
+                    <p className="text-text/70 text-center">
+                      Here you can see your orders and manage your shopping
+                      cart!
+                    </p>
+                  </div>
+                </div>
+              </>
             )}
           </div>
-
-          <button
-            onClick={() => setIsCartOpen(true)}
-            className="relative p-2 text-green2 hover:text-primary md:absolute md:right-0"
-          >
-            <ShoppingCart size={24} />
-            {cartItems.length > 0 && (
-              <span className="absolute -top-1 -right-1 bg-primary text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                {cartItems.length}
-              </span>
-            )}
-          </button>
         </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
-            {filterProducts().map((product) => (
+        {initialLoading ? (
+          <LoadingSpinner />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 max-w-7xl mx-auto">
+            {filteredProducts.map((product) => (
               <motion.div
                 key={product.id}
-                variants={itemVariants}
-                initial="hidden"
-                animate="visible"
-                exit="hidden"
-                transition={{ duration: 0.3 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
                 className="bg-background/95 p-5 rounded-2xl border-[1.6px] border-green2 shadow-lg hover:shadow-xl transition-all"
               >
                 <div className="relative group">
@@ -239,6 +307,7 @@ const Shop = () => {
                     src={product.image}
                     alt={product.name}
                     className="w-full h-44 object-cover rounded-xl mb-4"
+                    loading="lazy"
                   />
                   <div className="absolute inset-0 bg-green2/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl" />
                 </div>
@@ -269,12 +338,24 @@ const Shop = () => {
                 </button>
               </motion.div>
             ))}
-          </motion.div>
-        </AnimatePresence>
+          </div>
+        )}
+
+        {products.length >= PRODUCTS_PER_PAGE && !initialLoading && (
+          <div className="text-center mt-8">
+            <button
+              onClick={loadMoreProducts}
+              disabled={loadingMore}
+              className="px-6 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2"
+            >
+              {loadingMore ? "Loading..." : "Load More"}
+            </button>
+          </div>
+        )}
 
         <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
       </div>
-    </motion.div>
+    </div>
   );
 };
 

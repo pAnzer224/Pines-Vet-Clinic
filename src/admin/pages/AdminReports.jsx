@@ -44,7 +44,7 @@ function MetricCard({ title, value, icon: Icon }) {
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-green2 font-nunito-medium">{title}</p>
+          <p className="text-sm text-green2 font-nunito-semibold">{title}</p>
           <p className="text-2xl font-nunito-bold mt-2 text-primary">{value}</p>
         </div>
         <div className="p-3 rounded-full bg-green3/10 text-green2">
@@ -77,7 +77,7 @@ function OrderAccordion({ order, isOpen, onToggle }) {
               </div>
             </div>
           </div>
-          <span className="font-nunito-medium text-primary">
+          <span className="font-nunito-semibold text-primary">
             Total: ₱{order.total.toLocaleString()}
           </span>
         </div>
@@ -109,7 +109,7 @@ function OrderAccordion({ order, isOpen, onToggle }) {
                   className="w-12 h-12 object-cover rounded-lg"
                 />
                 <div>
-                  <p className="font-nunito-medium text-text">
+                  <p className="font-nunito-semibold text-text">
                     {item.productName}
                   </p>
                   <p className="text-sm text-text/60">
@@ -117,10 +117,47 @@ function OrderAccordion({ order, isOpen, onToggle }) {
                   </p>
                 </div>
               </div>
-              <p className="font-nunito-medium text-primary">
+              <p className="font-nunito-semibold text-primary">
                 ₱{(item.price * item.quantity).toLocaleString()}
               </p>
             </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function OrderHistoryAccordion({ orders }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openOrderId, setOpenOrderId] = useState(null);
+
+  return (
+    <div className="bg-background rounded-lg shadow-sm border-2 border-green3/60">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-6 py-4 flex items-center justify-between bg-green3/10"
+      >
+        <h3 className="font-nunito-bold text-green2">Order History</h3>
+        {isOpen ? (
+          <ChevronUp className="text-green2" />
+        ) : (
+          <ChevronDown className="text-green2" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="p-6 space-y-2">
+          {orders.map((order) => (
+            <OrderAccordion
+              key={order.orderId}
+              order={order}
+              isOpen={openOrderId === order.orderId}
+              onToggle={() =>
+                setOpenOrderId(
+                  openOrderId === order.orderId ? null : order.orderId
+                )
+              }
+            />
           ))}
         </div>
       )}
@@ -137,7 +174,6 @@ function Reports() {
     monthlyProducts: [],
   });
   const [orders, setOrders] = useState([]);
-  const [openOrderId, setOpenOrderId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -264,23 +300,7 @@ function Reports() {
         />
       </div>
 
-      <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-        <h3 className="font-nunito-bold text-green2 mb-4">Order History</h3>
-        <div className="space-y-2">
-          {orders.map((order) => (
-            <OrderAccordion
-              key={order.orderId}
-              order={order}
-              isOpen={openOrderId === order.orderId}
-              onToggle={() =>
-                setOpenOrderId(
-                  openOrderId === order.orderId ? null : order.orderId
-                )
-              }
-            />
-          ))}
-        </div>
-      </div>
+      <OrderHistoryAccordion orders={orders} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">

@@ -10,18 +10,13 @@ import {
 } from "firebase/firestore";
 import { db } from "../../firebase-config";
 import { useAuth } from "../../hooks/useAuth";
-import {
-  Package,
-  Clock,
-  CheckCircle,
-  XCircle,
-  ShoppingBag,
-} from "lucide-react";
+import { Clock, CheckCircle, XCircle, ShoppingBag } from "lucide-react";
 import { toast } from "react-toastify";
 
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancellingOrders, setCancellingOrders] = useState(new Set());
   const { currentUser } = useAuth();
 
   useEffect(() => {
@@ -30,15 +25,14 @@ const MyOrders = () => {
       return;
     }
 
-    const ordersCollection = collection(db, "orders");
     const ordersQuery = query(
-      ordersCollection,
+      collection(db, "orders"),
       where("userId", "==", currentUser.uid),
       orderBy("createdAt", "desc")
     );
 
-    const unsubscribe = onSnapshot(ordersQuery, (querySnapshot) => {
-      const ordersData = querySnapshot.docs.map((doc) => ({
+    const unsubscribe = onSnapshot(ordersQuery, (snapshot) => {
+      const ordersData = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
         createdAt: doc.data().createdAt?.toDate(),
@@ -51,6 +45,8 @@ const MyOrders = () => {
   }, [currentUser]);
 
   const cancelOrder = async (orderId) => {
+    setCancellingOrders((prev) => new Set([...prev, orderId]));
+
     try {
       const orderRef = doc(db, "orders", orderId);
       await updateDoc(orderRef, {
@@ -60,6 +56,12 @@ const MyOrders = () => {
     } catch (error) {
       console.error("Error cancelling order:", error);
       toast.error("Failed to cancel order");
+    } finally {
+      setCancellingOrders((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(orderId);
+        return newSet;
+      });
     }
   };
 
@@ -118,11 +120,11 @@ const MyOrders = () => {
               <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-2">
                   {getStatusIcon(order.status)}
-                  <span className="text-sm font-nunito-medium text-primary/50">
+                  <span className="text-sm font-nunito-semibold text-primary/50">
                     Status: {order.status}
                   </span>
                 </div>
-                <span className="text-sm font-nunito-medium text-primary/50">
+                <span className="text-sm font-nunito-semibold text-primary/50">
                   {formatDate(order.createdAt)}
                 </span>
               </div>
@@ -139,7 +141,7 @@ const MyOrders = () => {
                   <h3 className="text-lg font-nunito-bold text-green2">
                     {order.productName}
                   </h3>
-                  <div className="text-sm font-nunito-medium text-primary/50 space-y-1">
+                  <div className="text-sm font-nunito-semibold text-primary/50 space-y-1">
                     <p>Price: ₱{order.price}</p>
                     <p>Quantity: {order.quantity}</p>
                     <p>Total: ₱{order.price * order.quantity}</p>
@@ -151,9 +153,17 @@ const MyOrders = () => {
                 <div className="mt-4 flex justify-end">
                   <button
                     onClick={() => cancelOrder(order.id)}
-                    className="px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30"
+                    disabled={cancellingOrders.has(order.id)}
+                    className={`px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30 
+                      ${
+                        cancellingOrders.has(order.id)
+                          ? "opacity-50 cursor-not-allowed"
+                          : ""
+                      }`}
                   >
-                    Cancel Order
+                    {cancellingOrders.has(order.id)
+                      ? "Cancelling..."
+                      : "Cancel Order"}
                   </button>
                 </div>
               )}

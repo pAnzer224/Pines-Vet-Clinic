@@ -1,324 +1,485 @@
-import React, { useState } from "react";
-import { Settings2, Building2, Lock, Bell } from "lucide-react";
-import { toast } from "react-toastify";
+import React, { useState, useEffect } from "react";
+import {
+  Settings,
+  Bell,
+  Shield,
+  Store,
+  Calendar,
+  Eye,
+  EyeOff,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
+import { db } from "../../firebase-config";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  deleteDoc,
+  doc,
+} from "firebase/firestore";
 
-// Reusable section component for grouping related settings
-function SettingsSection({ title, children, icon: Icon }) {
-  return (
-    <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <div className="flex items-center gap-3 mb-6">
-        <Icon className="text-green2" size={24} />
-        <h2 className="text-lg font-nunito-bold text-green2">{title}</h2>
-      </div>
-      {children}
-    </div>
-  );
-}
-
-// Reusable input field component with consistent styling
-function InputField({ label, type = "text", value, onChange, placeholder }) {
-  return (
-    <div className="mb-4">
-      <label className="block text-xs font-nunito-bold text-green2 mb-2">
-        {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full px-4 py-2 rounded-lg border-2 border-green3/60 bg-background font-nunito-medium text-xs focus:border-primary focus:outline-none transition-colors text-primary"
-      />
-    </div>
-  );
-}
-
-// Custom toggle switch component for boolean settings
-function ToggleSwitch({ label, checked, onChange }) {
-  return (
-    <label className="flex items-center justify-between cursor-pointer mb-4">
-      <span className="text-xs font-nunito-medium text-green2">{label}</span>
-      <div className="relative">
-        <input
-          type="checkbox"
-          className="sr-only"
-          checked={checked}
-          onChange={onChange}
-        />
-        {/* Toggle background */}
-        <div
-          className={`block w-12 h-6 rounded-full transition-colors ${
-            checked ? "bg-green3" : "bg-green3/30"
-          }`}
-        />
-        {/* Toggle circle */}
-        <div
-          className={`absolute left-1 top-1 bg-background size-4 rounded-full transition-transform ${
-            checked ? "translate-x-6" : "translate-x-0"
-          }`}
-        />
-      </div>
-    </label>
-  );
-}
-
-function Settings() {
-  // business info
-  const [businessInfo, setBusinessInfo] = useState({
-    name: "Highland Petvibes",
-    address: "Maginhawa Branch 208 Lower East Camp 7",
-    phone: "349-0091, 917-1522",
-    email: "info@petvibes.com",
-  });
-
-  // State for notification preferences
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    appointmentReminders: true,
-    marketingEmails: false,
-  });
-
-  // State for credential management
-  const [credentialInfo, setCredentialInfo] = useState({
+const AdminSettings = () => {
+  const [activeTab, setActiveTab] = useState("notifications");
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [credentials, setCredentials] = useState({
     currentAdminId: "",
     currentPassword: "",
     newAdminId: "",
     newPassword: "",
-    confirmNewPassword: "",
   });
 
-  // Handler for saving changes in different sections
-  const handleSave = (section) => {
-    switch (section) {
-      case "business":
-        console.log("Saving business info...", businessInfo);
-        toast.success("Business information updated successfully");
-        break;
+  const [overlaySettings, setOverlaySettings] = useState({
+    appointments: {
+      isEnabled: false,
+      title: "",
+      message: "",
+    },
+    shop: {
+      isEnabled: false,
+      title: "",
+      message: "",
+    },
+    signup: {
+      isEnabled: false,
+      title: "",
+      message: "",
+    },
+    userOrders: {
+      isEnabled: false,
+      title: "",
+      message: "",
+    },
+  });
 
-      case "security":
-        // Validate credential change
-        const storedCredentials = JSON.parse(
-          localStorage.getItem("adminCredentials") || "{}"
-        );
+  const [timeSlots, setTimeSlots] = useState([]);
+  const [newTimeSlot, setNewTimeSlot] = useState("");
+  const [sessionTimeout, setSessionTimeout] = useState(30);
 
-        // Check current credentials
-        if (
-          credentialInfo.currentAdminId !== storedCredentials.adminId ||
-          credentialInfo.currentPassword !== storedCredentials.password
-        ) {
-          toast.error("Current credentials are incorrect");
-          return;
-        }
+  useEffect(() => {
+    const savedTimeout = localStorage.getItem("sessionTimeout");
+    if (savedTimeout) {
+      setSessionTimeout(parseInt(savedTimeout));
+    }
 
-        // Validate new password
-        if (credentialInfo.newPassword !== credentialInfo.confirmNewPassword) {
-          toast.error("New passwords do not match");
-          return;
-        }
+    const savedOverlaySettings = localStorage.getItem("overlaySettings");
+    if (savedOverlaySettings) {
+      setOverlaySettings(JSON.parse(savedOverlaySettings));
+    }
 
-        // Update credentials in local storage
-        const newCredentials = {
-          adminId: credentialInfo.newAdminId || storedCredentials.adminId,
-          password: credentialInfo.newPassword || storedCredentials.password,
-        };
+    fetchTimeSlots();
+  }, []);
 
-        localStorage.setItem(
-          "adminCredentials",
-          JSON.stringify(newCredentials)
-        );
-
-        // Clear input fields
-        setCredentialInfo({
-          currentAdminId: "",
-          currentPassword: "",
-          newAdminId: "",
-          newPassword: "",
-          confirmNewPassword: "",
-        });
-
-        toast.success("Credentials updated successfully");
-        break;
-
-      case "notifications":
-        console.log("Saving notifications...", notifications);
-        toast.success("Notification preferences updated");
-        break;
-
-      default:
-        break;
+  const fetchTimeSlots = async () => {
+    try {
+      const timeSlotsRef = collection(db, "timeSlots");
+      const snapshot = await getDocs(timeSlotsRef);
+      const slots = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        time: doc.data().time,
+      }));
+      setTimeSlots(slots.sort((a, b) => a.time.localeCompare(b.time)));
+    } catch (error) {
+      console.error("Error fetching time slots:", error);
     }
   };
 
+  const addTimeSlot = async () => {
+    if (!newTimeSlot) return;
+    try {
+      const timeSlotsRef = collection(db, "timeSlots");
+      await addDoc(timeSlotsRef, { time: newTimeSlot });
+      setNewTimeSlot("");
+      fetchTimeSlots();
+    } catch (error) {
+      console.error("Error adding time slot:", error);
+    }
+  };
+
+  const deleteTimeSlot = async (id) => {
+    try {
+      await deleteDoc(doc(db, "timeSlots", id));
+      fetchTimeSlots();
+    } catch (error) {
+      console.error("Error deleting time slot:", error);
+    }
+  };
+
+  const handleOverlayUpdate = (page, field, value) => {
+    const newSettings = {
+      ...overlaySettings,
+      [page]: {
+        ...overlaySettings[page],
+        [field]: value,
+      },
+    };
+    setOverlaySettings(newSettings);
+    localStorage.setItem("overlaySettings", JSON.stringify(newSettings));
+  };
+
+  const saveOverlaySettings = () => {
+    localStorage.setItem("overlaySettings", JSON.stringify(overlaySettings));
+    alert("Overlay settings saved successfully!");
+  };
+
+  const handleCredentialsUpdate = (e) => {
+    e.preventDefault();
+    const savedAdminId = localStorage.getItem("adminId") || "admin123";
+    const savedPassword =
+      localStorage.getItem("adminPassword") || "password123";
+
+    if (
+      credentials.currentAdminId === savedAdminId &&
+      credentials.currentPassword === savedPassword
+    ) {
+      localStorage.setItem("adminId", credentials.newAdminId);
+      localStorage.setItem("adminPassword", credentials.newPassword);
+      setCredentials({
+        currentAdminId: "",
+        currentPassword: "",
+        newAdminId: "",
+        newPassword: "",
+      });
+      alert("Admin credentials updated successfully!");
+    } else {
+      alert("Current admin ID or password is incorrect");
+    }
+  };
+
+  const handleTimeoutUpdate = (value) => {
+    const timeout = parseInt(value);
+    setSessionTimeout(timeout);
+    localStorage.setItem("sessionTimeout", timeout.toString());
+    const adminAuthTime = new Date().getTime();
+    localStorage.setItem("adminAuthTime", adminAuthTime.toString());
+  };
+
   return (
-    <div className="max-w-[1600px] mx-auto space-y-6">
-      {/* Page header section */}
+    <div className="space-y-6 mt-14">
       <div>
         <h1 className="text-2xl font-nunito-bold text-green2">Settings</h1>
         <div className="flex items-center mt-5">
-          <Settings2 className="mr-2 text-primary size-7" />
+          <Settings className="mr-2 text-primary size-7" />
           <p className="text-xl text-primary font-nunito-bold tracking-wide">
-            Manage your clinic settings
+            Manage your admin settings and preferences
           </p>
         </div>
       </div>
 
-      {/* Main settings grid layout */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 tracking-wide">
-        {/* Business Information Section */}
-        <SettingsSection title="Business Information" icon={Building2}>
-          <InputField
-            label="Business Name"
-            value={businessInfo.name}
-            onChange={(e) =>
-              setBusinessInfo({ ...businessInfo, name: e.target.value })
-            }
-          />
-          <InputField
-            label="Address"
-            value={businessInfo.address}
-            onChange={(e) =>
-              setBusinessInfo({ ...businessInfo, address: e.target.value })
-            }
-          />
-          <InputField
-            label="Phone Number"
-            value={businessInfo.phone}
-            onChange={(e) =>
-              setBusinessInfo({ ...businessInfo, phone: e.target.value })
-            }
-          />
-          <InputField
-            label="Email"
-            type="email"
-            value={businessInfo.email}
-            onChange={(e) =>
-              setBusinessInfo({ ...businessInfo, email: e.target.value })
-            }
-          />
-          {/* Save button for business info */}
-          <button
-            onClick={() => handleSave("business")}
-            className="w-full px-4 py-2 bg-green3 text-background rounded-md hover:bg-green3/80 transition-colors font-nunito-bold text-sm"
-          >
-            Save Changes
-          </button>
-        </SettingsSection>
+      <div className="bg-background border-[1.6px] border-green2 rounded-xl">
+        <div className="flex border-b border-green3/30">
+          {["notifications", "security", "business", "scheduling"].map(
+            (tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`flex items-center px-6 py-4 font-nunito-semibold tracking-wide ${
+                  activeTab === tab
+                    ? "text-green2 border-b-2 border-green2"
+                    : "text-text/60 hover:text-green2/80"
+                }`}
+              >
+                {tab === "notifications" && <Bell className="w-4 h-4 mr-2" />}
+                {tab === "security" && <Shield className="w-4 h-4 mr-2" />}
+                {tab === "business" && <Store className="w-4 h-4 mr-2" />}
+                {tab === "scheduling" && <Calendar className="w-4 h-4 mr-2" />}
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            )
+          )}
+        </div>
 
-        {/* Right column containing Security and Notifications */}
-        <div className="space-y-6">
-          {/* Security Section */}
-          <SettingsSection title="Account Security" icon={Lock}>
-            <InputField
-              label="Current Admin ID"
-              value={credentialInfo.currentAdminId}
-              onChange={(e) =>
-                setCredentialInfo({
-                  ...credentialInfo,
-                  currentAdminId: e.target.value,
-                })
-              }
-            />
-            <InputField
-              label="Current Password"
-              type="password"
-              value={credentialInfo.currentPassword}
-              onChange={(e) =>
-                setCredentialInfo({
-                  ...credentialInfo,
-                  currentPassword: e.target.value,
-                })
-              }
-              placeholder="Enter current password"
-            />
-            <InputField
-              label="New Admin ID (Optional)"
-              value={credentialInfo.newAdminId}
-              onChange={(e) =>
-                setCredentialInfo({
-                  ...credentialInfo,
-                  newAdminId: e.target.value,
-                })
-              }
-              placeholder="Enter new admin ID"
-            />
-            <InputField
-              label="New Password"
-              type="password"
-              value={credentialInfo.newPassword}
-              onChange={(e) =>
-                setCredentialInfo({
-                  ...credentialInfo,
-                  newPassword: e.target.value,
-                })
-              }
-              placeholder="Enter new password"
-            />
-            <InputField
-              label="Confirm New Password"
-              type="password"
-              value={credentialInfo.confirmNewPassword}
-              onChange={(e) =>
-                setCredentialInfo({
-                  ...credentialInfo,
-                  confirmNewPassword: e.target.value,
-                })
-              }
-              placeholder="Confirm new password"
-            />
-            {/* Save button for security settings */}
-            <button
-              onClick={() => handleSave("security")}
-              className="w-full px-4 py-2 bg-green3 text-background rounded-md hover:bg-green3/80 transition-colors font-nunito-bold text-sm"
-            >
-              Update Credentials
-            </button>
-          </SettingsSection>
+        <div className="p-6">
+          {activeTab === "notifications" && (
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-6">
+                {Object.entries(overlaySettings).map(([page, settings]) => (
+                  <div
+                    key={page}
+                    className="p-4 bg-background/95 rounded-lg border border-green3/30"
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <label className="font-nunito-semibold text-text/80 capitalize">
+                        {page.replace(/([A-Z])/g, " $1").trim()} Page Overlay
+                      </label>
+                      <button
+                        onClick={() =>
+                          handleOverlayUpdate(
+                            page,
+                            "isEnabled",
+                            !settings.isEnabled
+                          )
+                        }
+                        className={`w-12 h-6 rounded-full transition-colors ${
+                          settings.isEnabled ? "bg-green2" : "bg-gray-200"
+                        }`}
+                      >
+                        <div
+                          className={`w-5 h-5 bg-background rounded-full transform transition-transform ${
+                            settings.isEnabled
+                              ? "translate-x-6"
+                              : "translate-x-1"
+                          }`}
+                        />
+                      </button>
+                    </div>
 
-          {/* Notifications Section */}
-          <SettingsSection title="Notifications" icon={Bell}>
-            {/* Email notification toggles */}
-            <ToggleSwitch
-              label="Email Notifications"
-              checked={notifications.emailNotifications}
-              onChange={() =>
-                setNotifications({
-                  ...notifications,
-                  emailNotifications: !notifications.emailNotifications,
-                })
-              }
-            />
-            <ToggleSwitch
-              label="Appointment Reminders"
-              checked={notifications.appointmentReminders}
-              onChange={() =>
-                setNotifications({
-                  ...notifications,
-                  appointmentReminders: !notifications.appointmentReminders,
-                })
-              }
-            />
-            <ToggleSwitch
-              label="Marketing Emails"
-              checked={notifications.marketingEmails}
-              onChange={() =>
-                setNotifications({
-                  ...notifications,
-                  marketingEmails: !notifications.marketingEmails,
-                })
-              }
-            />
-            {/* Save button for notification preferences */}
-            <button
-              onClick={() => handleSave("notifications")}
-              className="w-full px-4 py-2 bg-green3 text-background rounded-md hover:bg-green3/80 transition-colors font-nunito-bold mt-4 text-sm"
-            >
-              Save Preferences
-            </button>
-          </SettingsSection>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block font-nunito-semibold text-text/80 mb-2">
+                          Title
+                        </label>
+                        <input
+                          type="text"
+                          value={settings.title}
+                          onChange={(e) =>
+                            handleOverlayUpdate(page, "title", e.target.value)
+                          }
+                          className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                          placeholder="Enter overlay title"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block font-nunito-semibold text-text/80 mb-2">
+                          Message
+                        </label>
+                        <textarea
+                          value={settings.message}
+                          onChange={(e) =>
+                            handleOverlayUpdate(page, "message", e.target.value)
+                          }
+                          className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                          placeholder="Enter overlay message"
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={saveOverlaySettings}
+                className="px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
+              >
+                Save Overlay Settings
+              </button>
+            </div>
+          )}
+
+          {activeTab === "security" && (
+            <div className="space-y-6">
+              <div className="p-4 bg-background/95 rounded-lg border border-green3/30">
+                <p className="font-nunito-semibold text-green2">
+                  Current Admin ID:{" "}
+                  {localStorage.getItem("adminId") || "admin123"}
+                </p>
+              </div>
+
+              <form onSubmit={handleCredentialsUpdate} className="space-y-4">
+                <h3 className="font-nunito-bold text-green2">
+                  Change Admin Credentials
+                </h3>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="block font-nunito-semibold text-text/80">
+                      Current Admin ID
+                    </label>
+                    <input
+                      type="text"
+                      value={credentials.currentAdminId}
+                      onChange={(e) =>
+                        setCredentials({
+                          ...credentials,
+                          currentAdminId: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block font-nunito-semibold text-text/80">
+                      Current Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showCurrentPassword ? "text" : "password"}
+                        value={credentials.currentPassword}
+                        onChange={(e) =>
+                          setCredentials({
+                            ...credentials,
+                            currentPassword: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setShowCurrentPassword(!showCurrentPassword)
+                        }
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-green2 hover:text-primary"
+                      >
+                        {showCurrentPassword ? (
+                          <EyeOff size={20} />
+                        ) : (
+                          <Eye size={20} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block font-nunito-semibold text-text/80">
+                      New Admin ID
+                    </label>
+                    <input
+                      type="text"
+                      value={credentials.newAdminId}
+                      onChange={(e) =>
+                        setCredentials({
+                          ...credentials,
+                          newAdminId: e.target.value,
+                        })
+                      }
+                      className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block font-nunito-semibold text-text/80">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showNewPassword ? "text" : "password"}
+                        value={credentials.newPassword}
+                        onChange={(e) =>
+                          setCredentials({
+                            ...credentials,
+                            newPassword: e.target.value,
+                          })
+                        }
+                        className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-green2 hover:text-primary"
+                      >
+                        {showNewPassword ? (
+                          <EyeOff size={20} />
+                        ) : (
+                          <Eye size={20} />
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  type="submit"
+                  className="px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito"
+                >
+                  Update Credentials
+                </button>
+              </form>
+
+              <div className="space-y-4 p-4 bg-background/95 rounded-lg border border-green3/30">
+                <h3 className="font-nunito-bold text-green2">
+                  Session Settings
+                </h3>
+                <div className="space-y-2">
+                  <label className="block font-nunito-semibold text-text/80">
+                    Session Timeout (minutes)
+                  </label>
+                  <input
+                    type="number"
+                    value={sessionTimeout}
+                    onChange={(e) => handleTimeoutUpdate(e.target.value)}
+                    min={1}
+                    max={120}
+                    className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "scheduling" && (
+            <div className="space-y-6">
+              <div>
+                <h3 className="font-nunito-bold text-green2 mb-4">
+                  Manage Time Slots
+                </h3>
+
+                <div className="flex gap-4 mb-4">
+                  <input
+                    type="time"
+                    value={newTimeSlot}
+                    onChange={(e) => setNewTimeSlot(e.target.value)}
+                    className="p-2 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                  />
+                  <button
+                    onClick={addTimeSlot}
+                    className="flex items-center gap-2 px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
+                  >
+                    <PlusCircle size={20} />
+                    Add Time Slot
+                  </button>
+                </div>
+
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {timeSlots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      className="flex items-center justify-between p-3 bg-background/95 rounded-lg border border-green3/30"
+                    >
+                      <span className="font-nunito-semibold">{slot.time}</span>
+                      <button
+                        onClick={() => deleteTimeSlot(slot.id)}
+                        className="text-red hover:text-red/80"
+                      >
+                        <Trash2 size={20} />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "business" && (
+            <div className="space-y-4">
+              {["Business Name", "Contact Email", "Phone Number"].map(
+                (field) => (
+                  <div key={field} className="space-y-2">
+                    <label className="block font-nunito-semibold text-text/80">
+                      {field}
+                    </label>
+                    <input
+                      type={field === "Contact Email" ? "email" : "text"}
+                      className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                    />
+                  </div>
+                )
+              )}
+              <button className="px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito">
+                Save Business Information
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
-}
+};
 
-export default Settings;
+export default AdminSettings;

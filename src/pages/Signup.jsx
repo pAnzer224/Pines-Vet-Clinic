@@ -99,7 +99,7 @@ const SignUp = () => {
             Create Account
           </h1>
 
-          <p className="text-text/80 mb-12 text-center tracking-wide font-nunito-medium">
+          <p className="text-text/80 mb-12 text-center tracking-wide font-nunito-semibold">
             Sign up to access your Highland PetVibes account
           </p>
 
@@ -182,7 +182,7 @@ const SignUp = () => {
                 transition={{ duration: 0.3 }}
                 className="space-y-6 mt-2"
               >
-                <h2 className="text-lg font-nunito-medium text-text/80 mb-4 text-left">
+                <h2 className="text-lg font-nunito-semibold text-text/80 mb-4 text-left">
                   What should we call you?
                 </h2>
                 <InputField

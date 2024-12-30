@@ -22,6 +22,7 @@ import StatusDropdown from "../../components/StatusDropdown";
 import AddCustomerModal from "../components/AddCustomerModal";
 import PetAddModal from "../../components/PetAddModal";
 import CustomerDetailsModal from "../components/CustomerDetailsModal";
+import LoadingSpinner from "../../components/LoadingSpinner";
 
 function CustomerCard({
   customer,
@@ -136,6 +137,7 @@ function CustomerCard({
 }
 
 function Customers() {
+  const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [searchQuery, setSearchQuery] = useState("");
   const [customers, setCustomers] = useState([]);
@@ -156,6 +158,7 @@ function Customers() {
       usersRef,
       async (usersSnapshot) => {
         try {
+          setLoading(true);
           const customerData = await Promise.all(
             usersSnapshot.docs.map(async (userDoc) => {
               const userData = userDoc.data();
@@ -199,11 +202,14 @@ function Customers() {
         } catch (error) {
           console.error("Error fetching customers:", error);
           toast.error("Failed to load customers");
+        } finally {
+          setLoading(false);
         }
       },
       (error) => {
         console.error("Error in customers listener:", error);
         toast.error("Failed to listen to customers");
+        setLoading(false);
       }
     );
 
@@ -278,6 +284,68 @@ function Customers() {
 
   return (
     <div className="space-y-6 mt-12">
+      <div>
+        <h1 className="text-2xl font-nunito-bold text-green2">Customers</h1>
+        <div className="flex items-center mt-5">
+          <Users className="mr-2 text-primary size-7" />
+          <p className="text-xl text-primary font-nunito-bold tracking-wide">
+            Manage your customer base
+          </p>
+        </div>
+      </div>
+
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
+          <div className="relative w-full sm:w-64">
+            <input
+              type="text"
+              placeholder="Search customers..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border-2 border-green3/50 rounded-lg focus:outline-none focus:border-green2 font-nunito-b"
+            />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text/60 size-5" />
+          </div>
+          <StatusDropdown
+            statusOptions={statusOptions}
+            selectedStatus={selectedStatus}
+            onStatusChange={setSelectedStatus}
+          />
+        </div>
+
+        <button
+          onClick={() => setIsCustomerModalOpen(true)}
+          className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
+        >
+          <UserPlus className="size-4 mr-2" />
+          Add Customer
+        </button>
+      </div>
+
+      {loading ? (
+        <LoadingSpinner />
+      ) : filteredCustomers.length === 0 ? (
+        <div className="text-center text-text/60 py-8">
+          {searchQuery
+            ? "No customers found matching your search"
+            : "No customers found"}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {filteredCustomers.map((customer) => (
+            <CustomerCard
+              key={customer.id}
+              customer={customer}
+              onAddPet={handleAddPet}
+              onEditCustomer={handleEditCustomer}
+              onDeleteCustomer={handleDeleteCustomer}
+              onViewDetails={handleViewCustomerDetails}
+              onDeletePet={handleDeletePet}
+            />
+          ))}
+        </div>
+      )}
+
       <AddCustomerModal
         isOpen={isCustomerModalOpen}
         onClose={() => setIsCustomerModalOpen(false)}
@@ -307,66 +375,6 @@ function Customers() {
           onAddPet={handleAddPet}
           onDeletePet={handleDeletePet}
         />
-      )}
-
-      <div>
-        <h1 className="text-2xl font-nunito-bold text-green2">Customers</h1>
-        <div className="flex items-center mt-5">
-          <Users className="mr-2 text-primary size-7" />
-          <p className="text-xl text-primary font-nunito-bold tracking-wide">
-            Manage your customer base
-          </p>
-        </div>
-      </div>
-
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-        <div className="flex flex-col sm:flex-row gap-4 w-full md:w-auto">
-          <div className="relative w-full sm:w-64">
-            <input
-              type="text"
-              placeholder="Search customers..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border-2 border-green3/50 rounded-lg focus:outline-none focus:border-green2 font-nunito-bold"
-            />
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text/60 size-5" />
-          </div>
-          <StatusDropdown
-            statusOptions={statusOptions}
-            selectedStatus={selectedStatus}
-            onStatusChange={setSelectedStatus}
-          />
-        </div>
-
-        <button
-          onClick={() => setIsCustomerModalOpen(true)}
-          className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/80 transition-colors font-nunito"
-        >
-          <UserPlus className="size-4 mr-2" />
-          Add Customer
-        </button>
-      </div>
-
-      {filteredCustomers.length === 0 ? (
-        <div className="text-center text-text/60 py-8">
-          {searchQuery
-            ? "No customers found matching your search"
-            : "No customers found"}
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredCustomers.map((customer) => (
-            <CustomerCard
-              key={customer.id}
-              customer={customer}
-              onAddPet={handleAddPet}
-              onEditCustomer={handleEditCustomer}
-              onDeleteCustomer={handleDeleteCustomer}
-              onViewDetails={handleViewCustomerDetails}
-              onDeletePet={handleDeletePet}
-            />
-          ))}
-        </div>
       )}
     </div>
   );

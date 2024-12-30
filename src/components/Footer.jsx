@@ -42,7 +42,7 @@ const Footer = () => {
   return (
     <footer
       id="footer"
-      className="bg-green2 text-background font-nunito-medium"
+      className="bg-green2 text-background font-nunito-semibold"
     >
       <div className="bg-gray-100">
         <div className="container mx-auto px-6 py-12 mt-5">

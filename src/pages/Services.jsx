@@ -54,7 +54,7 @@ const Services = () => {
                     setActiveAccordion(activeAccordion === index ? null : index)
                   }
                 >
-                  <span className="text-lg font-medium text-text">
+                  <span className="text-lg font-nunito-semibold text-text">
                     {service.title}
                   </span>
                   <ChevronDown
@@ -177,7 +177,7 @@ const Services = () => {
             {showMore && (
               <a
                 href="/appointments"
-                className="mb-5 flex items-center gap-2 text-text hover:text-text/80 transition-colors text-md font-nunito-medium"
+                className="mb-5 flex items-center gap-2 text-text hover:text-text/80 transition-colors text-md font-nunito-semibold"
               >
                 View all options
                 <MoveUpRight className="w-4 h-4" />

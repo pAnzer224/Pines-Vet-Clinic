@@ -5,13 +5,13 @@ import {
   Calendar,
   Store,
   Users,
-  FileText,
   BarChart,
   Settings,
   Menu,
   X,
   LogOut,
 } from "lucide-react";
+import SessionChecker from "../../admin/components/SessionChecker";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
@@ -63,7 +63,8 @@ function AdminLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background font-nunito">
+    <div className="min-h-screen bg-background font-nunito-semibold">
+      <SessionChecker />
       <aside
         className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
@@ -87,7 +88,7 @@ function AdminLayout() {
               key={item.path}
               to={item.path}
               onClick={() => setIsSidebarOpen(false)}
-              className={`flex items-center space-x-3 px-4 py-2 rounded-md transition-colors font-nunito-medium tracking-wide ${
+              className={`flex items-center space-x-3 px-4 py-2 rounded-md transition-colors font-nunito-semibold tracking-wide ${
                 location.pathname === item.path
                   ? "bg-green3 text-background"
                   : "text-green2 hover:text-primary"

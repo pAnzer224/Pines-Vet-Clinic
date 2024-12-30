@@ -25,9 +25,9 @@ function MetricCard({ title, value, change, icon: Icon }) {
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-green2 font-nunito-medium">{title}</p>
+          <p className="text-sm text-green2 font-nunito-semibold">{title}</p>
           <p className="text-2xl font-nunito-bold mt-2 text-primary">{value}</p>
-          <p className="text-sm text-primary mt-1 font-nunito-medium">
+          <p className="text-sm text-primary mt-1 font-nunito-semibold">
             {change} from last month
           </p>
         </div>
@@ -47,7 +47,7 @@ function ActivityItem({ title, description, time, icon: Icon }) {
       </div>
       <div className="flex-1 min-w-0">
         <p className="text-sm font-nunito-bold text-green2">{title}</p>
-        <p className="text-sm font-nunito-medium text-primary/50">
+        <p className="text-sm font-nunito-semibold text-primary/50">
           {description}
         </p>
         <p className="text-xs font-nunito-bold text-gray-400 mt-1">{time}</p>

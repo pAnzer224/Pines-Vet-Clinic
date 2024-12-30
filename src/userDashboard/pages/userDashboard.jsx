@@ -33,7 +33,7 @@ function WelcomeCard({ userData }) {
               )}
               !
             </h1>
-            <p className="text-sm font-nunito-medium text-primary/70">
+            <p className="text-sm font-nunito-semibold text-primary/70">
               - Pet Parent since{" "}
               {userData?.createdAt
                 ? new Date(userData.createdAt.toDate()).getFullYear()
@@ -78,7 +78,7 @@ function AppointmentCard({ appointments }) {
                 <p className="text-sm font-nunito-bold text-green2">
                   {appointment.petName} - {appointment.service}
                 </p>
-                <p className="text-sm font-nunito-medium text-primary/50">
+                <p className="text-sm font-nunito-semibold text-primary/50">
                   {appointment.date}
                 </p>
               </div>
@@ -121,7 +121,7 @@ function WellnessTipsCard() {
           <p className="text-sm font-nunito-bold text-green2">
             Dental Care Reminder
           </p>
-          <p className="text-sm font-nunito-medium text-primary/50">
+          <p className="text-sm font-nunito-semibold text-primary/50">
             Remember to brush Max's teeth regularly to maintain good oral
             health!
           </p>

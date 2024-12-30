@@ -40,6 +40,16 @@ function SubHeader() {
     requestAnimationFrame(animation);
   };
 
+  const scrollToSection = (elementId, headerOffset = 120) => {
+    const element = document.getElementById(elementId);
+    if (element) {
+      const elementPosition = element.getBoundingClientRect().top;
+      const offsetPosition =
+        elementPosition + window.pageYOffset - headerOffset;
+      smoothScroll(offsetPosition, 700);
+    }
+  };
+
   const handleClick = async (item) => {
     // Define pages that should always navigate to their standalone versions
     const standalonePages = ["Shop", "Appointments", "Login", "Signup"];
@@ -58,42 +68,28 @@ function SubHeader() {
     // Handle standalone pages navigation
     if (standalonePages.includes(item)) {
       navigate(`/${item.toLowerCase()}`);
+      // Add this line to scroll to top after navigation
+      setTimeout(() => window.scrollTo(0, 0), 100);
+      return;
+    }
+
+    // Handle standalone pages navigation
+    if (standalonePages.includes(item)) {
+      navigate(`/${item.toLowerCase()}`);
       return;
     }
 
     // Special handling for Services
     if (item === "Services") {
-      const currentPath = location.pathname.toLowerCase();
-      const nonHomePages = ["/shop", "/appointments", "/login", "/signup"];
-
-      if (currentPath === "/home") {
-        // On home page - scroll to section
-        const element = document.getElementById("services");
-        if (element) {
-          const headerOffset = 120;
-          const elementPosition = element.getBoundingClientRect().top;
-          const offsetPosition =
-            elementPosition + window.pageYOffset - headerOffset;
-          smoothScroll(offsetPosition, 700);
-        }
-      } else if (currentPath === "/services") {
-        // Already on standalone page - scroll to top
-        window.scrollTo(0, 0);
-      } else if (nonHomePages.includes(currentPath)) {
-        // From other pages - navigate to standalone page
-        navigate("/services", { state: { fromHome: true } });
+      if (location.pathname === "/home") {
+        // On home page - use 120px offset
+        scrollToSection("services", 120);
       } else {
-        // From any other location - navigate to home and scroll
+        // From other pages - navigate to home and use correct offset
         navigate("/home");
         setTimeout(() => {
-          const element = document.getElementById("services");
-          if (element) {
-            const headerOffset = 120;
-            const elementPosition = element.getBoundingClientRect().top;
-            const offsetPosition =
-              elementPosition + window.pageYOffset - headerOffset;
-            smoothScroll(offsetPosition, 700);
-          }
+          // Use different offset when coming from other pages
+          scrollToSection("services", 180);
         }, 100);
       }
       return;
@@ -104,24 +100,10 @@ function SubHeader() {
     if (location.pathname !== "/home") {
       navigate("/home");
       setTimeout(() => {
-        const element = document.getElementById(sectionId);
-        if (element) {
-          const headerOffset = 120;
-          const elementPosition = element.getBoundingClientRect().top;
-          const offsetPosition =
-            elementPosition + window.pageYOffset - headerOffset;
-          smoothScroll(offsetPosition, 700);
-        }
+        scrollToSection(sectionId, 180);
       }, 100);
     } else {
-      const element = document.getElementById(sectionId);
-      if (element) {
-        const headerOffset = 120;
-        const elementPosition = element.getBoundingClientRect().top;
-        const offsetPosition =
-          elementPosition + window.pageYOffset - headerOffset;
-        smoothScroll(offsetPosition, 700);
-      }
+      scrollToSection(sectionId, 120);
     }
   };
 
@@ -133,7 +115,7 @@ function SubHeader() {
           : "bg-green3 backdrop-filter-none"
       }`}
     >
-      <ul className="flex space-x-10 text-sm font-nunito-medium tracking-wider">
+      <ul className="flex space-x-10 text-sm font-nunito-semibold tracking-wider">
         {["Home", "Services", "Shop", "Appointments"].map((item) => (
           <li key={item}>
             <button

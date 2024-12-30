@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { ArrowRight, Menu, User } from "lucide-react";
+import { ArrowRight, Menu } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 
 function MainHeader() {

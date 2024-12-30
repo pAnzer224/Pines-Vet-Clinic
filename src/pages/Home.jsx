@@ -124,7 +124,7 @@ const Home = () => {
               ].map((benefit, index) => (
                 <div
                   key={index}
-                  className={`items-center py-7 px-8 rounded-full text-text/80 text-lg font-medium transform border-text border-[1.6px] text-center shadow-md relative overflow-hidden
+                  className={`items-center py-7 px-8 rounded-full text-text/80 text-lg font-nunito-bold transform border-text border-[1.6px] text-center shadow-md relative overflow-hidden
                     ${
                       index === 0
                         ? "bg-peach"

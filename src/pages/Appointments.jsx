@@ -13,6 +13,7 @@ import AppointmentSchedulerModal from "../pages/AppointmentSchedulerModal";
 import ServiceSelectionModal from "../pages/ServiceSelectionModal";
 import PetAddModal from "../components/PetAddModal";
 import PromptModal from "../components/promptModal";
+import FeatureOverlay from "../components/FeauterOverlay";
 import { toast } from "react-toastify";
 
 export default function Appointments() {
@@ -27,11 +28,18 @@ export default function Appointments() {
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
   const [selectedServiceDetails, setSelectedServiceDetails] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
+  const [overlaySettings, setOverlaySettings] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setCurrentUser(user);
     });
+
+    // Get overlay settings from localStorage
+    const savedOverlaySettings = localStorage.getItem("overlaySettings");
+    if (savedOverlaySettings) {
+      setOverlaySettings(JSON.parse(savedOverlaySettings));
+    }
 
     return () => unsubscribe();
   }, []);
@@ -105,6 +113,7 @@ export default function Appointments() {
           price: selectedServiceDetails?.price || "Price varies",
           duration: selectedServiceDetails?.duration || "Duration varies",
           userName: currentUser.displayName || "Unknown User",
+          userId: currentUser.uid,
           status: "Pending",
         };
 
@@ -157,7 +166,15 @@ export default function Appointments() {
   };
 
   return (
-    <div className="container mx-auto px-6 pb-20 font-nunito-bold">
+    <div className="container mx-auto px-6 pb-20 font-nunito-bold relative">
+      {overlaySettings?.appointments?.isEnabled && (
+        <FeatureOverlay
+          isEnabled={overlaySettings.appointments.isEnabled}
+          title={overlaySettings.appointments.title}
+          message={overlaySettings.appointments.message}
+        />
+      )}
+
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
         <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
           <h2 className="text-lg font-bold text-text mb-8 tracking-wide">
@@ -166,7 +183,7 @@ export default function Appointments() {
 
           <div className="mb-8 grid md:grid-cols-2 gap-4">
             <div className="flex flex-col">
-              <label className="text-md font-medium text-text/80 mb-2 block">
+              <label className="text-md font-nunito-semibold text-text/80 mb-2 block">
                 Select Service
               </label>
               <div className="h-[100px]">
@@ -192,7 +209,7 @@ export default function Appointments() {
             </div>
 
             <div className="flex flex-col">
-              <label className="text-md font-medium text-text/80 mb-2 block">
+              <label className="text-md font-nunito-semibold text-text/80 mb-2 block">
                 Select Pet
               </label>
               <div className="flex items-center gap-2">
@@ -312,7 +329,7 @@ export default function Appointments() {
                   className="relative pl-8 pb-6 border-l-[1.6px] border-green2 last:pb-0"
                 >
                   <div className="absolute left-[-6px] top-0 w-3 h-3 bg-green3 rounded-full border-[1.6px] border-green2" />
-                  <p className="font-medium text-text tracking-wide">
+                  <p className="font-nunito-semibold text-text tracking-wide">
                     {apt.date || "No date specified"}
                   </p>
                   <p className="text-text/80 tracking-wide">
