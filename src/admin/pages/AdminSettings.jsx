@@ -7,17 +7,8 @@ import {
   Calendar,
   Eye,
   EyeOff,
-  PlusCircle,
-  Trash2,
 } from "lucide-react";
-import { db } from "../../firebase-config";
-import {
-  collection,
-  getDocs,
-  addDoc,
-  deleteDoc,
-  doc,
-} from "firebase/firestore";
+import TimeSlotManager from "../../admin/components/TimeSlotManager";
 
 const AdminSettings = () => {
   const [activeTab, setActiveTab] = useState("notifications");
@@ -53,58 +44,12 @@ const AdminSettings = () => {
     },
   });
 
-  const [timeSlots, setTimeSlots] = useState([]);
-  const [newTimeSlot, setNewTimeSlot] = useState("");
-  const [sessionTimeout, setSessionTimeout] = useState(30);
-
   useEffect(() => {
-    const savedTimeout = localStorage.getItem("sessionTimeout");
-    if (savedTimeout) {
-      setSessionTimeout(parseInt(savedTimeout));
-    }
-
     const savedOverlaySettings = localStorage.getItem("overlaySettings");
     if (savedOverlaySettings) {
       setOverlaySettings(JSON.parse(savedOverlaySettings));
     }
-
-    fetchTimeSlots();
   }, []);
-
-  const fetchTimeSlots = async () => {
-    try {
-      const timeSlotsRef = collection(db, "timeSlots");
-      const snapshot = await getDocs(timeSlotsRef);
-      const slots = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        time: doc.data().time,
-      }));
-      setTimeSlots(slots.sort((a, b) => a.time.localeCompare(b.time)));
-    } catch (error) {
-      console.error("Error fetching time slots:", error);
-    }
-  };
-
-  const addTimeSlot = async () => {
-    if (!newTimeSlot) return;
-    try {
-      const timeSlotsRef = collection(db, "timeSlots");
-      await addDoc(timeSlotsRef, { time: newTimeSlot });
-      setNewTimeSlot("");
-      fetchTimeSlots();
-    } catch (error) {
-      console.error("Error adding time slot:", error);
-    }
-  };
-
-  const deleteTimeSlot = async (id) => {
-    try {
-      await deleteDoc(doc(db, "timeSlots", id));
-      fetchTimeSlots();
-    } catch (error) {
-      console.error("Error deleting time slot:", error);
-    }
-  };
 
   const handleOverlayUpdate = (page, field, value) => {
     const newSettings = {
@@ -145,14 +90,6 @@ const AdminSettings = () => {
     } else {
       alert("Current admin ID or password is incorrect");
     }
-  };
-
-  const handleTimeoutUpdate = (value) => {
-    const timeout = parseInt(value);
-    setSessionTimeout(timeout);
-    localStorage.setItem("sessionTimeout", timeout.toString());
-    const adminAuthTime = new Date().getTime();
-    localStorage.setItem("adminAuthTime", adminAuthTime.toString());
   };
 
   return (
@@ -391,70 +328,10 @@ const AdminSettings = () => {
                   Update Credentials
                 </button>
               </form>
-
-              <div className="space-y-4 p-4 bg-background/95 rounded-lg border border-green3/30">
-                <h3 className="font-nunito-bold text-green2">
-                  Session Settings
-                </h3>
-                <div className="space-y-2">
-                  <label className="block font-nunito-semibold text-text/80">
-                    Session Timeout (minutes)
-                  </label>
-                  <input
-                    type="number"
-                    value={sessionTimeout}
-                    onChange={(e) => handleTimeoutUpdate(e.target.value)}
-                    min={1}
-                    max={120}
-                    className="w-full p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
-                  />
-                </div>
-              </div>
             </div>
           )}
 
-          {activeTab === "scheduling" && (
-            <div className="space-y-6">
-              <div>
-                <h3 className="font-nunito-bold text-green2 mb-4">
-                  Manage Time Slots
-                </h3>
-
-                <div className="flex gap-4 mb-4">
-                  <input
-                    type="time"
-                    value={newTimeSlot}
-                    onChange={(e) => setNewTimeSlot(e.target.value)}
-                    className="p-2 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
-                  />
-                  <button
-                    onClick={addTimeSlot}
-                    className="flex items-center gap-2 px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
-                  >
-                    <PlusCircle size={20} />
-                    Add Time Slot
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                  {timeSlots.map((slot) => (
-                    <div
-                      key={slot.id}
-                      className="flex items-center justify-between p-3 bg-background/95 rounded-lg border border-green3/30"
-                    >
-                      <span className="font-nunito-semibold">{slot.time}</span>
-                      <button
-                        onClick={() => deleteTimeSlot(slot.id)}
-                        className="text-red hover:text-red/80"
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+          {activeTab === "scheduling" && <TimeSlotManager />}
 
           {activeTab === "business" && (
             <div className="space-y-4">

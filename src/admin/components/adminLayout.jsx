@@ -11,7 +11,6 @@ import {
   X,
   LogOut,
 } from "lucide-react";
-import SessionChecker from "../../admin/components/SessionChecker";
 
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
@@ -64,7 +63,6 @@ function AdminLayout() {
 
   return (
     <div className="min-h-screen bg-background font-nunito-semibold">
-      <SessionChecker />
       <aside
         className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"

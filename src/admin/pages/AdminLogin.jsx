@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 
@@ -9,28 +9,6 @@ function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  useEffect(() => {
-    // Check if already authenticated and within session timeout
-    const isAuthenticated =
-      localStorage.getItem("adminAuthenticated") === "true";
-    if (isAuthenticated) {
-      const authTime = parseInt(localStorage.getItem("adminAuthTime") || "0");
-      const timeoutMinutes = parseInt(
-        localStorage.getItem("sessionTimeout") || "30"
-      );
-      const currentTime = new Date().getTime();
-
-      if (currentTime - authTime < timeoutMinutes * 60 * 1000) {
-        // Session is still valid
-        navigate("/admin/dashboard");
-      } else {
-        // Session has expired
-        localStorage.removeItem("adminAuthenticated");
-        localStorage.removeItem("adminAuthTime");
-      }
-    }
-  }, [navigate]);
-
   const handleLogin = (e) => {
     e.preventDefault();
     setError(""); // Clear any previous errors
@@ -40,10 +18,6 @@ function AdminLogin() {
       localStorage.getItem("adminPassword") || "password123";
 
     if (adminId === savedAdminId && password === savedPassword) {
-      // Set authentication in local storage
-      localStorage.setItem("adminAuthenticated", "true");
-      localStorage.setItem("adminAuthTime", new Date().getTime().toString());
-
       // Navigate to dashboard after log in
       navigate("/admin/dashboard");
     } else {
