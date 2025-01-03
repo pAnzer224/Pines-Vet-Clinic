@@ -13,11 +13,43 @@ import { useAuth } from "../../hooks/useAuth";
 import { Clock, CheckCircle, XCircle, ShoppingBag } from "lucide-react";
 import { toast } from "react-toastify";
 
+const Overlay = ({ title, message, isVisible }) => {
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed top-[60px] right-0 bottom-0 w-full md:w-[calc(100%-16rem)] bg-text/50 backdrop-blur-sm z-[19]">
+      <div className="absolute inset-0 flex items-center justify-center p-4">
+        <div className="bg-background p-8 rounded-xl shadow-lg max-w-md w-full mx-4 border-2 border-primary/80">
+          <h2 className="text-2xl font-nunito-bold text-green2 mb-3">
+            {title}
+          </h2>
+          <p className="text-text/80 font-nunito-semibold text-md">{message}</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const MyOrders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [cancellingOrders, setCancellingOrders] = useState(new Set());
   const { currentUser } = useAuth();
+  const [overlaySettings, setOverlaySettings] = useState({
+    isEnabled: false,
+    title: "",
+    message: "",
+  });
+
+  useEffect(() => {
+    const savedSettings = localStorage.getItem("overlaySettings");
+    if (savedSettings) {
+      const settings = JSON.parse(savedSettings);
+      setOverlaySettings(
+        settings.userOrders || { isEnabled: false, title: "", message: "" }
+      );
+    }
+  }, []);
 
   useEffect(() => {
     if (!currentUser) {
@@ -96,6 +128,12 @@ const MyOrders = () => {
 
   return (
     <div className="space-y-6 mt-14">
+      <Overlay
+        title={overlaySettings.title}
+        message={overlaySettings.message}
+        isVisible={overlaySettings.isEnabled}
+      />
+
       <div>
         <h1 className="text-2xl font-nunito-bold text-green2">My Orders</h1>
         <div className="flex items-center mt-5">

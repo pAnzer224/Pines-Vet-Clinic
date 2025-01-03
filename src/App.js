@@ -31,7 +31,7 @@ import AdminAppointments from "./admin/pages/AdminAppointments";
 import AdminShop from "./admin/pages/AdminShop";
 import AdminCustomers from "./admin/pages/AdminCustomers";
 import AdminReports from "./admin/pages/AdminReports";
-import AdminSettings from "./admin/pages/AdminSettings";
+import AdminSettings from "./admin/pages/Settings Tabs/AdminSettings";
 
 import UserLayout from "./userDashboard/components/userLayout";
 import AdminLayout from "./admin/components/adminLayout";

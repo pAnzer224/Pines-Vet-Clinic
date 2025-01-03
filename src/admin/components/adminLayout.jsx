@@ -31,20 +31,23 @@ function AdminLayout() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const isAuthenticated =
-      localStorage.getItem("adminAuthenticated") === "true";
+    const checkAuth = () => {
+      const token = sessionStorage.getItem("adminToken");
+      const expiry = sessionStorage.getItem("adminTokenExpiry");
+      const isAuthenticated =
+        token && expiry && new Date().getTime() < parseInt(expiry);
 
-    // Redirect to login for all admin routes except login if not authenticated
-    if (!isAuthenticated && location.pathname !== "/admin/login") {
-      navigate("/admin/login");
-    }
+      if (!isAuthenticated && location.pathname !== "/admin/login") {
+        navigate("/admin/login");
+      }
+    };
+
+    checkAuth();
   }, [location.pathname, navigate]);
 
   const handleLogout = () => {
-    // Clear authentication
-    localStorage.removeItem("adminAuthenticated");
-
-    // Redirect to login page
+    sessionStorage.removeItem("adminToken");
+    sessionStorage.removeItem("adminTokenExpiry");
     navigate("/admin/login");
   };
 
@@ -54,7 +57,10 @@ function AdminLayout() {
   }
 
   // Check authentication for other routes
-  const isAuthenticated = localStorage.getItem("adminAuthenticated") === "true";
+  const token = sessionStorage.getItem("adminToken");
+  const expiry = sessionStorage.getItem("adminTokenExpiry");
+  const isAuthenticated =
+    token && expiry && new Date().getTime() < parseInt(expiry);
 
   // If not authenticated, don't render anything (navigation will happen in useEffect)
   if (!isAuthenticated) {

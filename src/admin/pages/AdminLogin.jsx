@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
+import { verifyAdminCredentials } from "./adminAuth.js";
 
 function AdminLogin() {
   const [adminId, setAdminId] = useState("");
@@ -9,19 +10,37 @@ function AdminLogin() {
   const [showPassword, setShowPassword] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  useEffect(() => {
+    const checkAuth = async () => {
+      const token = sessionStorage.getItem("adminToken");
+      const expiry = sessionStorage.getItem("adminTokenExpiry");
+
+      if (token && expiry && new Date().getTime() < parseInt(expiry)) {
+        navigate("/admin/dashboard");
+      }
+    };
+
+    checkAuth();
+  }, [navigate]);
+
+  const handleLogin = async (e) => {
     e.preventDefault();
-    setError(""); // Clear any previous errors
+    setError("");
 
-    const savedAdminId = localStorage.getItem("adminId") || "admin123";
-    const savedPassword =
-      localStorage.getItem("adminPassword") || "password123";
+    try {
+      const isValid = await verifyAdminCredentials(adminId, password);
 
-    if (adminId === savedAdminId && password === savedPassword) {
-      // Navigate to dashboard after log in
-      navigate("/admin/dashboard");
-    } else {
-      setError("Invalid admin ID or password");
+      if (isValid) {
+        const expiry = new Date().getTime() + 30 * 60 * 1000;
+        sessionStorage.setItem("adminToken", "authenticated");
+        sessionStorage.setItem("adminTokenExpiry", expiry.toString());
+        navigate("/admin/dashboard");
+      } else {
+        setError("Invalid admin ID or password");
+      }
+    } catch (error) {
+      setError("An error occurred during login");
+      console.error("Login error:", error);
     }
   };
 
