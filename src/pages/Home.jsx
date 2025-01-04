@@ -3,6 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import Services from "./Services";
 import Pricing from "./Pricing";
+import { Phone } from "lucide-react";
 
 const Home = () => {
   const navigate = useNavigate();
@@ -109,9 +110,12 @@ const Home = () => {
 
                 <button
                   onClick={() => handleScrollToSection("footer")}
-                  className="text-text/60 px-6 py-2 border border-green3 rounded-full hover:bg-green3/80 transition-colors flex items-center gap-2"
+                  className="group relative inline-flex h-12 items-center justify-center rounded-full border border-green3 px-6 text-text/60 hover:bg-green3/80 hover:text-text/90 transition-colors"
                 >
-                  Contact Us
+                  <div className="w-0 -translate-x-[100%] pr-0 opacity-0 transition-all duration-200 group-hover:w-5 group-hover:translate-x-0 group-hover:opacity-100 group-hover:mr-2">
+                    <Phone className="size-5" />
+                  </div>
+                  <span>Contact Us</span>
                 </button>
               </div>
             </div>

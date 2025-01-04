@@ -201,7 +201,7 @@ function AdminShop() {
             setSelectedImage(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito"
+          className="flex items-center px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito"
         >
           <PlusCircle className="w-4 h-4 mr-2" />
           Add Product
@@ -313,7 +313,7 @@ function AdminShop() {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
+                className="px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
               >
                 {isEditMode ? "Update Product" : "Add Product"}
               </button>

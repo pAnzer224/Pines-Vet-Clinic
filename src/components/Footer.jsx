@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import {
   FaFacebookF,
   FaInstagram,
@@ -10,14 +10,55 @@ import {
   FaClock,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
+import { doc, setDoc, getDoc } from "firebase/firestore";
+import { db } from "../firebase-config";
 
 const Footer = () => {
   const [email, setEmail] = useState("");
+  const [status, setStatus] = useState({ type: "", message: "" });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const location = useLocation();
+  const isHomePage = location.pathname === "/home";
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("Newsletter subscription:", email);
-    setEmail("");
+    setIsSubmitting(true);
+    setStatus({ type: "", message: "" });
+
+    try {
+      // Check if email already exists
+      const emailDoc = doc(db, "newsletter-subscribers", email);
+      const emailSnapshot = await getDoc(emailDoc);
+
+      if (emailSnapshot.exists()) {
+        setStatus({
+          type: "error",
+          message: "This email is already subscribed to our newsletter",
+        });
+        return;
+      }
+
+      // Adds new subscriber
+      await setDoc(emailDoc, {
+        email,
+        subscribedAt: new Date().toISOString(),
+        active: true,
+      });
+
+      setStatus({
+        type: "success",
+        message: "Thank you for subscribing to our newsletter!",
+      });
+      setEmail("");
+    } catch (error) {
+      console.error("Newsletter subscription error:", error);
+      setStatus({
+        type: "error",
+        message: "Something went wrong. Please try again later.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const socialLinks = [
@@ -45,7 +86,9 @@ const Footer = () => {
       className="bg-green2 text-background font-nunito-semibold"
     >
       <div className="bg-gray-100">
-        <div className="container mx-auto px-6 py-12 mt-5">
+        <div
+          className={`container mx-auto px-6 py-12 ${isHomePage ? "mt-5" : ""}`}
+        >
           <div className="max-w-xl mx-auto text-center">
             <h3 className="text-2xl font-nunito-bold mb-4 text-green2">
               Stay Updated with Highland Petvibes
@@ -54,26 +97,45 @@ const Footer = () => {
               Subscribe to our newsletter for pet care tips, updates, and
               exclusive offers!
             </p>
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-2 rounded-full bg-background border-2 border-green2/20 focus:border-green2 focus:outline-none placeholder:text-primary/30 text-green2"
-                required
-              />
-              <button
-                type="submit"
-                className="px-6 py-2 bg-green2 text-gray-100 rounded-full hover:bg-green2/90 transition-colors font-nunito-bold"
-              >
-                Subscribe
-              </button>
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  className="flex-1 px-4 py-2 rounded-full bg-background border-2 border-green2/20 focus:border-green2 focus:outline-none placeholder:text-primary/30 text-green2"
+                  required
+                  disabled={isSubmitting}
+                />
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`px-6 py-2 bg-green2 text-gray-100 rounded-full hover:bg-green2/90 transition-colors font-nunito-bold ${
+                    isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                  }`}
+                >
+                  {isSubmitting ? "Subscribing..." : "Subscribe"}
+                </button>
+              </div>
+
+              {status.message && (
+                <div
+                  className={`rounded-lg p-4 text-sm ${
+                    status.type === "error"
+                      ? "bg-red/30 text-red"
+                      : "bg-green2/40 text-primary"
+                  }`}
+                >
+                  {status.message}
+                </div>
+              )}
             </form>
           </div>
         </div>
       </div>
 
+      {/* Rest of your footer content remains the same */}
       <div className="container mx-auto px-6 py-16">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="text-center">
@@ -100,27 +162,6 @@ const Footer = () => {
               ))}
             </div>
           </div>
-
-          {/* Quick Links section commented out for future reference */}
-          {/*
-             <h3 className="text-lg font-nunito-bold mb-6">Quick Links</h3>
-             <div className="flex flex-col gap-3 text-sm">
-               {[
-                 { to: "/", label: "Home" },
-                 { to: "/shop", label: "Shop" },
-                 { to: "/appointments", label: "Book Appointment" },
-                 { to: "/grooming-boarding", label: "Grooming & Boarding" },
-               ].map((link) => (
-                 <Link
-                   key={link.label}
-                   to={link.to}
-                   className="text-background/80 hover:text-background transition-colors inline-block"
-                 >
-                   {link.label}
-                 </Link>
-               ))}
-             </div>
-           */}
 
           <div className="text-center">
             <h3 className="text-lg font-nunito-bold mb-6">Business Hours</h3>
@@ -167,7 +208,7 @@ const Footer = () => {
               <div className="flex items-center gap-2">
                 <FaEnvelope className="text-background/60" />
                 <a
-                  href="email"
+                  href="mailto:info@petvibes.com"
                   className="text-background/80 hover:text-background transition-colors"
                 >
                   info@petvibes.com

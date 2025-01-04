@@ -315,7 +315,7 @@ function Customers() {
 
         <button
           onClick={() => setIsCustomerModalOpen(true)}
-          className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
+          className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
         >
           <UserPlus className="size-4 mr-2" />
           Add Customer

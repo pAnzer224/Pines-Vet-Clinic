@@ -220,7 +220,7 @@ const Shop = () => {
         message={overlaySettings.message}
       />
 
-      <div className="container mx-auto px-6 pb-8 font-nunito-bold">
+      <div className="container mx-auto px-6 pb-20 mb-10 font-nunito-bold">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-text mb-2 tracking-wide">
             Pet Shop
@@ -278,7 +278,7 @@ const Shop = () => {
                   onClick={() => setShowTooltip(false)}
                 />
                 <div className="absolute right-0 mt-3 z-50">
-                  <div className="relative bg-white p-4 rounded-lg shadow-lg border-2 border-green2 w-64">
+                  <div className="relative bg-background p-4 rounded-lg shadow-lg border-2 border-green2 w-64">
                     <p className="text-text/70 text-center">
                       Here you can see your orders and manage your shopping
                       cart!

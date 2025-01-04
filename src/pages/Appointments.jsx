@@ -166,7 +166,7 @@ export default function Appointments() {
   };
 
   return (
-    <div className="container mx-auto px-6 pb-20 font-nunito-bold relative">
+    <div className="container mx-auto px-6 pb-20 mb-10 font-nunito-bold relative">
       {overlaySettings?.appointments?.isEnabled && (
         <FeatureOverlay
           isEnabled={overlaySettings.appointments.isEnabled}
