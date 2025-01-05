@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import ToggleSwitch from "../../../components/ToggleSwitch";
 
 const NotificationsTab = () => {
   const [overlaySettings, setOverlaySettings] = useState({
@@ -60,20 +61,12 @@ const NotificationsTab = () => {
               <label className="font-nunito-semibold text-text/80 capitalize">
                 {page.replace(/([A-Z])/g, " $1").trim()} Page Overlay
               </label>
-              <button
-                onClick={() =>
+              <ToggleSwitch
+                isEnabled={settings.isEnabled}
+                onToggle={() =>
                   handleOverlayUpdate(page, "isEnabled", !settings.isEnabled)
                 }
-                className={`w-12 h-6 rounded-full transition-colors ${
-                  settings.isEnabled ? "bg-green2" : "bg-gray-200"
-                }`}
-              >
-                <div
-                  className={`w-5 h-5 bg-background rounded-full transform transition-transform ${
-                    settings.isEnabled ? "translate-x-6" : "translate-x-1"
-                  }`}
-                />
-              </button>
+              />
             </div>
 
             <div className="space-y-4">
@@ -112,7 +105,7 @@ const NotificationsTab = () => {
       </div>
       <button
         onClick={saveOverlaySettings}
-        className="px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
+        className="px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
       >
         Save Overlay Settings
       </button>

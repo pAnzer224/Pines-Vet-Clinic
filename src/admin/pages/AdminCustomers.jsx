@@ -73,7 +73,7 @@ function CustomerCard({
           }}
           className="text-primary hover:bg-red-100 rounded-full p-1 transition-colors"
         >
-          <Trash2 className="size-5 text-red-500" />
+          <Trash2 className="size-5 text-red" />
         </button>
       </div>
 

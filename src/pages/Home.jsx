@@ -90,10 +90,9 @@ const Home = () => {
               </div>
 
               <div className="w-full max-w-[400px] flex gap-4 tracking-normal justify-center">
-                {/* Option 1: Using Link component */}
                 <Link
                   to="/appointments"
-                  className="px-6 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2"
+                  className="h-12 px-6 inline-flex items-center justify-center bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2"
                 >
                   Book Now
                 </Link>

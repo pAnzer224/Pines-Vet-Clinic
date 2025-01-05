@@ -1,20 +1,49 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, PawPrint } from "lucide-react";
+import { Calendar, PawPrint, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import StatusDropdown from "../../components/StatusDropdown";
 import { db } from "../../firebase-config";
-import { collection, onSnapshot, query } from "firebase/firestore";
+import {
+  collection,
+  onSnapshot,
+  query,
+  doc,
+  deleteDoc,
+} from "firebase/firestore";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import ToggleSwitch from "../../components/ToggleSwitch";
 
-function AppointmentCard({ appointment }) {
+function AppointmentCard({ appointment, onDeleteAppointment }) {
   const statusColors = {
     Confirmed: "bg-green3/50 text-green-800",
     Pending: "bg-yellow-100 text-yellow-800",
     Cancelled: "bg-red/80 text-red-800",
+    Concluded: "bg-green3/50 text-green2",
   };
 
+  // Check if appointment is past the set date
+  const isPastAppointment = new Date(appointment.date) < new Date();
+  const displayStatus = isPastAppointment ? "Concluded" : appointment.status;
+
   return (
-    <div className="bg-gold p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors">
+    <div className="bg-gold p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group">
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+        <button
+          onClick={() => {
+            if (
+              window.confirm(
+                `Are you sure you want to delete this appointment?`
+              )
+            ) {
+              onDeleteAppointment(appointment.id);
+            }
+          }}
+          className="text-primary hover:bg-red-100 rounded-full p-1 transition-colors"
+        >
+          <Trash2 className="size-5 text-red" />
+        </button>
+      </div>
+
       <div className="flex justify-between items-start mb-3">
         <div>
           <h3 className="font-nunito-bold text-green2">
@@ -28,11 +57,11 @@ function AppointmentCard({ appointment }) {
           </p>
         </div>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${
-            statusColors[appointment.status] || "bg-gray-100 text-gray-800"
+          className={`px-3 py-1 rounded-full text-xs font-nunito-bold opacity-100 group-hover:opacity-0 transition-opacity ${
+            statusColors[displayStatus] || "bg-gray-100 text-gray-800"
           }`}
         >
-          {appointment.status || "Unknown"}
+          {displayStatus || "Unknown"}
         </span>
       </div>
 
@@ -48,7 +77,14 @@ function Appointments() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [appointments, setAppointments] = useState([]);
-  const statusOptions = ["All Status", "Confirmed", "Pending", "Cancelled"];
+  const [showPastAppointments, setShowPastAppointments] = useState(false);
+  const statusOptions = [
+    "All Status",
+    "Confirmed",
+    "Pending",
+    "Cancelled",
+    "Concluded ",
+  ];
 
   useEffect(() => {
     const appointmentsCollectionRef = collection(db, "appointments");
@@ -85,10 +121,30 @@ function Appointments() {
     return () => unsubscribe();
   }, []);
 
-  const filteredAppointments =
-    selectedStatus === "All Status"
-      ? appointments
-      : appointments.filter((apt) => apt.status === selectedStatus);
+  const handleDeleteAppointment = async (appointmentId) => {
+    try {
+      const appointmentRef = doc(db, "appointments", appointmentId);
+      await deleteDoc(appointmentRef);
+      toast.success("Appointment deleted successfully");
+    } catch (error) {
+      console.error("Error deleting appointment:", error);
+      toast.error("Failed to delete appointment");
+    }
+  };
+
+  const filteredAppointments = appointments.filter((apt) => {
+    const appointmentDate = new Date(apt.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const isPastAppointment = appointmentDate < today;
+    const effectiveStatus = isPastAppointment ? "Concluded" : apt.status;
+
+    if (!showPastAppointments && isPastAppointment) return false;
+    return selectedStatus === "All Status"
+      ? true
+      : effectiveStatus === selectedStatus;
+  });
 
   return (
     <div className="space-y-6">
@@ -102,18 +158,33 @@ function Appointments() {
         </div>
       </div>
 
-      <StatusDropdown
-        statusOptions={statusOptions}
-        selectedStatus={selectedStatus}
-        onStatusChange={setSelectedStatus}
-      />
+      <div className="flex items-center gap-4">
+        <StatusDropdown
+          statusOptions={statusOptions}
+          selectedStatus={selectedStatus}
+          onStatusChange={setSelectedStatus}
+        />
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-nunito-semibold text-text/80">
+            Show Past Appointments
+          </span>
+          <ToggleSwitch
+            isEnabled={showPastAppointments}
+            onToggle={() => setShowPastAppointments(!showPastAppointments)}
+          />
+        </div>
+      </div>
 
       {loading ? (
         <LoadingSpinner />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {filteredAppointments.map((appointment) => (
-            <AppointmentCard key={appointment.id} appointment={appointment} />
+            <AppointmentCard
+              key={appointment.id}
+              appointment={appointment}
+              onDeleteAppointment={handleDeleteAppointment}
+            />
           ))}
         </div>
       )}
