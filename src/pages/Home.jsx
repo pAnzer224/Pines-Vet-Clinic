@@ -57,11 +57,6 @@ const Home = () => {
     }
   };
 
-  // Handle appointment navigation
-  const handleAppointmentClick = () => {
-    navigate("/appointments");
-  };
-
   return (
     <motion.div
       id="home"

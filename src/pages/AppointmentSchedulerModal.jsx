@@ -3,7 +3,7 @@ import { Clock, ChevronRight, ChevronLeft, SquareX } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import PromptModal from "../components/promptModal";
 import { db } from "../firebase-config";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, setDoc, doc } from "firebase/firestore";
 
 const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   const [selectedDay, setSelectedDay] = useState(null);
@@ -19,8 +19,12 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
       try {
         const timeSlotsRef = collection(db, "timeSlots");
         const snapshot = await getDocs(timeSlotsRef);
-        const slots = snapshot.docs.map((doc) => doc.data().time);
-        setTimeSlots(slots.sort((a, b) => a.localeCompare(b)));
+        const slots = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          scheduleId: doc.id,
+        }));
+        setTimeSlots(slots.sort((a, b) => a.time.localeCompare(b.time)));
       } catch (error) {
         console.error("Error fetching time slots:", error);
       }
@@ -115,7 +119,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
     );
   };
 
-  const handleSchedule = () => {
+  const handleSchedule = async () => {
     if (!currentUser) {
       setShowPromptModal(true);
       return;
@@ -127,7 +131,28 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
         day: "numeric",
         year: "numeric",
       });
-      onSchedule({ date: selectedDate, time: timeSlots[selectedTime] });
+
+      try {
+        const selectedSlot = timeSlots[selectedTime];
+        const scheduleRef = doc(db, "timeScheduling", selectedSlot.scheduleId);
+
+        await setDoc(scheduleRef, {
+          time: selectedSlot.time,
+          date: selectedDate,
+          userId: currentUser.uid,
+          isAvailable: false,
+          bookedAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString(),
+        });
+
+        onSchedule({
+          date: selectedDate,
+          time: selectedSlot.time,
+          scheduleId: selectedSlot.scheduleId,
+        });
+      } catch (error) {
+        console.error("Error scheduling appointment:", error);
+      }
     }
   };
 
@@ -140,7 +165,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-text bg-opacity-50 flex items-center justify-center z-50">
         <div
           ref={modalRef}
           className="bg-background rounded-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
@@ -204,7 +229,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 text-sm">
-              {timeSlots.map((time, index) => (
+              {timeSlots.map((slot, index) => (
                 <button
                   key={index}
                   onClick={() => setSelectedTime(index)}
@@ -215,7 +240,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
                         : "hover:bg-green3/10"
                     }`}
                 >
-                  {time}
+                  {slot.time}
                 </button>
               ))}
             </div>

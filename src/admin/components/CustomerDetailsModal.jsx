@@ -248,7 +248,7 @@ function CustomerDetailsModal({
                       {selectedPet === pet.id && (
                         <button
                           onClick={() => handleDeletePet(pet.id)}
-                          className="text-red-500 hover:text-red-600 transition-colors"
+                          className="text-red/90 hover:text-red transition-colors"
                         >
                           <Trash2 className="w-4 h-4 text-red" />
                         </button>

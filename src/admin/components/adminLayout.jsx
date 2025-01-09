@@ -72,7 +72,7 @@ function AdminLayout() {
       <aside
         className={`fixed top-0 left-0 z-40 h-screen transition-transform ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } md:translate-x-0 w-64 bg-background border-r-2 border-green3/80 `}
+        } lg:translate-x-0 w-64 bg-background border-r-2 border-green3/80`}
       >
         <div className="flex items-center justify-between h-[60px] px-4 border-b border-green3/30">
           <Link to="/admin/dashboard" className="flex items-center space-x-2">
@@ -80,7 +80,7 @@ function AdminLayout() {
           </Link>
           <button
             onClick={() => setIsSidebarOpen(false)}
-            className="md:hidden text-green2 hover:text-primary"
+            className="lg:hidden text-green2 hover:text-primary"
           >
             <X size={20} />
           </button>
@@ -105,23 +105,23 @@ function AdminLayout() {
         </nav>
       </aside>
 
-      <div className="md:ml-64">
-        <header className="fixed top-0 right-0 z-30 w-full md:w-[calc(100%-16rem)] bg-background border-b-2 border-green3/30 h-[60px]">
-          <div className="flex items-center justify-between px-6 h-full ">
+      <div className="lg:ml-64">
+        <header className="fixed top-0 right-0 z-30 w-full lg:w-[calc(100%-16rem)] bg-background border-b-2 border-green3/30 h-[60px]">
+          <div className="flex items-center justify-between px-4 md:px-6 h-full">
             <button
               onClick={() => setIsSidebarOpen(true)}
-              className="md:hidden text-green2 hover:text-primary"
+              className="lg:hidden text-green2 hover:text-primary"
             >
               <Menu size={24} />
             </button>
 
-            <div className="flex items-center gap-5">
+            <div className="flex items-center gap-3 md:gap-5">
               <span className="text-sm font-nunito-bold tracking-wide text-green2">
                 Admin
               </span>
               <button
                 onClick={handleLogout}
-                className="text-sm text-background hover:text-primary flex items-center gap-1 border px-5 py-2 rounded-md bg-green3 hover:bg-green3/80 font-nunito-bold"
+                className="text-xs md:text-sm text-background hover:text-primary flex items-center gap-1 border px-3 md:px-5 py-2 rounded-md bg-green3 hover:bg-green3/80 font-nunito-bold"
               >
                 <LogOut size={18} />
                 <span>Log out</span>
@@ -130,14 +130,14 @@ function AdminLayout() {
           </div>
         </header>
 
-        <main className="pt-[60px] p-4 md:p-6 ">
+        <main className="pt-[60px] p-4 md:p-6">
           <Outlet />
         </main>
       </div>
 
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-text/50 md:hidden"
+          className="fixed inset-0 z-30 bg-text/50 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

@@ -9,6 +9,7 @@ import {
   doc,
   serverTimestamp,
   orderBy,
+  updateDoc,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 
@@ -106,7 +107,15 @@ export const cancelAppointment = async (appointmentId) => {
       return false;
     }
 
-    await deleteDoc(doc(db, "appointments", appointmentId));
+    const appointmentRef = doc(db, "appointments", appointmentId);
+    await updateDoc(appointmentRef, {
+      status: "cancelled",
+      cancelledAt: serverTimestamp(),
+    });
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    await deleteDoc(appointmentRef);
+
     return true;
   } catch (error) {
     console.error("Error canceling appointment:", error);

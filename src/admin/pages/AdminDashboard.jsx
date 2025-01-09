@@ -8,6 +8,7 @@ import {
   Package,
   UserPlus,
   PawPrint,
+  Shield,
 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
@@ -39,9 +40,13 @@ function MetricCard({ title, value, change, icon: Icon }) {
   );
 }
 
-function ActivityItem({ title, description, time, icon: Icon }) {
+function ActivityItem({ title, description, time, icon: Icon, status }) {
   return (
-    <div className="flex items-start space-x-4 p-5 hover:bg-green3/10 rounded-lg">
+    <div
+      className={`flex items-start space-x-4 p-5 hover:bg-green3/10 rounded-lg relative ${
+        status === "cancelled" ? "opacity-60" : ""
+      }`}
+    >
       <div className="bg-green3/10 p-2 rounded-full text-green2">
         <Icon size={20} />
       </div>
@@ -52,6 +57,13 @@ function ActivityItem({ title, description, time, icon: Icon }) {
         </p>
         <p className="text-xs font-nunito-bold text-gray-400 mt-1">{time}</p>
       </div>
+      {status === "cancelled" && (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <span className="bg-red/10 text-red text-xs font-nunito-bold tracking-wide px-2.5 py-0.5 rounded-full">
+            Cancelled
+          </span>
+        </div>
+      )}
     </div>
   );
 }
@@ -158,6 +170,28 @@ function Dashboard() {
     const setupActivityListeners = () => {
       const activityItems = new Map();
 
+      const adminActivityUnsubscribe = onSnapshot(
+        query(collection(db, "adminActivity"), orderBy("createdAt", "desc")),
+        (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type === "added") {
+              const activity = change.doc.data();
+              toast.info(activity.title);
+              activityItems.set(change.doc.id, {
+                id: change.doc.id,
+                type: "security",
+                title: activity.title,
+                description: activity.description,
+                time: "Just now",
+                icon: Shield,
+                timestamp: activity.createdAt?.seconds || Date.now() / 1000,
+              });
+              updateRecentActivity();
+            }
+          });
+        }
+      );
+
       const appointmentsUnsubscribe = onSnapshot(
         query(collection(db, "appointments"), orderBy("createdAt", "desc")),
         (snapshot) => {
@@ -174,9 +208,20 @@ function Dashboard() {
                 description: `${appointment.petName} - ${appointment.service}`,
                 time: "Just now",
                 icon: Clock,
+                status: appointment.status || "active",
                 timestamp: appointment.createdAt?.seconds || Date.now() / 1000,
               });
               updateRecentActivity();
+            } else if (change.type === "modified") {
+              const appointment = change.doc.data();
+              const existingItem = activityItems.get(change.doc.id);
+              if (existingItem) {
+                activityItems.set(change.doc.id, {
+                  ...existingItem,
+                  status: appointment.status || "active",
+                });
+                updateRecentActivity();
+              }
             }
           });
         }
@@ -261,6 +306,7 @@ function Dashboard() {
       };
 
       return () => {
+        adminActivityUnsubscribe();
         appointmentsUnsubscribe();
         ordersUnsubscribe();
         usersUnsubscribe();

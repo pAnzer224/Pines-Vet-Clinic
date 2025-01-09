@@ -26,7 +26,7 @@ const Services = () => {
   return (
     <div id="services" className="min-h-screen bg-transparent">
       <div className="container mx-auto px-6 pb-20  font-nunito-bold">
-        <div className="max-w-5xl mx-auto sm:pt-20 lg:pt-0">
+        <div className="max-w-5xl mx-auto pt-20 lg:pt-0">
           <h1 className="text-4xl font-bold text-text mb-8 tracking-wide">
             What Highland Petvibes has to offer
           </h1>

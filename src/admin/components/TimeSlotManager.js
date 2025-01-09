@@ -116,10 +116,10 @@ const TimeSlotManager = () => {
           <div className="flex items-end">
             <button
               onClick={addTimeSlot}
-              className="flex items-center gap-2 px-4 py-2 bg-green2 text-white rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold h-10"
+              className="flex items-center gap-2 px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold h-10"
             >
               <PlusCircle size={20} />
-              Add Time Slot
+              Add time slot
             </button>
           </div>
         </div>

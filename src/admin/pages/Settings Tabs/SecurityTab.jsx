@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Eye, EyeOff, Info } from "lucide-react";
-import { doc, getDoc, setDoc } from "firebase/firestore";
+import { doc, getDoc, setDoc, collection, addDoc } from "firebase/firestore";
 import { db } from "../../../firebase-config";
 import LoadingSpinner from "../../../components/LoadingSpinner";
 
@@ -49,6 +49,15 @@ const SecurityTab = () => {
       const adminDocRef = doc(db, "admin", ADMIN_DOC_ID);
       const adminDoc = await getDoc(adminDocRef);
 
+      const activityCollectionRef = collection(db, "adminActivity");
+      const activityData = {
+        type: "security",
+        title: "Security Update",
+        description: "Admin credentials were changed",
+        createdAt: new Date(),
+        icon: "Shield",
+      };
+
       if (
         !adminDoc.exists() &&
         currentCreds.adminId === "admin123" &&
@@ -59,6 +68,10 @@ const SecurityTab = () => {
           password: newCreds.password,
           lastUpdated: new Date().toISOString(),
         });
+
+        activityData.title = "Admin Account Created";
+        activityData.description = "Initial admin credentials were set up";
+        await addDoc(activityCollectionRef, activityData);
         return true;
       }
 
@@ -75,6 +88,8 @@ const SecurityTab = () => {
           password: newCreds.password,
           lastUpdated: new Date().toISOString(),
         });
+
+        await addDoc(activityCollectionRef, activityData);
         return true;
       }
 

@@ -71,7 +71,7 @@ function CustomerCard({
               onDeleteCustomer(customer.id);
             }
           }}
-          className="text-primary hover:bg-red-100 rounded-full p-1 transition-colors"
+          className="text-primary hover:bg-red rounded-full p-1 transition-colors"
         >
           <Trash2 className="size-5 text-red" />
         </button>

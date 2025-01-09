@@ -23,21 +23,7 @@ import { collection, query, getDocs, where } from "firebase/firestore";
 import { db } from "../../firebase-config";
 
 const COLORS = ["#235840", "#5B9279", "#8FCB9B", "#D1E8D5"];
-
-const serviceBreakdown = [
-  { name: "Veterinary Consultations", value: 40 },
-  { name: "Grooming", value: 30 },
-  { name: "Dental Care", value: 20 },
-  { name: "Vaccinations", value: 10 },
-];
-
-const servicesData = [
-  { month: "Jan", services: 200 },
-  { month: "Feb", services: 250 },
-  { month: "Mar", services: 300 },
-  { month: "Apr", services: 350 },
-  { month: "May", services: 400 },
-];
+const SERVICE_CATEGORIES = ["Consultation", "Grooming", "Dental Care"];
 
 function MetricCard({ title, value, icon: Icon }) {
   return (
@@ -51,6 +37,103 @@ function MetricCard({ title, value, icon: Icon }) {
           <Icon size={24} />
         </div>
       </div>
+    </div>
+  );
+}
+
+function AppointmentAccordion({ appointment, isOpen, onToggle }) {
+  const isPastAppointment = new Date(appointment.date) < new Date();
+  const displayStatus = isPastAppointment ? "Concluded" : appointment.status;
+
+  return (
+    <div className="border-2 border-green3/60 rounded-lg mb-2">
+      <button
+        onClick={onToggle}
+        className="w-full px-4 py-3 flex items-center justify-between bg-green3/10 rounded-t-lg"
+      >
+        <div className="flex items-center gap-4 flex-wrap">
+          <span className="font-nunito-bold text-green2">
+            {appointment.petName}
+          </span>
+          <div className="flex items-center">
+            <span className="font-nunito-bold text-primary mr-2">
+              {appointment.userName}
+            </span>
+          </div>
+          <span className="font-nunito-semibold text-primary">
+            {appointment.price}
+          </span>
+        </div>
+        <div className="flex items-center gap-3">
+          <span className="text-text/60 hidden sm:inline text-sm">
+            {appointment.date}
+          </span>
+          {isOpen ? (
+            <ChevronUp className="text-green2" />
+          ) : (
+            <ChevronDown className="text-green2" />
+          )}
+        </div>
+      </button>
+      {isOpen && (
+        <div className="p-4">
+          <div className="sm:hidden mb-2 text-text/60">{appointment.date}</div>
+          <div className="space-y-2">
+            <p className="text-text">
+              <span className="font-semibold">Service:</span>{" "}
+              {appointment.service}
+            </p>
+            <p className="text-text">
+              <span className="font-semibold">Category:</span>{" "}
+              {appointment.category}
+            </p>
+            <p className="text-text">
+              <span className="font-semibold">Duration:</span>{" "}
+              {appointment.duration}
+            </p>
+            <p className="text-text">
+              <span className="font-semibold">Status:</span> {displayStatus}
+            </p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function AppointmentHistoryAccordion({ appointments }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [openAppointmentId, setOpenAppointmentId] = useState(null);
+
+  return (
+    <div className="bg-background rounded-lg shadow-sm border-2 border-green3/60">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full px-6 py-4 flex items-center justify-between bg-green3/10"
+      >
+        <h3 className="font-nunito-bold text-green2">Appointment History</h3>
+        {isOpen ? (
+          <ChevronUp className="text-green2" />
+        ) : (
+          <ChevronDown className="text-green2" />
+        )}
+      </button>
+      {isOpen && (
+        <div className="p-6 space-y-2">
+          {appointments.map((appointment) => (
+            <AppointmentAccordion
+              key={appointment.id}
+              appointment={appointment}
+              isOpen={openAppointmentId === appointment.id}
+              onToggle={() =>
+                setOpenAppointmentId(
+                  openAppointmentId === appointment.id ? null : appointment.id
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
@@ -172,8 +255,11 @@ function Reports() {
     totalProducts: 0,
     monthlyRevenue: [],
     monthlyProducts: [],
+    monthlyServices: [],
+    serviceBreakdown: [],
   });
   const [orders, setOrders] = useState([]);
+  const [appointments, setAppointments] = useState([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -239,8 +325,76 @@ function Reports() {
           (productMonthlyData[monthKey] || 0) + data.quantity;
       });
 
+      const appointmentsQuery = query(collection(db, "appointments"));
+      const appointmentsSnapshot = await getDocs(appointmentsQuery);
+      const appointmentsData = appointmentsSnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      const serviceMonthlyData = {};
+      const serviceCategories = {
+        Consultation: 0,
+        Grooming: 0,
+        "Dental Care": 0,
+      };
+      let appointmentRevenue = 0;
+
+      appointmentsData.forEach((appointment) => {
+        const appointmentDate = new Date(appointment.date);
+        const monthKey = monthNames[appointmentDate.getMonth()];
+        if (appointmentDate < new Date()) {
+          const price = parseInt(appointment.price?.replace(/[^\d]/g, "")) || 0;
+          appointmentRevenue += price;
+          if (
+            appointment.category &&
+            SERVICE_CATEGORIES.includes(appointment.category)
+          ) {
+            serviceCategories[appointment.category]++;
+          }
+          if (!serviceMonthlyData[monthKey]) {
+            serviceMonthlyData[monthKey] = {
+              Consultation: 0,
+              Grooming: 0,
+              "Dental Care": 0,
+            };
+          }
+
+          if (
+            appointment.category &&
+            SERVICE_CATEGORIES.includes(appointment.category)
+          ) {
+            serviceMonthlyData[monthKey][appointment.category]++;
+          }
+        }
+      });
+
+      const totalServices = Object.values(serviceCategories).reduce(
+        (a, b) => a + b,
+        0
+      );
+      const serviceBreakdown = Object.entries(serviceCategories).map(
+        ([name, value]) => ({
+          name,
+          value:
+            totalServices > 0 ? Math.round((value / totalServices) * 100) : 0,
+        })
+      );
+
+      const servicesData = Object.entries(serviceMonthlyData)
+        .map(([month, categories]) => ({
+          month,
+          ...categories,
+        }))
+        .sort(
+          (a, b) => monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
+        );
+
       const revenueData = Object.entries(monthlyData)
-        .map(([month, revenue]) => ({ month, revenue }))
+        .map(([month, revenue]) => ({
+          month,
+          revenue: revenue + (appointmentRevenue || 0),
+        }))
         .sort(
           (a, b) => monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
         );
@@ -255,14 +409,17 @@ function Reports() {
       const usersSnapshot = await getDocs(usersQuery);
 
       setMetrics({
-        totalRevenue,
+        totalRevenue: totalRevenue + appointmentRevenue,
         totalCustomers: usersSnapshot.size,
         totalProducts,
         monthlyRevenue: revenueData,
         monthlyProducts: productsData,
+        monthlyServices: servicesData,
+        serviceBreakdown,
       });
 
       setOrders(Object.values(orderGroups).sort((a, b) => b.date - a.date));
+      setAppointments(appointmentsData);
     };
 
     fetchData();
@@ -300,6 +457,7 @@ function Reports() {
         />
       </div>
 
+      <AppointmentHistoryAccordion appointments={appointments} />
       <OrderHistoryAccordion orders={orders} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
@@ -338,7 +496,7 @@ function Reports() {
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
-                  data={serviceBreakdown}
+                  data={metrics.serviceBreakdown}
                   dataKey="value"
                   nameKey="name"
                   cx="50%"
@@ -347,7 +505,7 @@ function Reports() {
                   fill="#235840"
                   label
                 >
-                  {serviceBreakdown.map((entry, index) => (
+                  {metrics.serviceBreakdown.map((entry, index) => (
                     <Cell
                       key={`cell-${index}`}
                       fill={COLORS[index % COLORS.length]}
@@ -401,7 +559,7 @@ function Reports() {
           <div className="w-full h-[300px] min-h-[250px]">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart
-                data={servicesData}
+                data={metrics.monthlyServices}
                 margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
               >
                 <XAxis dataKey="month" stroke="#5B9279" />
@@ -414,9 +572,24 @@ function Reports() {
                 />
                 <Line
                   type="monotone"
-                  dataKey="services"
+                  dataKey="Consultation"
+                  stroke="#235840"
+                  strokeWidth={3}
+                  name="Consultation"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Grooming"
+                  stroke="#8FCB9B"
+                  strokeWidth={3}
+                  name="Grooming"
+                />
+                <Line
+                  type="monotone"
+                  dataKey="Dental Care"
                   stroke="#D1E8D5"
                   strokeWidth={3}
+                  name="Dental Care"
                 />
               </LineChart>
             </ResponsiveContainer>

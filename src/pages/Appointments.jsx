@@ -1,6 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CreditCard, Wallet, CalendarDays, PlusCircle } from "lucide-react";
+import {
+  CalendarFold,
+  CreditCard,
+  Wallet,
+  CalendarDays,
+  PlusCircle,
+} from "lucide-react";
 import {
   storeAppointment,
   getStoredAppointments,
@@ -35,7 +41,6 @@ export default function Appointments() {
       setCurrentUser(user);
     });
 
-    // Get overlay settings from localStorage
     const savedOverlaySettings = localStorage.getItem("overlaySettings");
     if (savedOverlaySettings) {
       setOverlaySettings(JSON.parse(savedOverlaySettings));
@@ -50,7 +55,6 @@ export default function Appointments() {
         try {
           const fetchedAppointments = await getStoredAppointments();
 
-          // Filter appointments for the current user
           const userAppointments = fetchedAppointments.filter(
             (apt) => apt.userId === currentUser.uid
           );
@@ -163,6 +167,12 @@ export default function Appointments() {
     } else {
       setIsAuthPromptOpen(true);
     }
+  };
+
+  const isAppointmentPast = (dateString) => {
+    const [date, time] = dateString.split(", ");
+    const appointmentDate = new Date(`${date} ${time}`);
+    return appointmentDate < new Date();
   };
 
   return (
@@ -322,41 +332,62 @@ export default function Appointments() {
               No appointments scheduled
             </div>
           ) : (
-            <div className="space-y-6">
-              {appointments.map((apt) => (
-                <div
-                  key={apt.id}
-                  className="relative pl-8 pb-6 border-l-[1.6px] border-green2 last:pb-0"
-                >
-                  <div className="absolute left-[-6px] top-0 w-3 h-3 bg-green3 rounded-full border-[1.6px] border-green2" />
-                  <p className="font-nunito-semibold text-text tracking-wide">
-                    {apt.date || "No date specified"}
-                  </p>
-                  <p className="text-text/80 tracking-wide">
-                    {apt.service || "No service specified"} for{" "}
-                    {apt.petName || "Unknown Pet"}
-                  </p>
-                  <p className="text-text/60 text-sm tracking-wide">
-                    Payment: {apt.paymentMethod || "Not specified"}
-                  </p>
-                  {apt.price && (
-                    <p className="text-text/60 text-sm tracking-wide">
-                      Price: {apt.price}
-                    </p>
-                  )}
-                  {apt.duration && (
-                    <p className="text-text/60 text-sm tracking-wide">
-                      Duration: {apt.duration}
-                    </p>
-                  )}
-                  <button
-                    className="absolute right-2 bottom-0 text-red hover:text-red/80"
-                    onClick={() => handleCancelAppointment(apt.id)}
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ))}
+            <div
+              className={`space-y-6 ${
+                appointments.length > 3 ? "h-96 overflow-y-auto pr-4" : ""
+              }`}
+            >
+              {appointments.map((apt) => {
+                const isPast = isAppointmentPast(apt.date);
+                return (
+                  <div key={apt.id} className="relative pl-8 pb-6 last:pb-0">
+                    <div className="absolute left-0 top-0 bottom-0 flex flex-col items-center z-20">
+                      <div className="w-3 h-3 bg-green3 rounded-full border-[1.6px] border-green2" />
+                      <div className="w-[1.6px] h-full bg-green2" />
+                    </div>
+
+                    <div className="relative">
+                      {isPast && (
+                        <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-10">
+                          <span className="text-green2 font-bold tracking-wide px-5 py-2 bg-[#C6E3CB] rounded-full">
+                            Concluded
+                          </span>
+                        </div>
+                      )}
+
+                      <p className="font-nunito-semibold text-text/70 tracking-wide mb-2 text-sm flex items-center">
+                        <CalendarFold className="mr-1 size-4" />
+                        {apt.date || "No date specified"}
+                      </p>
+                      <p className="text-primary">
+                        {apt.service || "No service specified"} for{" "}
+                        {apt.petName || "Unknown Pet"}
+                      </p>
+                      <p className="text-text/60 text-sm tracking-wide">
+                        Payment: {apt.paymentMethod || "Not specified"}
+                      </p>
+                      {apt.price && (
+                        <p className="text-text/60 text-sm tracking-wide">
+                          Price: {apt.price}
+                        </p>
+                      )}
+                      {apt.duration && (
+                        <p className="text-text/60 text-sm tracking-wide">
+                          Duration: {apt.duration}
+                        </p>
+                      )}
+                      {!isPast && (
+                        <button
+                          className="absolute right-2 bottom-0 text-red hover:text-red/80"
+                          onClick={() => handleCancelAppointment(apt.id)}
+                        >
+                          Cancel
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

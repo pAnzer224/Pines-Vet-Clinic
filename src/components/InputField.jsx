@@ -19,9 +19,7 @@ const InputField = ({
         onChange={onChange}
         className={`peer h-10 w-full px-4 py-4 rounded-xl bg-green3/10 text-text placeholder-transparent focus:outline-none transition-all ease-in-out duration-200 font-nunito-semibold 
                      pt-2 peer-focus:pt-4 peer-placeholder-shown:pt-2
-                     ${
-                       error ? "border-2 border-red-500" : "border-transparent"
-                     }`}
+                     ${error ? "border-2 border-red" : "border-transparent"}`}
         placeholder=" "
         required={required}
       />
@@ -34,7 +32,7 @@ const InputField = ({
         {label}
       </label>
       {error && (
-        <p className="text-red-500 text-xs mt-1 absolute left-4">{error}</p>
+        <p className="text-red text-xs mt-1 absolute left-4">{error}</p>
       )}
     </div>
   );

@@ -73,7 +73,7 @@ function AppointmentCard({ appointment, onDeleteAppointment }) {
   );
 }
 
-function Appointments() {
+function AdminAppointments() {
   const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [appointments, setAppointments] = useState([]);
@@ -160,7 +160,7 @@ function Appointments() {
         />
         <div className="flex items-center gap-2">
           <span className="text-sm font-nunito-semibold text-text/80">
-            Show Past Appointments
+            Show past appointments
           </span>
           <ToggleSwitch
             isEnabled={showPastAppointments}
@@ -186,4 +186,4 @@ function Appointments() {
   );
 }
 
-export default Appointments;
+export default AdminAppointments;

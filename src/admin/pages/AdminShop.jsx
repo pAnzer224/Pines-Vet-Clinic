@@ -179,7 +179,7 @@ function AdminShop() {
 
   return (
     <div className="space-y-6 mt-14">
-      <div className="flex justify-between items-center">
+      <div className="flex justify-between items-center gap-4">
         <StatusDropdown
           statusOptions={categories}
           selectedStatus={selectedCategory}
@@ -201,18 +201,18 @@ function AdminShop() {
             setSelectedImage(null);
             setIsModalOpen(true);
           }}
-          className="flex items-center px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito"
+          className="inline-flex items-center whitespace-nowrap px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito text-sm md:text-base"
         >
-          <PlusCircle className="w-4 h-4 mr-2" />
+          <PlusCircle className="w-4 h-4 md:w-5 md:h-5 mr-2" />
           Add Product
         </button>
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 font-nunito-semibold tracking-wide text-sm">
+        <div className="fixed inset-0 flex items-center justify-center z-50 font-nunito-semibold tracking-wide text-sm md:text-base px-4">
           <form
             onSubmit={handleAddProduct}
-            className="bg-background p-8 rounded-2xl w-96 border-[1.6px] border-green2"
+            className="bg-background p-4 sm:p-8 rounded-2xl w-full max-w-md border-[1.6px] border-green2"
           >
             <input
               type="text"
@@ -221,18 +221,20 @@ function AdminShop() {
               onChange={(e) =>
                 setNewProduct({ ...newProduct, name: e.target.value })
               }
-              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent text-sm md:text-base"
               required
             />
             <div className="w-full mb-4">
-              <p className="text-sm text-text/70 mb-2">Select Product Image:</p>
+              <p className="text-sm md:text-base text-text/70 mb-2">
+                Select Product Image:
+              </p>
               <div className="flex space-x-2 overflow-x-auto pb-2">
                 {shopImages.map((image, index) => (
                   <div
                     key={index}
                     onClick={() => setSelectedImage(image)}
                     className={`
-                      w-24 h-24 flex-shrink-0 rounded-lg cursor-pointer 
+                      w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 rounded-lg cursor-pointer 
                       border-2 transition-all duration-200
                       ${
                         selectedImage === image
@@ -256,7 +258,7 @@ function AdminShop() {
               onChange={(e) =>
                 setNewProduct({ ...newProduct, category: e.target.value })
               }
-              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent text-sm md:text-base"
               required
             >
               <option value="">Select Category</option>
@@ -272,12 +274,12 @@ function AdminShop() {
               onChange={(e) =>
                 setNewProduct({ ...newProduct, description: e.target.value })
               }
-              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent text-sm md:text-base"
               required
               rows={3}
             />
             <div className="relative mb-2">
-              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 font-nunito-bold text-primary/80">
+              <span className="absolute left-3 top-1/2 transform -translate-y-1/2 font-nunito-bold text-primary/80 text-sm md:text-base">
                 ₱
               </span>
               <input
@@ -288,7 +290,7 @@ function AdminShop() {
                   const value = e.target.value.replace(/[^0-9.]/g, "");
                   setNewProduct({ ...newProduct, price: value });
                 }}
-                className="w-full p-2 pl-7 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+                className="w-full p-2 pl-7 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent text-sm md:text-base"
                 required
               />
             </div>
@@ -300,20 +302,20 @@ function AdminShop() {
                 const value = e.target.value.replace(/[^0-9]/g, "");
                 setNewProduct({ ...newProduct, stock: value });
               }}
-              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent"
+              className="w-full mb-2 p-2 px-4 border-[1.6px] border-green2 rounded-lg focus:outline-none focus:ring-2 focus:ring-green2 focus:border-transparent text-sm md:text-base"
               required
             />
             <div className="flex justify-end space-x-3">
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                className="px-4 py-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors font-nunito"
+                className="px-4 py-2 bg-gray-200 rounded-full hover:bg-gray-300 transition-colors font-nunito text-sm md:text-base"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
+                className="px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold text-sm md:text-base"
               >
                 {isEditMode ? "Update Product" : "Add Product"}
               </button>
@@ -326,13 +328,19 @@ function AdminShop() {
         <table className="w-full bg-background border-collapse">
           <thead>
             <tr className="bg-green3/20 font-nunito-bold text-text">
-              <th className="p-3 text-left">Product Name</th>
-              <th className="p-3 text-left">Category</th>
-              <th className="p-3 text-left">Description</th>
-              <th className="p-3 text-left">Price</th>
-              <th className="p-3 text-left">Stock</th>
-              <th className="p-3 text-left">Status</th>
-              <th className="p-3 text-center">Actions</th>
+              <th className="p-3 text-left text-base">Product Name</th>
+              <th className="hidden md:table-cell p-3 text-left text-base">
+                Category
+              </th>
+              <th className="hidden md:table-cell p-3 text-left text-base">
+                Description
+              </th>
+              <th className="p-3 text-left text-base">Price/Stock</th>
+              <th className="hidden md:table-cell p-3 text-left text-base">
+                Stock
+              </th>
+              <th className="p-3 text-left text-base">Status</th>
+              <th className="p-3 text-center text-base">Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -341,38 +349,61 @@ function AdminShop() {
                 key={product.id}
                 className="border-b border-green3/30 hover:bg-green3/10 font-nunito-semibold text-text/80"
               >
-                <td className="p-3 font-nunito-bold">{product.name}</td>
-                <td className="p-3">{product.category}</td>
-                <td className="p-3">{product.description}</td>
-                <td className="p-3">₱{product.price}</td>
-                <td className="p-3">{product.stock}</td>
+                <td className="p-3 font-nunito-bold text-base">
+                  {product.name}
+                </td>
+                <td className="hidden md:table-cell p-3 text-base">
+                  {product.category}
+                </td>
+                <td className="hidden md:table-cell p-3 text-base">
+                  {product.description}
+                </td>
+                <td className="p-3 text-base">
+                  <div className="flex flex-col">
+                    <span>₱{product.price}</span>
+                    <span
+                      className={`md:hidden text-base ${
+                        product.stock <= 20
+                          ? "text-yellow-600"
+                          : "text-green-600"
+                      }`}
+                    >
+                      {product.stock} left
+                    </span>
+                  </div>
+                </td>
+                <td className="hidden md:table-cell p-3 text-base">
+                  {product.stock}
+                </td>
                 <td className="p-3">
                   <span
                     className={`
-                    px-3 py-1 rounded-full text-xs font-nunito-bold
-                    ${
-                      product.status === "In Stock"
-                        ? "bg-green3/50 text-green-800"
-                        : "bg-yellow-100 text-yellow-800"
-                    }
-                  `}
+                  inline-flex whitespace-nowrap px-3 py-1 rounded-full text-base font-nunito-bold
+                  ${
+                    product.status === "In Stock"
+                      ? "bg-green3/50 text-green-800"
+                      : "bg-yellow-100 text-yellow-800"
+                  }
+                `}
                   >
                     {product.status}
                   </span>
                 </td>
-                <td className="p-3 flex justify-center space-x-2">
-                  <button
-                    onClick={() => handleEdit(product)}
-                    className="text-green2 hover:text-green2/80 transition-colors"
-                  >
-                    <Edit size={18} />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteProduct(product.id)}
-                    className="text-red/80 hover:text-red transition-colors"
-                  >
-                    <Trash2 size={18} />
-                  </button>
+                <td className="p-3">
+                  <div className="flex justify-center space-x-2">
+                    <button
+                      onClick={() => handleEdit(product)}
+                      className="text-green2 hover:text-green2/80 transition-colors"
+                    >
+                      <Edit className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteProduct(product.id)}
+                      className="text-red/80 hover:text-red transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -380,9 +411,8 @@ function AdminShop() {
         </table>
       </div>
 
-      {/* Order History Section */}
       <div className="mt-12">
-        <h2 className="text-2xl font-nunito-bold text-green2 mb-6">
+        <h2 className="text-3xl font-nunito-bold text-green2 mb-6">
           Order History
         </h2>
         <div className="grid gap-4">
@@ -393,10 +423,10 @@ function AdminShop() {
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-lg font-nunito-bold text-primary">
+                  <h3 className="text-xl font-nunito-bold text-primary">
                     {order.userName}
                   </h3>
-                  <p className="text-sm">
+                  <p className="text-base">
                     <span className="font-nunito-semibold text-green2">
                       Product:
                     </span>{" "}
@@ -404,11 +434,11 @@ function AdminShop() {
                       {order.productName}
                     </span>
                   </p>
-                  <p className="text-primary font-nunito-semibold mt-2">
+                  <p className="text-primary font-nunito-semibold mt-2 text-lg">
                     ₱{order.price * order.quantity}
                   </p>
                   <div className="mt-2">
-                    <span className="text-sm text-text/60 font-nunito-semibold">
+                    <span className="text-base text-text/60 font-nunito-semibold">
                       Order Date:{" "}
                       {order.createdAt
                         ? new Date(
@@ -427,9 +457,9 @@ function AdminShop() {
                     order.status !== "Received" && (
                       <button
                         onClick={() => handleConfirmOrder(order.id)}
-                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2"
+                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2 text-base"
                       >
-                        <CheckCircle size={18} />
+                        <CheckCircle className="w-5 h-5" />
                         Confirm
                       </button>
                     )}
@@ -437,15 +467,15 @@ function AdminShop() {
                     order.status !== "Received" && (
                       <button
                         onClick={() => handleReceiveOrder(order.id)}
-                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2"
+                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2 text-base"
                       >
-                        <CheckCircle size={18} />
+                        <CheckCircle className="w-5 h-5" />
                         Received
                       </button>
                     )}
                   {order.status === "Received" && (
-                    <span className="px-4 py-2 bg-green3/30 text-text rounded-full border-[1.6px] border-green2 flex items-center gap-2">
-                      <CheckCircle size={18} />
+                    <span className="px-4 py-2 bg-green3/30 text-text rounded-full border-[1.6px] border-green2 flex items-center gap-2 text-base">
+                      <CheckCircle className="w-5 h-5" />
                       Completed
                     </span>
                   )}
