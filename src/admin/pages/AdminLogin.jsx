@@ -80,26 +80,28 @@ function AdminLogin() {
             />
           </div>
 
-          <div className="relative">
+          <div>
             <label
               htmlFor="password"
               className="block text-sm font-nunito-semibold text-green2"
             >
               Password
             </label>
-            <div className="relative">
+            <div className="relative mt-1">
               <input
                 type={showPassword ? "text" : "password"}
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 pr-10 border border-green3/60 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green3 focus:border-green3 text-primary font-nunito-semibold"
+                className="block w-full px-3 py-2 pr-10 border border-green3/60 rounded-md shadow-sm focus:outline-none focus:ring-1 focus:ring-green3 focus:border-green3 text-primary font-nunito-semibold [&::-ms-reveal]:hidden [&::-ms-clear]:hidden [&::-webkit-inner-spin-button]:hidden [&::-webkit-outer-spin-button]:hidden [&::-webkit-credentials-auto-fill-button]:hidden"
                 required
+                autoComplete="new-password"
               />
               <button
                 type="button"
                 onClick={togglePasswordVisibility}
-                className="absolute inset-y-0 right-0 px-3 flex items-center text-green2 hover:text-primary"
+                className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center text-green2 w-6 h-6"
+                tabIndex="-1"
               >
                 {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
               </button>

@@ -1,5 +1,5 @@
 import React from "react";
-import TimeSlotManager from "../../../admin/components/TimeSlotManager";
+import TimeSlotManager from "../../components/TimeSlotManager";
 
 const SchedulingTab = () => {
   return <TimeSlotManager />;

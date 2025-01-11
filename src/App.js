@@ -30,7 +30,7 @@ import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminAppointments from "./admin/pages/AdminAppointments";
 import AdminShop from "./admin/pages/AdminShop";
 import AdminCustomers from "./admin/pages/AdminCustomers";
-import AdminReports from "./admin/pages/AdminReports";
+import AdminReports from "./admin/pages/Reports/AdminReports";
 import AdminSettings from "./admin/pages/Settings Tabs/AdminSettings";
 
 import UserLayout from "./userDashboard/components/userLayout";

@@ -164,7 +164,7 @@ function AddCustomerModal({ isOpen, onClose, onCustomerAdded }) {
             </button>
             <button
               type="submit"
-              className="w-full px-4 py-2 bg-primary text-white rounded-full hover:bg-primary/80 transition-colors font-nunito"
+              className="w-full px-4 py-2 bg-primary text-background rounded-full hover:bg-primary/80 transition-colors font-nunito"
             >
               Add Customer
             </button>

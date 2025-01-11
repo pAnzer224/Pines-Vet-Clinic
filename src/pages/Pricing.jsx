@@ -80,7 +80,7 @@ const PricingPage = () => {
                 `}
               >
                 {tier.highlighted && (
-                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary px-4 py-1 rounded-full text-white text-sm">
+                  <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary px-4 py-1 rounded-full text-background text-sm">
                     Most Popular
                   </div>
                 )}

@@ -93,7 +93,7 @@ const PetAddModal = ({ isOpen, onClose, onPetAdded, userId }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-black/50 z-[200] flex items-center justify-center"
+      className="fixed inset-0 bg-text/50 z-[200] flex items-center justify-center"
       onClick={onClose}
     >
       <div

@@ -67,11 +67,12 @@ const CartModal = ({ isOpen, onClose }) => {
       return;
     }
 
-    const batch = writeBatch(db);
-
     try {
-      for (const item of cartItems) {
-        await addDoc(collection(db, "orders"), {
+      const batch = writeBatch(db);
+      const timestamp = serverTimestamp(); // Create a single timestamp for all orders
+
+      const orderPromises = cartItems.map(async (item) => {
+        const orderRef = await addDoc(collection(db, "orders"), {
           userId: currentUser.uid,
           productId: item.productId,
           productName: item.productName,
@@ -79,18 +80,25 @@ const CartModal = ({ isOpen, onClose }) => {
           price: item.price,
           quantity: item.quantity,
           status: "Pending",
-          createdAt: serverTimestamp(),
+          createdAt: timestamp, // Use the same timestamp
           userName: currentUser.displayName || "Unknown User",
         });
 
         const cartItemRef = doc(db, "cart", item.id);
         batch.delete(cartItemRef);
-      }
 
+        return orderRef;
+      });
+
+      await Promise.all(orderPromises);
       await batch.commit();
-      toast.success("Order placed successfully!");
-      onClose();
-      navigate("/user/orders");
+
+      // Add a small delay before navigation to ensure Firestore has time to update
+      setTimeout(() => {
+        toast.success("Order placed successfully!");
+        onClose();
+        navigate("/user/orders");
+      }, 1000);
     } catch (error) {
       console.error("Error placing order:", error);
       toast.error("Failed to place order");

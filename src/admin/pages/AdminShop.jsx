@@ -10,6 +10,7 @@ import {
   updateDoc,
   onSnapshot,
   query,
+  orderBy,
 } from "firebase/firestore";
 
 function importAllImages(requireContext) {
@@ -49,6 +50,10 @@ function AdminShop() {
   useEffect(() => {
     const productsCollectionRef = collection(db, "products");
     const ordersCollectionRef = collection(db, "orders");
+    const ordersQuery = query(
+      ordersCollectionRef,
+      orderBy("createdAt", "desc")
+    );
 
     const unsubscribeProducts = onSnapshot(
       query(productsCollectionRef),
@@ -65,7 +70,7 @@ function AdminShop() {
     );
 
     const unsubscribeOrders = onSnapshot(
-      query(ordersCollectionRef),
+      ordersQuery,
       (snapshot) => {
         const fetchedOrders = snapshot.docs.map((doc) => ({
           id: doc.id,
@@ -171,11 +176,34 @@ function AdminShop() {
     }
   };
 
+  const handleDeleteOrder = async (orderId) => {
+    try {
+      await deleteDoc(doc(db, "orders", orderId));
+    } catch (e) {
+      console.error("Error deleting order: ", e);
+    }
+  };
+
   const filteredProducts = products.filter(
     (product) =>
       selectedCategory === "All Categories" ||
       product.category === selectedCategory
   );
+
+  const sortedOrders = [...orders].sort((a, b) => {
+    const statusOrder = {
+      Pending: 0,
+      Cancelled: 0,
+      Confirmed: 1,
+      Received: 2,
+    };
+
+    if (statusOrder[a.status] !== statusOrder[b.status]) {
+      return statusOrder[a.status] - statusOrder[b.status];
+    }
+
+    return b.createdAt.seconds - a.createdAt.seconds;
+  });
 
   return (
     <div className="space-y-6 mt-14">
@@ -411,22 +439,25 @@ function AdminShop() {
         </table>
       </div>
 
-      <div className="mt-12">
-        <h2 className="text-3xl font-nunito-bold text-green2 mb-6">
+      <div className="mt-8">
+        <h2 className="text-2xl font-nunito-bold text-green2 mb-4">
           Order History
         </h2>
-        <div className="grid gap-4">
-          {orders.map((order) => (
+        <span className="px-2.5 py-1 bg-green3/30 text-green2 rounded-full text-sm font-nunito-bold border border-green2">
+          {orders.length} Orders
+        </span>
+        <div className="grid gap-3 pt-5">
+          {sortedOrders.map((order) => (
             <div
               key={order.id}
-              className="bg-background/95 p-6 rounded-xl border-[1.6px] border-green2 shadow-lg"
+              className="bg-background/95 p-4 rounded-lg border border-green2/60 shadow-sm hover:shadow-[0_0_0_1px] hover:shadow-green2"
             >
               <div className="flex justify-between items-start">
                 <div>
-                  <h3 className="text-xl font-nunito-bold text-primary">
+                  <h3 className="text-base font-nunito-bold text-primary">
                     {order.userName}
                   </h3>
-                  <p className="text-base">
+                  <p className="text-sm">
                     <span className="font-nunito-semibold text-green2">
                       Product:
                     </span>{" "}
@@ -434,11 +465,11 @@ function AdminShop() {
                       {order.productName}
                     </span>
                   </p>
-                  <p className="text-primary font-nunito-semibold mt-2 text-lg">
+                  <p className="text-primary font-nunito-semibold mt-1 text-base">
                     ₱{order.price * order.quantity}
                   </p>
-                  <div className="mt-2">
-                    <span className="text-base text-text/60 font-nunito-semibold">
+                  <div className="mt-1">
+                    <span className="text-sm text-text/60 font-nunito-semibold">
                       Order Date:{" "}
                       {order.createdAt
                         ? new Date(
@@ -457,9 +488,9 @@ function AdminShop() {
                     order.status !== "Received" && (
                       <button
                         onClick={() => handleConfirmOrder(order.id)}
-                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2 text-base"
+                        className="px-3 py-1.5 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border border-green2 flex items-center gap-1.5 text-sm"
                       >
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-4 h-4" />
                         Confirm
                       </button>
                     )}
@@ -467,18 +498,25 @@ function AdminShop() {
                     order.status !== "Received" && (
                       <button
                         onClick={() => handleReceiveOrder(order.id)}
-                        className="px-4 py-2 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center gap-2 text-base"
+                        className="px-3 py-1.5 bg-green3 text-text rounded-full hover:bg-green3/80 transition-colors border border-green2 flex items-center gap-1.5 text-sm"
                       >
-                        <CheckCircle className="w-5 h-5" />
+                        <CheckCircle className="w-4 h-4" />
                         Received
                       </button>
                     )}
                   {order.status === "Received" && (
-                    <span className="px-4 py-2 bg-green3/30 text-text rounded-full border-[1.6px] border-green2 flex items-center gap-2 text-base">
-                      <CheckCircle className="w-5 h-5" />
+                    <span className="px-3 py-1.5 bg-green3/30 text-text rounded-full border border-green2 flex items-center gap-1.5 text-sm">
+                      <CheckCircle className="w-4 h-4" />
                       Completed
                     </span>
                   )}
+                  <button
+                    onClick={() => handleDeleteOrder(order.id)}
+                    className="px-3 py-1.5 bg-red/10 text-red rounded-full hover:bg-red/20 transition-colors border border-red/60 flex items-center gap-1.5 text-sm"
+                  >
+                    <Trash2 className="size-4" />
+                    Delete
+                  </button>
                 </div>
               </div>
             </div>

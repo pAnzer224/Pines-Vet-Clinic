@@ -9,3 +9,8 @@ For Shop
 For Signup
       title: "Registration Closed"
       message: "New user registration is temporarily disabled. Please try again later."
+
+For UserOrders
+      title: "Orders Temporarily Unavailable"
+      message: "Our order processing system is currently undergoing maintenance. Your existing orders are safe and we'll be back shortly. 
+      Thank you for your patience."

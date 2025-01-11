@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import InputField from "../components/InputField";
+import FeatureOverlay from "../components/FeauterOverlay";
 import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../firebase-config";
 import { ArrowLeft, ArrowRight } from "lucide-react";
@@ -18,7 +19,28 @@ const SignUp = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showProceed, setShowProceed] = useState(false);
+  const [overlaySettings, setOverlaySettings] = useState({
+    isEnabled: false,
+    title: "",
+    message: "",
+  });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    // Load overlay settings from localStorage
+    const savedOverlaySettings = localStorage.getItem("overlaySettings");
+    if (savedOverlaySettings) {
+      const settings = JSON.parse(savedOverlaySettings);
+      // Get the signup specific settings
+      if (settings.signup) {
+        setOverlaySettings({
+          isEnabled: settings.signup.isEnabled,
+          title: settings.signup.title,
+          message: settings.signup.message,
+        });
+      }
+    }
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -219,6 +241,13 @@ const SignUp = () => {
           </AnimatePresence>
         </div>
       </motion.div>
+
+      {/* Feature Overlay */}
+      <FeatureOverlay
+        isEnabled={overlaySettings.isEnabled}
+        title={overlaySettings.title}
+        message={overlaySettings.message}
+      />
     </div>
   );
 };

@@ -1,4 +1,5 @@
 import React from "react";
+import { Link } from "react-router-dom";
 
 const FeatureOverlay = ({ isEnabled = true, title, message }) => {
   if (!isEnabled) return null;
@@ -10,7 +11,15 @@ const FeatureOverlay = ({ isEnabled = true, title, message }) => {
           <h2 className="text-2xl font-nunito-bold text-green2 mb-3">
             {title}
           </h2>
-          <p className="text-text/80 font-nunito-semibold text-md">{message}</p>
+          <p className="text-text/80 font-nunito-semibold text-md mb-10">
+            {message}
+          </p>
+          <div className="text-text/80 font-nunito-semibold text-sm ">
+            Return to{" "}
+            <Link to="/" className="text-primary hover:text-primary/80">
+              Home
+            </Link>
+          </div>
         </div>
       </div>
     </div>
