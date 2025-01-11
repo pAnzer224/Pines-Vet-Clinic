@@ -10,8 +10,34 @@ import {
   ProductsSoldChart,
   ServicesPerformedChart,
 } from "../Reports/components/BusinessGraphs";
+import StatusDropdown from "../../../components/StatusDropdown";
 
 const SERVICE_CATEGORIES = ["Consultation", "Grooming", "Dental Care"];
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+const getMonthDisplay = (date) => {
+  return date.toLocaleString("default", { month: "long", year: "numeric" });
+};
+
+const isSameMonth = (date1, date2) => {
+  return (
+    date1.getMonth() === date2.getMonth() &&
+    date1.getFullYear() === date2.getFullYear()
+  );
+};
 
 function MetricCard({ title, value, icon: Icon }) {
   return (
@@ -30,6 +56,8 @@ function MetricCard({ title, value, icon: Icon }) {
 }
 
 function Reports() {
+  const [selectedMonth, setSelectedMonth] = useState("all");
+  const [availableMonths, setAvailableMonths] = useState([]);
   const [metrics, setMetrics] = useState({
     totalRevenue: 0,
     totalCustomers: 0,
@@ -42,23 +70,17 @@ function Reports() {
   const [orders, setOrders] = useState([]);
   const [appointments, setAppointments] = useState([]);
 
+  const filterDataByMonth = (data, selectedMonth) => {
+    if (selectedMonth === "all") return data;
+    const targetDate = new Date(selectedMonth);
+    return data.filter((item) => {
+      const itemDate = new Date(item.date);
+      return isSameMonth(itemDate, targetDate);
+    });
+  };
+
   useEffect(() => {
     const fetchData = async () => {
-      const monthNames = [
-        "Jan",
-        "Feb",
-        "Mar",
-        "Apr",
-        "May",
-        "Jun",
-        "Jul",
-        "Aug",
-        "Sep",
-        "Oct",
-        "Nov",
-        "Dec",
-      ];
-
       const ordersQuery = query(
         collection(db, "orders"),
         where("status", "in", ["Confirmed", "Received"])
@@ -71,11 +93,13 @@ function Reports() {
       const monthlyData = {};
       const productMonthlyData = {};
       const processedOrders = new Set();
+      const months = new Set();
 
       ordersSnapshot.docs.forEach((doc) => {
         const data = doc.data();
         const timestamp = data.createdAt?.seconds * 1000;
         const orderDate = new Date(timestamp);
+        months.add(orderDate.toISOString().slice(0, 7));
         const monthKey = monthNames[orderDate.getMonth()];
         const orderTotal = data.price * data.quantity;
 
@@ -116,10 +140,14 @@ function Reports() {
         where("status", "==", "Concluded")
       );
       const appointmentsSnapshot = await getDocs(appointmentsQuery);
-      const appointmentsData = appointmentsSnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
+      const appointmentsData = appointmentsSnapshot.docs.map((doc) => {
+        const data = doc.data();
+        months.add(new Date(data.date).toISOString().slice(0, 7));
+        return {
+          id: doc.id,
+          ...data,
+        };
+      });
 
       const serviceMonthlyData = {};
       const serviceCategories = SERVICE_CATEGORIES.reduce((acc, category) => {
@@ -208,6 +236,14 @@ function Reports() {
       const usersQuery = query(collection(db, "users"));
       const usersSnapshot = await getDocs(usersQuery);
 
+      const sortedMonths = Array.from(months).sort().reverse();
+      setAvailableMonths(sortedMonths);
+
+      const currentMonth = new Date().toISOString().slice(0, 7);
+      if (sortedMonths.includes(currentMonth)) {
+        setSelectedMonth(currentMonth);
+      }
+
       setMetrics({
         totalRevenue: totalRevenue + appointmentRevenue,
         totalCustomers: usersSnapshot.size,
@@ -225,40 +261,104 @@ function Reports() {
     fetchData();
   }, []);
 
+  const filteredOrders = filterDataByMonth(orders, selectedMonth);
+  const filteredAppointments = filterDataByMonth(appointments, selectedMonth);
+
+  const filteredMetrics = {
+    ...metrics,
+    totalRevenue:
+      selectedMonth === "all"
+        ? metrics.totalRevenue
+        : filteredOrders.reduce((sum, order) => sum + order.total, 0) +
+          filteredAppointments.reduce(
+            (sum, apt) => sum + parseInt(apt.price?.replace(/[^\d]/g, "") || 0),
+            0
+          ),
+    totalProducts:
+      selectedMonth === "all"
+        ? metrics.totalProducts
+        : filteredOrders.reduce(
+            (sum, order) =>
+              sum +
+              order.items.reduce((itemSum, item) => itemSum + item.quantity, 0),
+            0
+          ),
+    totalCustomers:
+      selectedMonth === "all"
+        ? metrics.totalCustomers
+        : new Set([
+            ...filteredOrders.map((order) => order.userId),
+            ...filteredAppointments.map((apt) => apt.userId),
+          ]).size,
+  };
+
   return (
     <div className="max-w-[1600px] mx-auto space-y-6 mt-12">
       <div>
         <h1 className="text-2xl font-nunito-bold text-green2">
           Business Reports
         </h1>
-        <div className="flex items-center mt-5">
-          <BarChart2 className="mr-2 text-primary size-7" />
-          <p className="text-xl text-primary font-nunito-bold tracking-wide">
-            Comprehensive Business Analytics
-          </p>
+        <div className="relative mt-5">
+          <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
+            <div className="flex items-center">
+              <BarChart2 className="mr-2 text-primary size-7" />
+              <p className="text-xl text-primary font-nunito-bold tracking-wide">
+                Comprehensive Business Analytics
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 text-sm pt-4 sm:pt-0">
+              <span className="text-green2 font-nunito-semibold whitespace-nowrap">
+                Show results for:
+              </span>
+              <StatusDropdown
+                statusOptions={[
+                  "All Time",
+                  ...availableMonths.map((month) =>
+                    getMonthDisplay(new Date(month))
+                  ),
+                ]}
+                selectedStatus={
+                  selectedMonth === "all"
+                    ? "All Time"
+                    : getMonthDisplay(new Date(selectedMonth))
+                }
+                onStatusChange={(selected) => {
+                  if (selected === "All Time") {
+                    setSelectedMonth("all");
+                  } else {
+                    const monthDate = availableMonths.find(
+                      (month) => getMonthDisplay(new Date(month)) === selected
+                    );
+                    setSelectedMonth(monthDate);
+                  }
+                }}
+              />
+            </div>
+          </div>
         </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <MetricCard
           title="Total Revenue"
-          value={`₱${metrics.totalRevenue.toLocaleString()}`}
+          value={`₱${filteredMetrics.totalRevenue.toLocaleString()}`}
           icon={TrendingUp}
         />
         <MetricCard
           title="Total Customers"
-          value={metrics.totalCustomers.toLocaleString()}
+          value={filteredMetrics.totalCustomers.toLocaleString()}
           icon={Users}
         />
         <MetricCard
           title="Total Products Sold"
-          value={metrics.totalProducts.toLocaleString()}
+          value={filteredMetrics.totalProducts.toLocaleString()}
           icon={ShoppingBag}
         />
       </div>
 
-      <AppointmentHistory appointments={appointments} />
-      <OrderHistory orders={orders} />
+      <AppointmentHistory appointments={filteredAppointments} />
+      <OrderHistory orders={filteredOrders} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <MonthlyRevenueChart data={metrics.monthlyRevenue} />

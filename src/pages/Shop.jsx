@@ -22,6 +22,7 @@ import CartModal from "../userDashboard/components/cartModal";
 import StatusDropdown from "../components/StatusDropdown";
 import LoadingSpinner from "../components/LoadingSpinner";
 import FeatureOverlay from "../components/FeauterOverlay";
+import PromptModal from "../components/promptModal";
 
 const PRODUCTS_PER_PAGE = 12;
 
@@ -36,6 +37,7 @@ const Shop = () => {
   const [showTooltip, setShowTooltip] = useState(false);
   const [lastProduct, setLastProduct] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
   const { currentUser } = useAuth();
   const [overlaySettings, setOverlaySettings] = useState({
     isEnabled: false,
@@ -155,7 +157,7 @@ const Shop = () => {
 
   const handleAddToCart = async (product) => {
     if (!currentUser) {
-      toast.error("Please login to add items to cart");
+      setIsAuthPromptOpen(true);
       return;
     }
 
@@ -254,6 +256,10 @@ const Shop = () => {
           <div className="relative self-end sm:self-auto">
             <button
               onClick={() => {
+                if (!currentUser) {
+                  setIsAuthPromptOpen(true);
+                  return;
+                }
                 setIsCartOpen(true);
                 setShowTooltip(false);
               }}
@@ -354,6 +360,13 @@ const Shop = () => {
         )}
 
         <CartModal isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
+
+        <PromptModal
+          isOpen={isAuthPromptOpen}
+          onClose={() => setIsAuthPromptOpen(false)}
+          title="Authentication Required"
+          message="You need to be logged in to perform this action. Please log in or sign up to continue."
+        />
       </div>
     </div>
   );

@@ -415,7 +415,7 @@ export default function Appointments() {
         isOpen={isAuthPromptOpen}
         onClose={() => setIsAuthPromptOpen(false)}
         title="Authentication Required"
-        message="You need to be logged in to perform this action. Please login or sign up to continue."
+        message="You need to be logged in to perform this action. Please log in or sign up to continue."
       />
     </div>
   );
