@@ -11,6 +11,7 @@ import {
   ServicesPerformedChart,
 } from "../Reports/components/BusinessGraphs";
 import StatusDropdown from "../../../components/StatusDropdown";
+import ExportButton from "./components/ExportButton";
 
 const SERVICE_CATEGORIES = ["Consultation", "Grooming", "Dental Care"];
 const monthNames = [
@@ -236,7 +237,7 @@ function Reports() {
       const usersQuery = query(collection(db, "users"));
       const usersSnapshot = await getDocs(usersQuery);
 
-      const sortedMonths = Array.from(months).sort().reverse();
+      const sortedMonths = Array.from(months).sort();
       setAvailableMonths(sortedMonths);
 
       const currentMonth = new Date().toISOString().slice(0, 7);
@@ -307,32 +308,38 @@ function Reports() {
               </p>
             </div>
 
-            <div className="flex items-center gap-2 text-sm pt-4 sm:pt-0">
-              <span className="text-green2 font-nunito-semibold whitespace-nowrap">
-                Show results for:
-              </span>
-              <StatusDropdown
-                statusOptions={[
-                  "All Time",
-                  ...availableMonths.map((month) =>
-                    getMonthDisplay(new Date(month))
-                  ),
-                ]}
-                selectedStatus={
-                  selectedMonth === "all"
-                    ? "All Time"
-                    : getMonthDisplay(new Date(selectedMonth))
-                }
-                onStatusChange={(selected) => {
-                  if (selected === "All Time") {
-                    setSelectedMonth("all");
-                  } else {
-                    const monthDate = availableMonths.find(
-                      (month) => getMonthDisplay(new Date(month)) === selected
-                    );
-                    setSelectedMonth(monthDate);
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-green2 font-nunito-semibold whitespace-nowrap">
+                  Show results for:
+                </span>
+                <StatusDropdown
+                  statusOptions={[
+                    "All Time",
+                    ...availableMonths.map((month) =>
+                      getMonthDisplay(new Date(month))
+                    ),
+                  ]}
+                  selectedStatus={
+                    selectedMonth === "all"
+                      ? "All Time"
+                      : getMonthDisplay(new Date(selectedMonth))
                   }
-                }}
+                  onStatusChange={(selected) => {
+                    if (selected === "All Time") {
+                      setSelectedMonth("all");
+                    } else {
+                      const monthDate = availableMonths.find(
+                        (month) => getMonthDisplay(new Date(month)) === selected
+                      );
+                      setSelectedMonth(monthDate);
+                    }
+                  }}
+                />
+              </div>
+              <ExportButton
+                metrics={filteredMetrics}
+                selectedMonth={selectedMonth}
               />
             </div>
           </div>
@@ -361,13 +368,25 @@ function Reports() {
       <OrderHistory orders={filteredOrders} />
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <MonthlyRevenueChart data={metrics.monthlyRevenue} />
-        <ServiceBreakdownChart data={metrics.serviceBreakdown} />
+        <MonthlyRevenueChart
+          data={metrics.monthlyRevenue}
+          selectedMonth={selectedMonth}
+        />
+        <ServiceBreakdownChart
+          data={metrics.serviceBreakdown}
+          selectedMonth={selectedMonth}
+        />
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
-        <ProductsSoldChart data={metrics.monthlyProducts} />
-        <ServicesPerformedChart data={metrics.monthlyServices} />
+        <ProductsSoldChart
+          data={metrics.monthlyProducts}
+          selectedMonth={selectedMonth}
+        />
+        <ServicesPerformedChart
+          data={metrics.monthlyServices}
+          selectedMonth={selectedMonth}
+        />
       </div>
     </div>
   );

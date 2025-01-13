@@ -20,7 +20,7 @@ function StatusDropdown({
     >
       <button
         onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-        className="w-full px-4 py-2 bg-green3 text-text rounded-xl hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between font-nunito"
+        className="w-full px-4 py-2 bg-green3/90 text-primary rounded-xl hover:bg-green3/80 transition-colors border-[1.6px] border-green2 flex items-center justify-between font-nunito"
       >
         <span>{selectedStatus}</span>
         <ChevronDown className="w-4 h-4" />
@@ -32,7 +32,7 @@ function StatusDropdown({
             <button
               key={status}
               onClick={() => handleStatusSelect(status)}
-              className="w-full px-4 py-2 text-left hover:bg-green3/20 text-text transition-colors first:rounded-t-xl last:rounded-b-xl font-nunito"
+              className="w-full px-4 py-2 text-left hover:bg-green3/20 text-primary transition-colors first:rounded-t-xl last:rounded-b-xl font-nunito"
             >
               {status}
             </button>

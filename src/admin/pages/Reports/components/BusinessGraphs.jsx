@@ -9,25 +9,74 @@ import {
   Tooltip,
   Cell,
   ResponsiveContainer,
+  CartesianGrid,
 } from "recharts";
 
 const COLORS = ["#235840", "#5B9279", "#8FCB9B", "#D1E8D5"];
 const SERVICE_CATEGORIES = ["Consultation", "Grooming", "Dental Care"];
+const monthNames = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
 
 const formatCurrency = (value) => {
   return `₱${value.toLocaleString()}`;
 };
 
-export function MonthlyRevenueChart({ data }) {
+const filterDataByMonth = (data, selectedMonth) => {
+  if (selectedMonth === "all") return data;
+
+  const targetDate = new Date(selectedMonth);
+  const targetMonth = targetDate.getMonth();
+
+  // Get previous and next month indices
+  const prevMonth = targetMonth === 0 ? 11 : targetMonth - 1;
+  const nextMonth = targetMonth === 11 ? 0 : targetMonth + 1;
+
+  return data.filter((item) => {
+    const itemMonth = monthNames.indexOf(item.month);
+    return [prevMonth, targetMonth, nextMonth].includes(itemMonth);
+  });
+};
+
+const sortByMonth = (data) => {
+  const currentDate = new Date();
+  const currentMonth = currentDate.getMonth();
+
+  return [...data].sort((a, b) => {
+    let monthA = monthNames.indexOf(a.month);
+    let monthB = monthNames.indexOf(b.month);
+
+    if (monthA > currentMonth) monthA -= 12;
+    if (monthB > currentMonth) monthB -= 12;
+
+    return monthA - monthB;
+  });
+};
+
+export function MonthlyRevenueChart({ data, selectedMonth }) {
+  const filteredData = sortByMonth(filterDataByMonth(data, selectedMonth));
+
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <h3 className="font-nunito-bold text-green2 mb-6">Monthly Revenue</h3>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={data}
+            data={filteredData}
             margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
           >
+            <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
             <XAxis dataKey="month" stroke="#5B9279" />
             <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
             <Tooltip
@@ -42,7 +91,8 @@ export function MonthlyRevenueChart({ data }) {
               dataKey="revenue"
               name="Revenue"
               stroke="#235840"
-              strokeWidth={3}
+              strokeWidth={3.5}
+              opacity={1}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -93,16 +143,19 @@ export function ServiceBreakdownChart({ data }) {
   );
 }
 
-export function ProductsSoldChart({ data }) {
+export function ProductsSoldChart({ data, selectedMonth }) {
+  const filteredData = sortByMonth(filterDataByMonth(data, selectedMonth));
+
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <h3 className="font-nunito-bold text-green2 mb-6">Products Sold</h3>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={data}
+            data={filteredData}
             margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
           >
+            <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
             <XAxis dataKey="month" stroke="#5B9279" />
             <YAxis
               stroke="#5B9279"
@@ -120,7 +173,8 @@ export function ProductsSoldChart({ data }) {
               dataKey="products"
               name="Products"
               stroke="#8FCB9B"
-              strokeWidth={3}
+              strokeWidth={3.5}
+              opacity={1}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -129,16 +183,19 @@ export function ProductsSoldChart({ data }) {
   );
 }
 
-export function ServicesPerformedChart({ data }) {
+export function ServicesPerformedChart({ data, selectedMonth }) {
+  const filteredData = sortByMonth(filterDataByMonth(data, selectedMonth));
+
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <h3 className="font-nunito-bold text-green2 mb-6">Services Performed</h3>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={data}
+            data={filteredData}
             margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
           >
+            <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
             <XAxis dataKey="month" stroke="#5B9279" />
             <YAxis stroke="#5B9279" allowDecimals={false} />
             <Tooltip
@@ -154,8 +211,8 @@ export function ServicesPerformedChart({ data }) {
                 dataKey={category}
                 name={category}
                 stroke={COLORS[index % COLORS.length]}
-                strokeWidth={3}
-                dot={{ fill: COLORS[index % COLORS.length] }}
+                strokeWidth={3.5}
+                opacity={1}
               />
             ))}
           </LineChart>
