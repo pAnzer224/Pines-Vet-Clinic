@@ -24,7 +24,13 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
           ...doc.data(),
           scheduleId: doc.id,
         }));
-        setTimeSlots(slots.sort((a, b) => a.time.localeCompare(b.time)));
+        setTimeSlots(
+          slots.sort((a, b) => {
+            const timeA = new Date(`2000/01/01 ${a.time}`);
+            const timeB = new Date(`2000/01/01 ${b.time}`);
+            return timeA - timeB;
+          })
+        );
       } catch (error) {
         console.error("Error fetching time slots:", error);
       }
