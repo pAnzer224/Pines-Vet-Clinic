@@ -49,10 +49,17 @@ export const getPets = async () => {
 
     const querySnapshot = await getDocs(q);
 
-    return querySnapshot.docs.map((doc) => ({
+    const pets = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
+
+    // Remove duplicates based on pet name and userId
+    const uniquePets = Array.from(
+      new Map(pets.map((pet) => [`${pet.name}-${pet.userId}`, pet])).values()
+    );
+
+    return uniquePets;
   } catch (error) {
     console.error("Error fetching pets:", error);
     toast.error("Failed to fetch pets. Please try again.");

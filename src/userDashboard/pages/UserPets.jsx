@@ -12,8 +12,9 @@ import {
 import { getPets } from "../../pages/petsUtils";
 import PetAddModal from "../../components/PetAddModal";
 import { auth } from "../../firebase-config";
+import useFirestoreCrud from "../../hooks/useFirestoreCrud";
 
-function PetCard({ name, species, breed, age }) {
+function PetCard({ name, species, breed, age, id, onDelete }) {
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <div className="h-48 bg-green3/10 rounded-lg flex items-center justify-center mb-4">
@@ -28,6 +29,12 @@ function PetCard({ name, species, breed, age }) {
         </div>
         <button className="w-full mt-4 px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30">
           View Profile
+        </button>
+        <button
+          onClick={() => onDelete(id)}
+          className="w-full mt-2 px-4 py-2 text-sm font-nunito-bold text-red bg-red/30 rounded-md hover:bg-red/50"
+        >
+          Delete Pet
         </button>
       </div>
     </div>
@@ -97,6 +104,7 @@ function MyPets() {
   const [expandedRecord, setExpandedRecord] = useState("record-1");
   const [isAddPetModalOpen, setIsAddPetModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const { deleteItem } = useFirestoreCrud("pets");
 
   const medicalRecords = [
     {
@@ -133,7 +141,16 @@ function MyPets() {
   }, []);
 
   const handlePetAdded = (newPet) => {
-    setPets([...pets, newPet]);
+    setPets((prevPets) => [...prevPets, newPet]);
+  };
+
+  const handleDeletePet = async (id) => {
+    try {
+      await deleteItem(id);
+      setPets((prevPets) => prevPets.filter((pet) => pet.id !== id));
+    } catch (error) {
+      console.error("Error deleting pet:", error);
+    }
   };
 
   if (isLoading) {
@@ -167,11 +184,17 @@ function MyPets() {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {pets.map((pet) => (
-          <PetCard key={pet.id} {...pet} />
-        ))}
-      </div>
+      {pets.length === 0 ? (
+        <div className="text-center text-primary/50 font-nunito-semibold">
+          No pets added
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {pets.map((pet) => (
+            <PetCard key={pet.id} {...pet} onDelete={handleDeletePet} />
+          ))}
+        </div>
+      )}
 
       <div className="space-y-4">
         <div className="flex items-center justify-between">

@@ -5,7 +5,6 @@ import {
   query,
   where,
   getDocs,
-  deleteDoc,
   doc,
   serverTimestamp,
   orderBy,
@@ -109,12 +108,9 @@ export const cancelAppointment = async (appointmentId) => {
 
     const appointmentRef = doc(db, "appointments", appointmentId);
     await updateDoc(appointmentRef, {
-      status: "cancelled",
+      status: "Cancelled",
       cancelledAt: serverTimestamp(),
     });
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    await deleteDoc(appointmentRef);
 
     return true;
   } catch (error) {

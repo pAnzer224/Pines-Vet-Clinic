@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { addDoc, collection, serverTimestamp } from "firebase/firestore";
-import { db, auth } from "../firebase-config";
+import { auth } from "../firebase-config";
 import { toast } from "react-toastify";
 import { onAuthStateChanged } from "firebase/auth";
 import StatusDropdown from "../components/StatusDropdown";
 import { X } from "lucide-react";
+import useFirestoreCrud from "../hooks/useFirestoreCrud";
 
 const PetAddModal = ({ isOpen, onClose, onPetAdded, userId }) => {
   const [petName, setPetName] = useState("");
@@ -12,6 +12,8 @@ const PetAddModal = ({ isOpen, onClose, onPetAdded, userId }) => {
   const [petBreed, setPetBreed] = useState("");
   const [petAge, setPetAge] = useState("");
   const [currentUser, setCurrentUser] = useState(null);
+
+  const { createItem } = useFirestoreCrud("pets");
 
   const speciesOptions = [
     "Select Species",
@@ -57,12 +59,9 @@ const PetAddModal = ({ isOpen, onClose, onPetAdded, userId }) => {
         breed: petBreed,
         age: parseInt(petAge, 10) || 0,
         userId: userId || currentUser.uid,
-        createdAt: serverTimestamp(),
       };
 
-      const docRef = await addDoc(collection(db, "pets"), newPet);
-      const addedPet = { ...newPet, id: docRef.id };
-
+      const addedPet = await createItem(newPet);
       onPetAdded(addedPet);
       resetForm();
       onClose();

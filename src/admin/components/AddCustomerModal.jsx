@@ -1,16 +1,29 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { X, UserPlus } from "lucide-react";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
-import { db } from "../../firebase-config";
+import { Timestamp } from "firebase/firestore";
 import { toast } from "react-toastify";
+import useFirestoreCrud from "../../hooks/useFirestoreCrud";
 
-function AddCustomerModal({ isOpen, onClose, onCustomerAdded }) {
+function AddCustomerModal({
+  isOpen,
+  onClose,
+  onCustomerAdded,
+  customerToEdit,
+}) {
   const [customerData, setCustomerData] = useState({
     fullName: "",
     email: "",
     phone: "",
     status: "Active",
   });
+
+  const { createItem, updateItem } = useFirestoreCrud("users");
+
+  useEffect(() => {
+    if (customerToEdit) {
+      setCustomerData(customerToEdit);
+    }
+  }, [customerToEdit]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -30,15 +43,22 @@ function AddCustomerModal({ isOpen, onClose, onCustomerAdded }) {
     }
 
     try {
-      // Add customer to Firestore
-      const usersRef = collection(db, "users");
-      const newCustomerRef = await addDoc(usersRef, {
-        ...customerData,
-        createdAt: Timestamp.now(),
-        status: customerData.status,
-      });
+      if (customerToEdit) {
+        // Update customer
+        await updateItem(customerToEdit.id, {
+          ...customerData,
+          updatedAt: Timestamp.now(),
+        });
+        toast.success("Customer updated successfully");
+      } else {
+        // Add new customer
+        await createItem({
+          ...customerData,
+          createdAt: Timestamp.now(),
+        });
+        toast.success("Customer added successfully");
+      }
 
-      toast.success("Customer added successfully");
       // Reset form and close modal
       setCustomerData({
         fullName: "",
@@ -51,8 +71,8 @@ function AddCustomerModal({ isOpen, onClose, onCustomerAdded }) {
       onCustomerAdded && onCustomerAdded();
       onClose();
     } catch (error) {
-      console.error("Error adding customer:", error);
-      toast.error("Failed to add customer");
+      console.error("Error adding/updating customer:", error);
+      toast.error("Failed to add/update customer");
     }
   };
 
@@ -72,8 +92,17 @@ function AddCustomerModal({ isOpen, onClose, onCustomerAdded }) {
         {/* Modal Header */}
         <div className="p-6 pb-0">
           <h2 className="text-xl font-nunito-bold text-green2 flex items-center">
-            <UserPlus className="mr-2 text-primary size-6" />
-            Add New Customer
+            {customerToEdit ? (
+              <>
+                <UserPlus className="mr-2 text-primary size-6" />
+                Edit Customer
+              </>
+            ) : (
+              <>
+                <UserPlus className="mr-2 text-primary size-6" />
+                Add New Customer
+              </>
+            )}
           </h2>
         </div>
 
@@ -166,7 +195,7 @@ function AddCustomerModal({ isOpen, onClose, onCustomerAdded }) {
               type="submit"
               className="w-full px-4 py-2 bg-primary text-background rounded-full hover:bg-primary/80 transition-colors font-nunito"
             >
-              Add Customer
+              {customerToEdit ? "Save Changes" : "Add Customer"}
             </button>
           </div>
         </form>

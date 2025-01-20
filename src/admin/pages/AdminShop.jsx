@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from "react";
 import { PlusCircle, Edit, Trash2, CheckCircle } from "lucide-react";
-import { db } from "../../firebase-config";
 import StatusDropdown from "../../components/StatusDropdown";
-import {
-  collection,
-  addDoc,
-  deleteDoc,
-  doc,
-  updateDoc,
-  onSnapshot,
-  query,
-  orderBy,
-} from "firebase/firestore";
+import useFirestoreCrud from "../../hooks/useFirestoreCrud";
 
 function importAllImages(requireContext) {
   return requireContext.keys().map(requireContext);
 }
 
 function AdminShop() {
-  const [products, setProducts] = useState([]);
-  const [orders, setOrders] = useState([]);
+  const {
+    items: products,
+    createItem,
+    updateItem,
+    deleteItem,
+  } = useFirestoreCrud("products");
+  const {
+    items: orders,
+    updateItem: updateOrder,
+    deleteItem: deleteOrder,
+  } = useFirestoreCrud("orders", {
+    orderBy: { field: "createdAt", direction: "desc" },
+  });
+
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
@@ -48,48 +50,6 @@ function AdminShop() {
   ];
 
   useEffect(() => {
-    const productsCollectionRef = collection(db, "products");
-    const ordersCollectionRef = collection(db, "orders");
-    const ordersQuery = query(
-      ordersCollectionRef,
-      orderBy("createdAt", "desc")
-    );
-
-    const unsubscribeProducts = onSnapshot(
-      query(productsCollectionRef),
-      (snapshot) => {
-        const fetchedProducts = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setProducts(fetchedProducts);
-      },
-      (error) => {
-        console.error("Error fetching products: ", error);
-      }
-    );
-
-    const unsubscribeOrders = onSnapshot(
-      ordersQuery,
-      (snapshot) => {
-        const fetchedOrders = snapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setOrders(fetchedOrders);
-      },
-      (error) => {
-        console.error("Error fetching orders: ", error);
-      }
-    );
-
-    return () => {
-      unsubscribeProducts();
-      unsubscribeOrders();
-    };
-  }, []);
-
-  useEffect(() => {
     if (selectedImage) {
       setNewProduct((prev) => ({
         ...prev,
@@ -111,9 +71,9 @@ function AdminShop() {
       };
 
       if (isEditMode && editingProduct) {
-        await updateDoc(doc(db, "products", editingProduct.id), productToAdd);
+        await updateItem(editingProduct.id, productToAdd);
       } else {
-        await addDoc(collection(db, "products"), productToAdd);
+        await createItem(productToAdd);
       }
 
       setIsModalOpen(false);
@@ -148,19 +108,9 @@ function AdminShop() {
     setIsModalOpen(true);
   };
 
-  const handleDeleteProduct = async (productId) => {
-    try {
-      await deleteDoc(doc(db, "products", productId));
-    } catch (e) {
-      console.error("Error removing document: ", e);
-    }
-  };
-
   const handleConfirmOrder = async (orderId) => {
     try {
-      await updateDoc(doc(db, "orders", orderId), {
-        status: "Confirmed",
-      });
+      await updateOrder(orderId, { status: "Confirmed" });
     } catch (e) {
       console.error("Error confirming order: ", e);
     }
@@ -168,19 +118,9 @@ function AdminShop() {
 
   const handleReceiveOrder = async (orderId) => {
     try {
-      await updateDoc(doc(db, "orders", orderId), {
-        status: "Received",
-      });
+      await updateOrder(orderId, { status: "Received" });
     } catch (e) {
       console.error("Error marking order as received: ", e);
-    }
-  };
-
-  const handleDeleteOrder = async (orderId) => {
-    try {
-      await deleteDoc(doc(db, "orders", orderId));
-    } catch (e) {
-      console.error("Error deleting order: ", e);
     }
   };
 
@@ -426,7 +366,7 @@ function AdminShop() {
                       <Edit className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => handleDeleteProduct(product.id)}
+                      onClick={() => deleteItem(product.id)}
                       className="text-red/80 hover:text-red transition-colors"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -511,7 +451,7 @@ function AdminShop() {
                     </span>
                   )}
                   <button
-                    onClick={() => handleDeleteOrder(order.id)}
+                    onClick={() => deleteOrder(order.id)}
                     className="px-3 py-1.5 bg-red/10 text-red rounded-full hover:bg-red/20 transition-colors border border-red/60 flex items-center gap-1.5 text-sm"
                   >
                     <Trash2 className="size-4" />

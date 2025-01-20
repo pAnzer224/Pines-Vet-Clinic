@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Users,
   UserPlus,
@@ -7,22 +7,13 @@ import {
   Trash2,
   Search,
 } from "lucide-react";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  deleteDoc,
-  onSnapshot,
-} from "firebase/firestore";
-import { db } from "../../firebase-config";
 import { toast } from "react-toastify";
 import StatusDropdown from "../../components/StatusDropdown";
 import AddCustomerModal from "../components/AddCustomerModal";
 import PetAddModal from "../../components/PetAddModal";
 import CustomerDetailsModal from "../components/CustomerDetailsModal";
 import LoadingSpinner from "../../components/LoadingSpinner";
+import useFirestoreCrud from "../../hooks/useFirestoreCrud";
 
 function CustomerCard({
   customer,
@@ -71,9 +62,9 @@ function CustomerCard({
               onDeleteCustomer(customer.id);
             }
           }}
-          className="text-primary hover:bg-red rounded-full p-1 transition-colors"
+          className="text-primary hover:bg-red/20 rounded-full p-1 transition-colors"
         >
-          <Trash2 className="size-5 text-red" />
+          <Trash2 className="size-5 text-red/80" />
         </button>
       </div>
 
@@ -137,10 +128,8 @@ function CustomerCard({
 }
 
 function Customers() {
-  const [loading, setLoading] = useState(true);
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [searchQuery, setSearchQuery] = useState("");
-  const [customers, setCustomers] = useState([]);
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
   const [isCustomerDetailsModalOpen, setIsCustomerDetailsModalOpen] =
     useState(false);
@@ -148,103 +137,40 @@ function Customers() {
   const [selectedCustomerId, setSelectedCustomerId] = useState(null);
   const [selectedCustomerForDetails, setSelectedCustomerForDetails] =
     useState(null);
+  const [customerToEdit, setCustomerToEdit] = useState(null);
+
   const statusOptions = ["All Status", "Active", "Inactive"];
 
-  useEffect(() => {
-    const usersRef = collection(db, "users");
-    const petsRef = collection(db, "pets");
-
-    const unsubscribe = onSnapshot(
-      usersRef,
-      async (usersSnapshot) => {
-        try {
-          setLoading(true);
-          const customerData = await Promise.all(
-            usersSnapshot.docs.map(async (userDoc) => {
-              const userData = userDoc.data();
-
-              const petsQuery = query(
-                petsRef,
-                where("userId", "==", userDoc.id)
-              );
-              const petsSnapshot = await getDocs(petsQuery);
-
-              const userPets = petsSnapshot.docs.map((petDoc) => ({
-                id: petDoc.id,
-                name: petDoc.data().name,
-                type: `${petDoc.data().species} ${
-                  petDoc.data().breed || ""
-                }`.trim(),
-              }));
-
-              return {
-                id: userDoc.id,
-                name: userData.fullName || "Unknown",
-                email: userData.email || "N/A",
-                phone: userData.phone || "",
-                pets: userPets,
-                joinedDate: userData.createdAt
-                  ? new Date(userData.createdAt.toDate()).toLocaleDateString(
-                      "en-US",
-                      {
-                        month: "short",
-                        day: "numeric",
-                        year: "numeric",
-                      }
-                    )
-                  : "Unknown",
-                status: userData.status || "Active",
-              };
-            })
-          );
-
-          setCustomers(customerData);
-        } catch (error) {
-          console.error("Error fetching customers:", error);
-          toast.error("Failed to load customers");
-        } finally {
-          setLoading(false);
-        }
-      },
-      (error) => {
-        console.error("Error in customers listener:", error);
-        toast.error("Failed to listen to customers");
-        setLoading(false);
-      }
-    );
-
-    return () => unsubscribe();
-  }, []);
+  const {
+    items: customers,
+    loading,
+    deleteItem: deleteCustomer,
+  } = useFirestoreCrud("users");
+  const { items: allPets, deleteItem: deletePet } = useFirestoreCrud("pets", {
+    where: { field: "userId", operator: "!=", value: "" },
+  });
 
   const handleAddPet = (customerId) => {
     setSelectedCustomerId(customerId);
     setIsPetModalOpen(true);
   };
 
-  const handlePetAdded = (addedPet) => {
+  const handlePetAdded = (newPet) => {
+    toast.success("Pet added successfully");
     setIsPetModalOpen(false);
   };
 
   const handleEditCustomer = (customer) => {
-    setSelectedCustomerForDetails(customer);
-    setIsCustomerDetailsModalOpen(true);
+    setCustomerToEdit(customer);
+    setIsCustomerModalOpen(true);
   };
 
   const handleDeleteCustomer = async (customerId) => {
     try {
-      const customerRef = doc(db, "users", customerId);
-      await deleteDoc(customerRef);
-
-      const petsRef = collection(db, "pets");
-      const petsQuery = query(petsRef, where("userId", "==", customerId));
-      const petsSnapshot = await getDocs(petsQuery);
-
-      const deletePromises = petsSnapshot.docs.map((petDoc) =>
-        deleteDoc(petDoc.ref)
-      );
-
+      const customerPets = allPets.filter((pet) => pet.userId === customerId);
+      const deletePromises = customerPets.map((pet) => deletePet(pet.id));
       await Promise.all(deletePromises);
-
+      await deleteCustomer(customerId);
       toast.success("Customer and associated pets deleted successfully");
     } catch (error) {
       console.error("Error deleting customer:", error);
@@ -254,8 +180,7 @@ function Customers() {
 
   const handleDeletePet = async (customerId, petId) => {
     try {
-      const petRef = doc(db, "pets", petId);
-      await deleteDoc(petRef);
+      await deletePet(petId);
       toast.success("Pet deleted successfully");
     } catch (error) {
       console.error("Error deleting pet:", error);
@@ -268,7 +193,30 @@ function Customers() {
     setIsCustomerDetailsModalOpen(true);
   };
 
-  const filteredCustomers = customers
+  const enrichedCustomers = customers.map((customer) => ({
+    ...customer,
+    name: customer.fullName || "Unknown",
+    pets: allPets
+      .filter((pet) => pet.userId === customer.id)
+      .map((pet) => ({
+        id: pet.id,
+        name: pet.name,
+        type: `${pet.species} ${pet.breed || ""}`.trim(),
+      })),
+    joinedDate: customer.createdAt
+      ? new Date(customer.createdAt.seconds * 1000).toLocaleDateString(
+          "en-US",
+          {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }
+        )
+      : "Unknown",
+    status: customer.status || "Active",
+  }));
+
+  const filteredCustomers = enrichedCustomers
     .filter((customer) =>
       selectedStatus === "All Status"
         ? true
@@ -276,9 +224,12 @@ function Customers() {
     )
     .filter((customer) =>
       searchQuery
-        ? customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer.phone.includes(searchQuery)
+        ? (customer?.name?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
+            customer?.email
+              ?.toLowerCase()
+              ?.includes(searchQuery.toLowerCase()) ||
+            customer?.phone?.includes(searchQuery)) ??
+          false
         : true
     );
 
@@ -314,7 +265,10 @@ function Customers() {
         </div>
 
         <button
-          onClick={() => setIsCustomerModalOpen(true)}
+          onClick={() => {
+            setCustomerToEdit(null);
+            setIsCustomerModalOpen(true);
+          }}
           className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
         >
           <UserPlus className="size-4 mr-2" />
@@ -348,8 +302,15 @@ function Customers() {
 
       <AddCustomerModal
         isOpen={isCustomerModalOpen}
-        onClose={() => setIsCustomerModalOpen(false)}
-        onCustomerAdded={() => {}}
+        onClose={() => {
+          setIsCustomerModalOpen(false);
+          setCustomerToEdit(null);
+        }}
+        onCustomerAdded={() => {
+          toast.success("Customer added successfully");
+          setIsCustomerModalOpen(false);
+        }}
+        customerToEdit={customerToEdit}
       />
 
       <PetAddModal

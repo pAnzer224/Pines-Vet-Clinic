@@ -17,7 +17,7 @@ function AppointmentCard({ appointment, onDeleteAppointment }) {
   const statusColors = {
     Confirmed: "bg-green3/50 text-green-800",
     Pending: "bg-yellow-100 text-yellow-800",
-    Cancelled: "bg-red/80 text-red-800",
+    Cancelled: "bg-red/30 text-red",
     Concluded: "bg-green3/50 text-green2",
   };
 
