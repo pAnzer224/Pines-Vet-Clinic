@@ -8,6 +8,7 @@ function AdminLogin() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -26,6 +27,7 @@ function AdminLogin() {
   const handleLogin = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
       const isValid = await verifyAdminCredentials(adminId, password);
@@ -41,6 +43,8 @@ function AdminLogin() {
     } catch (error) {
       setError("An error occurred during login");
       console.error("Login error:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,9 +120,10 @@ function AdminLogin() {
 
           <button
             type="submit"
-            className="w-full py-2 px-4 bg-green3 text-background rounded-md hover:bg-green3/80 transition-colors font-nunito-bold tracking-wide"
+            disabled={loading}
+            className="w-full py-2 px-4 bg-green3 text-background rounded-md hover:bg-green3/80 transition-colors font-nunito-bold tracking-wide disabled:opacity-50"
           >
-            Log In
+            {loading ? "Logging in..." : "Log In"}
           </button>
         </form>
 

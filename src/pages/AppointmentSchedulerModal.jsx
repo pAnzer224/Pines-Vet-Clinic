@@ -19,7 +19,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
     const fetchTimeSlotsAndAppointments = async () => {
       try {
         const timeSlotsRef = collection(db, "timeSlots");
-        const appointmentsRef = collection(db, "timeScheduling");
+        const appointmentsRef = collection(db, "appointments");
 
         const [timeSlotsSnapshot, appointmentsSnapshot] = await Promise.all([
           getDocs(timeSlotsRef),
@@ -38,10 +38,15 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
           })
         );
 
-        const appointments = appointmentsSnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
+        const appointments = appointmentsSnapshot.docs
+          .map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }))
+          .filter(
+            (apt) => apt.status === "Pending" || apt.status === "Confirmed"
+          );
+
         setScheduledAppointments(appointments);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -82,15 +87,17 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   };
 
   const isDayScheduled = (date) => {
+    if (!scheduledAppointments) return false;
+
     return scheduledAppointments.some(
       (appointment) =>
-        new Date(appointment.date).toDateString() === date.toDateString()
+        new Date(appointment.date).toDateString() === date.toDateString() &&
+        (appointment.status === "Confirmed" || appointment.status === "Pending")
     );
   };
 
   const isTimeSlotScheduled = (slotDate, slotTime) => {
-    // Ensure slotDate is a valid Date object
-    if (!slotDate || !slotTime) return false;
+    if (!slotDate || !slotTime || !scheduledAppointments) return false;
 
     const parsedDate =
       typeof slotDate === "string" || typeof slotDate === "number"
@@ -105,10 +112,14 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
       year: "numeric",
     });
 
-    return scheduledAppointments.some(
-      (appointment) =>
-        appointment.date === formattedDate && appointment.time === slotTime
-    );
+    return scheduledAppointments.some((appointment) => {
+      return (
+        appointment.date === formattedDate &&
+        appointment.time === slotTime &&
+        appointment.status &&
+        (appointment.status === "Confirmed" || appointment.status === "Pending")
+      );
+    });
   };
 
   const generateCalendarDays = () => {
@@ -187,13 +198,13 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
 
       try {
         const selectedSlot = timeSlots[selectedTime];
-        const scheduleRef = doc(db, "timeScheduling", selectedSlot.id);
+        const scheduleRef = doc(collection(db, "appointments"));
 
         await setDoc(scheduleRef, {
           time: selectedSlot.time,
           date: selectedDate,
           userId: currentUser.uid,
-          isAvailable: false,
+          status: "Pending",
           bookedAt: new Date().toISOString(),
           lastUpdated: new Date().toISOString(),
         });
@@ -201,17 +212,16 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
         onSchedule({
           date: selectedDate,
           time: selectedSlot.time,
-          scheduleId: selectedSlot.id,
+          scheduleId: scheduleRef.id,
         });
 
-        // Update the scheduledAppointments state
         setScheduledAppointments([
           ...scheduledAppointments,
           {
             time: selectedSlot.time,
             date: selectedDate,
             userId: currentUser.uid,
-            isAvailable: false,
+            status: "Pending",
             bookedAt: new Date().toISOString(),
             lastUpdated: new Date().toISOString(),
           },

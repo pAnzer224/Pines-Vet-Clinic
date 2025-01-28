@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, PawPrint, Trash2, Check } from "lucide-react";
+import { Calendar, PawPrint, Trash2 } from "lucide-react";
 import { toast } from "react-toastify";
 import StatusDropdown from "../../components/StatusDropdown";
 import { db } from "../../firebase-config";
@@ -15,10 +15,92 @@ import {
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ToggleSwitch from "../../components/ToggleSwitch";
 
+// New AppointmentDetailsModal component
+function AppointmentDetailsModal({
+  appointment,
+  onClose,
+  onConfirm,
+  onDelete,
+}) {
+  if (!appointment) return null;
+
+  return (
+    <div
+      className="fixed inset-0 flex items-center justify-center"
+      onClick={onClose}
+    >
+      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 border-2 border-green2/50 shadow-lg">
+        <h2 className="text-xl font-nunito-bold text-green2 mb-4">
+          Appointment Details
+        </h2>
+
+        <div className="space-y-3 mb-6">
+          <div>
+            <h3 className="font-nunito-bold text-green2">
+              {appointment.petName || "Unnamed Pet"}
+            </h3>
+            <p className="font-nunito-bold text-sm text-text/60">
+              {appointment.service || "No service specified"}
+            </p>
+          </div>
+
+          <div className="flex items-center text-sm text-text/80 font-nunito-semibold">
+            <Calendar size={16} className="mr-2" />
+            {appointment.date || "No date specified"}
+          </div>
+
+          <div className="space-y-1 text-sm text-text/80">
+            <p>Scheduled by: {appointment.userName || "Unknown User"}</p>
+            {appointment.paymentMethod && (
+              <p>Payment Method: {appointment.paymentMethod}</p>
+            )}
+            {appointment.price && <p>Price: {appointment.price}</p>}
+            {appointment.duration && <p>Duration: {appointment.duration}</p>}
+          </div>
+
+          <div className="bg-yellow-100 text-yellow-800 px-3 py-2 rounded-md text-sm">
+            Status: {appointment.status}
+          </div>
+        </div>
+
+        <div className="flex gap-3 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-nunito-semibold text-text/60 hover:text-text/80 transition-colors"
+          >
+            Close
+          </button>
+          <button
+            onClick={() => {
+              onDelete(appointment.id);
+              onClose();
+            }}
+            className="px-4 py-2 text-sm font-nunito-semibold text-red bg-red/20 rounded-xl hover:bg-red/40 transition-colors"
+          >
+            Delete
+          </button>
+          {appointment.status === "Pending" && (
+            <button
+              onClick={() => {
+                onConfirm(appointment.id);
+                onClose();
+              }}
+              className="px-4 py-2 text-sm font-nunito-semibold text-white bg-green3 rounded-lg hover:bg-green3/80 transition-colors"
+            >
+              Confirm
+            </button>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function AppointmentCard({
   appointment,
   onDeleteAppointment,
   onConfirmAppointment,
+  onClick,
 }) {
   const statusColors = {
     Confirmed: "bg-green3/50 text-green-800",
@@ -34,18 +116,14 @@ function AppointmentCard({
       : appointment.status;
 
   return (
-    <div className="bg-pantone/20 p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group">
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
-        {appointment.status === "Pending" && !isPastAppointment && (
-          <button
-            onClick={() => onConfirmAppointment(appointment.id)}
-            className="text-primary hover:bg-green-100 rounded-full p-1 transition-colors"
-          >
-            <Check className="size-5 text-green-600" />
-          </button>
-        )}
+    <div
+      className="bg-pantone/20 p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group cursor-pointer"
+      onClick={onClick}
+    >
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
         <button
-          onClick={() => {
+          onClick={(e) => {
+            e.stopPropagation();
             if (
               window.confirm(
                 "Are you sure you want to delete this appointment?"
@@ -94,6 +172,7 @@ function AdminAppointments() {
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [appointments, setAppointments] = useState([]);
   const [showPastAppointments, setShowPastAppointments] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState(null);
   const statusOptions = ["All Status", "Confirmed", "Pending", "Cancelled"];
 
   useEffect(() => {
@@ -218,9 +297,19 @@ function AdminAppointments() {
               appointment={appointment}
               onDeleteAppointment={handleDeleteAppointment}
               onConfirmAppointment={handleConfirmAppointment}
+              onClick={() => setSelectedAppointment(appointment)}
             />
           ))}
         </div>
+      )}
+
+      {selectedAppointment && (
+        <AppointmentDetailsModal
+          appointment={selectedAppointment}
+          onClose={() => setSelectedAppointment(null)}
+          onConfirm={handleConfirmAppointment}
+          onDelete={handleDeleteAppointment}
+        />
       )}
     </div>
   );
