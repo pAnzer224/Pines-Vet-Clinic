@@ -91,7 +91,7 @@ const Footer = () => {
         >
           <div className="max-w-xl mx-auto text-center">
             <h3 className="text-2xl font-nunito-bold mb-4 text-green2">
-              Stay Updated with Highland Petvibes
+              Stay Updated with Pines Vet Clinic
             </h3>
             <p className="text-green2/80 mb-6">
               Subscribe to our newsletter for pet care tips, updates, and
@@ -140,7 +140,7 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
           <div className="text-center">
             <h3 className="text-lg font-nunito-bold mb-6">
-              About Highland Petvibes
+              About Pines Vet Clinic
             </h3>
             <p className="text-background/80 mb-6 text-sm">
               Your trusted partner in pet care, providing quality services and
@@ -222,7 +222,7 @@ const Footer = () => {
       <div className="border-t border-background/10">
         <div className="container mx-auto px-6 py-6">
           <div className="flex flex-col md:flex-row justify-center items-center gap-4 text-background/60 text-sm">
-            <p>© 2024 Highland Petvibes. All rights reserved.</p>
+            <p>© 2024 Pines Vet Clinic. All rights reserved.</p>
             <div className="flex gap-6">
               <Link
                 to="/privacy"

@@ -24,7 +24,7 @@ function MainHeader() {
       <Link to="/">
         <img
           src="/images/HPLogo.svg"
-          alt="Highland Petvibes temp logo"
+          alt="Pines Vet Clinic temp logo"
           className="h-8 md:h-12"
         />
       </Link>

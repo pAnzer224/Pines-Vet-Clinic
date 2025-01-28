@@ -1,12 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  CalendarFold,
-  CreditCard,
-  Wallet,
-  CalendarDays,
-  PlusCircle,
-} from "lucide-react";
+import { CalendarFold, Wallet, CalendarDays, PlusCircle } from "lucide-react";
 import {
   storeAppointment,
   getStoredAppointments,
@@ -54,7 +48,6 @@ export default function Appointments() {
       if (currentUser) {
         try {
           const fetchedAppointments = await getStoredAppointments();
-
           const userAppointments = fetchedAppointments.filter(
             (apt) => apt.userId === currentUser.uid
           );
@@ -81,6 +74,7 @@ export default function Appointments() {
     setSelectedServiceDetails(serviceDetails);
     setSelectedService(serviceDetails.category);
     setIsServiceModalOpen(false);
+    setSelectedPayment("Cash"); // Automatically set payment to Cash
   };
 
   const handlePetAdded = async (newPet) => {
@@ -99,12 +93,7 @@ export default function Appointments() {
       return;
     }
 
-    if (
-      selectedService &&
-      selectedPayment &&
-      scheduledDateTime &&
-      selectedPet
-    ) {
+    if (selectedService && scheduledDateTime && selectedPet) {
       try {
         const newAppointment = {
           service: selectedServiceDetails
@@ -113,7 +102,7 @@ export default function Appointments() {
           date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
           petName: selectedPet.name,
           petId: selectedPet.id,
-          paymentMethod: selectedPayment,
+          paymentMethod: "Cash",
           price: selectedServiceDetails?.price || "Price varies",
           duration: selectedServiceDetails?.duration || "Duration varies",
           userName: currentUser.displayName || "Unknown User",
@@ -125,13 +114,11 @@ export default function Appointments() {
 
         if (storedAppointment) {
           setAppointments((prev) => [...prev, storedAppointment]);
-
           setSelectedService("");
           setSelectedPayment("");
           setSelectedServiceDetails(null);
           setSelectedPet(null);
           setIsSchedulerOpen(false);
-
           toast.success("Appointment booked successfully!");
         } else {
           toast.error(
@@ -264,44 +251,12 @@ export default function Appointments() {
                 className="mb-8 overflow-hidden"
               >
                 <h3 className="text-md font-nunito-bold text-text/80 mb-2">
-                  Select Payment Method
+                  Payment Method
                 </h3>
-                <div className="grid grid-cols-3 gap-4 text-sm">
-                  <button
-                    className={`border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                      selectedPayment === "Credit Card"
-                        ? "ring-2 ring-green3 bg-green3/60"
-                        : ""
-                    }`}
-                    onClick={() => setSelectedPayment("Credit Card")}
-                  >
-                    <CreditCard className="mx-auto mb-2 text-text" />
-                    <span className="text-text/80 text-xs">Credit Card</span>
-                  </button>
-                  <button
-                    className={`border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                      selectedPayment === "Cash"
-                        ? "ring-2 ring-green3 bg-green3/60"
-                        : ""
-                    }`}
-                    onClick={() => setSelectedPayment("Cash")}
-                  >
+                <div className="grid grid-cols-1 gap-4 text-sm">
+                  <button className="w-[100px] border-[1.6px] border-green2 rounded-2xl p-4 text-center ring-2 ring-green3 bg-green3/60">
                     <Wallet className="mx-auto mb-2 text-text" />
                     <span className="text-text/80 text-xs">Cash</span>
-                  </button>
-                  <button
-                    className={`border-[1.6px] border-green2 rounded-2xl p-4 text-center bg-green3/10 ${
-                      selectedPayment === "Gcash"
-                        ? "ring-2 ring-green3 bg-green3/60"
-                        : ""
-                    } hover:bg-blue-100`}
-                    onClick={() => setSelectedPayment("Gcash")}
-                  >
-                    <img
-                      src="/images/gcash.svg"
-                      alt="Gcash Logo"
-                      className="mx-auto h-10"
-                    />
                   </button>
                 </div>
               </motion.div>
@@ -347,12 +302,20 @@ export default function Appointments() {
                     </div>
 
                     <div className="relative">
-                      {isPast && (
+                      {isPast ? (
                         <div className="absolute inset-0 bg-background/70 flex items-center justify-center z-10">
                           <span className="text-green2 font-bold tracking-wide px-5 py-2 bg-[#C6E3CB] rounded-full">
                             Concluded
                           </span>
                         </div>
+                      ) : (
+                        apt.status === "Pending" && (
+                          <div className="absolute inset-0 bg-background/30 flex items-center justify-center z-10">
+                            <span className="text-yellow-800 font-bold tracking-wide px-5 py-2 bg-yellow-100 rounded-full">
+                              Pending
+                            </span>
+                          </div>
+                        )
                       )}
 
                       <p className="font-nunito-semibold text-text/70 tracking-wide mb-2 text-sm flex items-center">

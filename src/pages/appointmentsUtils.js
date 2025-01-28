@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   orderBy,
   updateDoc,
+  deleteDoc,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 
@@ -19,7 +20,6 @@ export const storeAppointment = async (appointmentData) => {
       throw new Error("User not authenticated");
     }
 
-    // Check for existing appointments with same date and time
     const q = query(
       collection(db, "appointments"),
       where("userId", "==", auth.currentUser.uid),
@@ -28,7 +28,7 @@ export const storeAppointment = async (appointmentData) => {
 
     const existingAppointments = await getDocs(q);
     if (!existingAppointments.empty) {
-      return null; // Indicates a duplicate appointment
+      return null;
     }
 
     const appointmentWithUser = {
@@ -37,6 +37,7 @@ export const storeAppointment = async (appointmentData) => {
       userName:
         auth.currentUser.displayName || auth.currentUser.email.split("@")[0],
       createdAt: serverTimestamp(),
+      status: "Pending",
     };
 
     const docRef = await addDoc(
@@ -45,8 +46,8 @@ export const storeAppointment = async (appointmentData) => {
     );
 
     return {
-      ...appointmentWithUser,
       id: docRef.id,
+      ...appointmentWithUser,
     };
   } catch (error) {
     console.error("Error storing appointment:", error);
@@ -57,29 +58,36 @@ export const storeAppointment = async (appointmentData) => {
 
 export const getStoredAppointments = async () => {
   try {
-    // Check if admin is authenticated via local storage
     const isAdminAuthenticated =
       localStorage.getItem("adminAuthenticated") === "true";
 
     if (isAdminAuthenticated) {
-      // For admin, fetch all appointments
       const q = query(
         collection(db, "appointments"),
         orderBy("createdAt", "desc")
       );
       const querySnapshot = await getDocs(q);
-      return querySnapshot.docs.map((doc) => ({
+      const appointments = querySnapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       }));
+
+      const currentDate = new Date();
+      return appointments.filter((apt) => {
+        const aptDate = new Date(apt.date);
+        if (aptDate < currentDate && apt.status === "Pending") {
+          const appointmentRef = doc(db, "appointments", apt.id);
+          deleteDoc(appointmentRef);
+          return false;
+        }
+        return apt.status !== "Cancelled"; // Filter out canceled appointments
+      });
     }
 
-    // If no user is logged in, return empty array
     if (!auth.currentUser) {
       return [];
     }
 
-    // For regular users, fetch only their own appointments
     const q = query(
       collection(db, "appointments"),
       where("userId", "==", auth.currentUser.uid),
@@ -87,11 +95,21 @@ export const getStoredAppointments = async () => {
     );
 
     const querySnapshot = await getDocs(q);
-
-    return querySnapshot.docs.map((doc) => ({
+    const appointments = querySnapshot.docs.map((doc) => ({
       id: doc.id,
       ...doc.data(),
     }));
+
+    const currentDate = new Date();
+    return appointments.filter((apt) => {
+      const aptDate = new Date(apt.date);
+      if (aptDate < currentDate && apt.status === "Pending") {
+        const appointmentRef = doc(db, "appointments", apt.id);
+        deleteDoc(appointmentRef);
+        return false;
+      }
+      return apt.status !== "Cancelled"; // Filter out canceled appointments
+    });
   } catch (error) {
     console.error("Error fetching appointments:", error);
     toast.error("Failed to fetch appointments. Please try again.");

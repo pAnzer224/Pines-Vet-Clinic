@@ -92,11 +92,11 @@ const PetAddModal = ({ isOpen, onClose, onPetAdded, userId }) => {
 
   return (
     <div
-      className="fixed inset-0 bg-text/50 z-[200] flex items-center justify-center"
+      className="fixed inset-0 z-[200] flex items-center justify-center"
       onClick={onClose}
     >
       <div
-        className="bg-background w-full max-w-md mx-4 rounded-xl shadow-xl relative"
+        className="bg-background w-full max-w-md mx-4 rounded-xl shadow-xl relative border-green2/30 border-2"
         onClick={handleModalClick}
       >
         <button

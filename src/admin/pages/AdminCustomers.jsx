@@ -38,7 +38,7 @@ function CustomerCard({
 
   return (
     <div
-      className="bg-background p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group cursor-pointer"
+      className="bg-pantone/20  p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group cursor-pointer"
       onClick={() => onViewDetails(customer)}
     >
       <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">

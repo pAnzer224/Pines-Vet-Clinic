@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Calendar, PawPrint, Trash2 } from "lucide-react";
+import { Calendar, PawPrint, Trash2, Check } from "lucide-react";
 import { toast } from "react-toastify";
 import StatusDropdown from "../../components/StatusDropdown";
 import { db } from "../../firebase-config";
@@ -9,30 +9,46 @@ import {
   query,
   doc,
   deleteDoc,
+  updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ToggleSwitch from "../../components/ToggleSwitch";
 
-function AppointmentCard({ appointment, onDeleteAppointment }) {
+function AppointmentCard({
+  appointment,
+  onDeleteAppointment,
+  onConfirmAppointment,
+}) {
   const statusColors = {
     Confirmed: "bg-green3/50 text-green-800",
     Pending: "bg-yellow-100 text-yellow-800",
     Cancelled: "bg-red/30 text-red",
-    Concluded: "bg-green3/50 text-green2",
+    Concluded: "bg-green3/30 text-green2",
   };
 
-  // Check if appointment is past the set date
   const isPastAppointment = new Date(appointment.date) < new Date();
-  const displayStatus = isPastAppointment ? "Concluded" : appointment.status;
+  const displayStatus =
+    isPastAppointment && appointment.status === "Confirmed"
+      ? "Concluded"
+      : appointment.status;
 
   return (
-    <div className="bg-gold p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group">
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+    <div className="bg-pantone/20 p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group">
+      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+        {appointment.status === "Pending" && !isPastAppointment && (
+          <button
+            onClick={() => onConfirmAppointment(appointment.id)}
+            className="text-primary hover:bg-green-100 rounded-full p-1 transition-colors"
+          >
+            <Check className="size-5 text-green-600" />
+          </button>
+        )}
         <button
           onClick={() => {
             if (
               window.confirm(
-                `Are you sure you want to delete this appointment?`
+                "Are you sure you want to delete this appointment?"
               )
             ) {
               onDeleteAppointment(appointment.id);
@@ -88,12 +104,23 @@ function AdminAppointments() {
       (snapshot) => {
         try {
           setLoading(true);
+          const currentDate = new Date();
           const fetchedAppointments = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }));
 
-          const sortedAppointments = fetchedAppointments.sort((a, b) => {
+          const validAppointments = fetchedAppointments.filter((apt) => {
+            const aptDate = new Date(apt.date);
+            if (aptDate < currentDate && apt.status === "Pending") {
+              const appointmentRef = doc(db, "appointments", apt.id);
+              deleteDoc(appointmentRef);
+              return false;
+            }
+            return true;
+          });
+
+          const sortedAppointments = validAppointments.sort((a, b) => {
             return new Date(a.date) - new Date(b.date);
           });
 
@@ -104,11 +131,6 @@ function AdminAppointments() {
         } finally {
           setLoading(false);
         }
-      },
-      (error) => {
-        toast.error("Error listening to appointments");
-        console.error("Appointments listener error:", error);
-        setLoading(false);
       }
     );
 
@@ -126,13 +148,30 @@ function AdminAppointments() {
     }
   };
 
+  const handleConfirmAppointment = async (appointmentId) => {
+    try {
+      const appointmentRef = doc(db, "appointments", appointmentId);
+      await updateDoc(appointmentRef, {
+        status: "Confirmed",
+        confirmedAt: serverTimestamp(),
+      });
+      toast.success("Appointment confirmed successfully");
+    } catch (error) {
+      console.error("Error confirming appointment:", error);
+      toast.error("Failed to confirm appointment");
+    }
+  };
+
   const filteredAppointments = appointments.filter((apt) => {
     const appointmentDate = new Date(apt.date);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
     const isPastAppointment = appointmentDate < today;
-    const effectiveStatus = isPastAppointment ? "Concluded" : apt.status;
+    const effectiveStatus =
+      isPastAppointment && apt.status === "Confirmed"
+        ? "Concluded"
+        : apt.status;
 
     if (!showPastAppointments && isPastAppointment) return false;
     return selectedStatus === "All Status"
@@ -178,6 +217,7 @@ function AdminAppointments() {
               key={appointment.id}
               appointment={appointment}
               onDeleteAppointment={handleDeleteAppointment}
+              onConfirmAppointment={handleConfirmAppointment}
             />
           ))}
         </div>

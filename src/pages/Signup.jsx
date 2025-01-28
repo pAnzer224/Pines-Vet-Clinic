@@ -3,10 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import InputField from "../components/InputField";
 import FeatureOverlay from "../components/FeauterOverlay";
-import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
-import { auth, db } from "../firebase-config";
 import { ArrowLeft, ArrowRight } from "lucide-react";
-import { doc, setDoc } from "firebase/firestore";
+import { useAuth } from "../hooks/useAuth";
 
 const SignUp = () => {
   const [step, setStep] = useState(1);
@@ -16,8 +14,6 @@ const SignUp = () => {
     confirmPassword: "",
     fullName: "",
   });
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const [showProceed, setShowProceed] = useState(false);
   const [overlaySettings, setOverlaySettings] = useState({
     isEnabled: false,
@@ -25,13 +21,12 @@ const SignUp = () => {
     message: "",
   });
   const navigate = useNavigate();
+  const { signup, error, loading } = useAuth();
 
   useEffect(() => {
-    // Load overlay settings from localStorage
     const savedOverlaySettings = localStorage.getItem("overlaySettings");
     if (savedOverlaySettings) {
       const settings = JSON.parse(savedOverlaySettings);
-      // Get the signup specific settings
       if (settings.signup) {
         setOverlaySettings({
           isEnabled: settings.signup.isEnabled,
@@ -63,38 +58,18 @@ const SignUp = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
+
+    if (formData.password !== formData.confirmPassword) {
+      return;
+    }
 
     try {
-      if (formData.password !== formData.confirmPassword) {
-        setError("Passwords do not match");
-        return;
-      }
-
-      const userCredential = await createUserWithEmailAndPassword(
-        auth,
-        formData.email,
-        formData.password
-      );
-
-      // Update user profile with full name
-      await updateProfile(userCredential.user, {
-        displayName: formData.fullName,
-      });
-
-      await setDoc(doc(db, "users", userCredential.user.uid), {
-        email: formData.email,
+      await signup(formData.email, formData.password, {
         fullName: formData.fullName,
-        createdAt: new Date(),
       });
-
       navigate("/home");
     } catch (err) {
-      console.error("Signup Error:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      // Error is handled in useAuth
     }
   };
 
@@ -242,7 +217,6 @@ const SignUp = () => {
         </div>
       </motion.div>
 
-      {/* Feature Overlay */}
       <FeatureOverlay
         isEnabled={overlaySettings.isEnabled}
         title={overlaySettings.title}

@@ -42,7 +42,7 @@ export const useAuth = () => {
 
       return user;
     } catch (err) {
-      // More comprehensive error handling
+     
       let errorMessage = "Signup failed. Please try again.";
       switch (err.code) {
         case "auth/email-already-in-use":

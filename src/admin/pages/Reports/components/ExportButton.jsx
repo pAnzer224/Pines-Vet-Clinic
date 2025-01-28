@@ -1,164 +1,113 @@
 import React from "react";
 import { Download } from "lucide-react";
-import {
-  PDFDownloadLink,
-  Document,
-  Page,
-  Text,
-  View,
-  StyleSheet,
-} from "@react-pdf/renderer";
-
-const monthNames = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-const styles = StyleSheet.create({
-  page: {
-    padding: 30,
-  },
-  title: {
-    fontSize: 24,
-    marginBottom: 20,
-  },
-  section: {
-    marginBottom: 15,
-  },
-  header: {
-    fontSize: 18,
-    marginBottom: 10,
-  },
-  text: {
-    fontSize: 12,
-    marginBottom: 5,
-  },
-  table: {
-    display: "table",
-    width: "100%",
-    marginBottom: 15,
-  },
-  tableRow: {
-    flexDirection: "row",
-    borderBottom: 1,
-    borderBottomColor: "#000",
-  },
-  tableCell: {
-    padding: 5,
-    flex: 1,
-  },
-});
-
-const filterDataByMonth = (data, selectedMonth) => {
-  if (selectedMonth === "all") return data;
-  const targetDate = new Date(selectedMonth);
-  return data.filter((item) => {
-    const itemMonth = monthNames.indexOf(item.month);
-    const currentMonth = targetDate.getMonth();
-    return itemMonth === currentMonth;
-  });
-};
-
-const ReportDocument = ({ data }) => (
-  <Document>
-    <Page size="A4" style={styles.page}>
-      <Text style={styles.title}>Business Report</Text>
-
-      <View style={styles.section}>
-        <Text style={styles.header}>Summary</Text>
-        <Text style={styles.text}>Period: {data.period}</Text>
-        <Text style={styles.text}>
-          Total Revenue: ₱{data.totalRevenue.toLocaleString()}
-        </Text>
-        <Text style={styles.text}>Total Customers: {data.totalCustomers}</Text>
-        <Text style={styles.text}>Products Sold: {data.totalProducts}</Text>
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.header}>Service Breakdown</Text>
-        {data.serviceBreakdown.map((service, i) => (
-          <Text key={i} style={styles.text}>
-            {service.name}: {service.value}%
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.header}>Monthly Revenue</Text>
-        {data.monthlyRevenue.map((item, i) => (
-          <Text key={i} style={styles.text}>
-            {item.month}: ₱{item.revenue.toLocaleString()}
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.header}>Monthly Products</Text>
-        {data.monthlyProducts.map((item, i) => (
-          <Text key={i} style={styles.text}>
-            {item.month}: {item.products} products
-          </Text>
-        ))}
-      </View>
-
-      <View style={styles.section}>
-        <Text style={styles.header}>Monthly Services</Text>
-        {data.monthlyServices.map((item, i) => (
-          <Text key={i} style={styles.text}>
-            {item.month}:
-            {Object.entries(item)
-              .filter(([key]) => key !== "month")
-              .map(([service, count]) => ` ${service}: ${count}`)
-              .join(", ")}
-          </Text>
-        ))}
-      </View>
-    </Page>
-  </Document>
-);
+import Papa from "papaparse";
 
 const ExportButton = ({ metrics, selectedMonth }) => {
-  const reportData = {
-    period:
+  const generateCSV = () => {
+    // Filter data based on selected month
+    const filterByMonth = (data) => {
+      if (selectedMonth === "all") return data;
+      const targetDate = new Date(selectedMonth);
+      return data.filter((item) => {
+        const monthNames = [
+          "Jan",
+          "Feb",
+          "Mar",
+          "Apr",
+          "May",
+          "Jun",
+          "Jul",
+          "Aug",
+          "Sep",
+          "Oct",
+          "Nov",
+          "Dec",
+        ];
+        const itemMonth = monthNames.indexOf(item.month);
+        return itemMonth === targetDate.getMonth();
+      });
+    };
+
+    // Prepare data for CSV
+    const csvData = [];
+
+    // Add header row with clinic name
+    csvData.push(["Pines Vet Clinic"]);
+    csvData.push([]); // Empty row for spacing
+
+    // Add period
+    const period =
       selectedMonth === "all"
         ? "All Time"
         : new Date(selectedMonth).toLocaleString("default", {
             month: "long",
             year: "numeric",
-          }),
-    totalRevenue: metrics.totalRevenue,
-    totalCustomers: metrics.totalCustomers,
-    totalProducts: metrics.totalProducts,
-    serviceBreakdown: metrics.serviceBreakdown,
-    monthlyRevenue: filterDataByMonth(metrics.monthlyRevenue, selectedMonth),
-    monthlyProducts: filterDataByMonth(metrics.monthlyProducts, selectedMonth),
-    monthlyServices: filterDataByMonth(metrics.monthlyServices, selectedMonth),
+          });
+    csvData.push(["Period:", period]);
+    csvData.push([]); // Empty row for spacing
+
+    // Add summary data
+    csvData.push(["Summary"]);
+    csvData.push([
+      "Total Revenue",
+      `₱${metrics.totalRevenue.toLocaleString()}`,
+    ]);
+    csvData.push(["Total Customers", metrics.totalCustomers]);
+    csvData.push(["Total Products", metrics.totalProducts]);
+    csvData.push([]); // Empty row for spacing
+
+    // Add service breakdown
+    csvData.push(["Service Breakdown"]);
+    metrics.serviceBreakdown.forEach((service) => {
+      csvData.push([service.name, `${service.value}%`]);
+    });
+    csvData.push([]); // Empty row for spacing
+
+    // Add monthly revenue
+    csvData.push(["Monthly Revenue"]);
+    csvData.push(["Month", "Revenue"]);
+    filterByMonth(metrics.monthlyRevenue).forEach((item) => {
+      csvData.push([item.month, `₱${item.revenue.toLocaleString()}`]);
+    });
+    csvData.push([]); // Empty row for spacing
+
+    // Add monthly products
+    csvData.push(["Monthly Products"]);
+    csvData.push(["Month", "Products"]);
+    filterByMonth(metrics.monthlyProducts).forEach((item) => {
+      csvData.push([item.month, item.products]);
+    });
+
+    // Convert to CSV string
+    const csvContent = Papa.unparse(csvData);
+
+    // Create and trigger download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `pines-vet-clinic-report-${
+        selectedMonth === "all" ? "all-time" : selectedMonth
+      }.csv`
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
     <div className="relative group">
-      <PDFDownloadLink
-        document={<ReportDocument data={reportData} />}
-        fileName={`business-report-${
-          selectedMonth === "all" ? "all-time" : selectedMonth
-        }.pdf`}
+      <button
+        onClick={generateCSV}
         className="flex items-center text-primary hover:text-green2 transition-colors"
       >
         <Download size={19} />
-      </PDFDownloadLink>
+      </button>
 
       <div className="absolute right-0 top-full mt-1 px-2 py-1 bg-green2/80 text-background/90 text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap font-nunito-semibold tracking-wide">
-        Export as PDF
+        Export as CSV
       </div>
     </div>
   );

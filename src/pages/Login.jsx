@@ -1,10 +1,9 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { EyeIcon, EyeOffIcon } from "lucide-react";
 import InputField from "../components/InputField";
-import { signInWithEmailAndPassword, onAuthStateChanged } from "firebase/auth";
-import { auth } from "../firebase-config";
+import { useAuth } from "../hooks/useAuth";
 
 const Login = () => {
   const [showPassword, setShowPassword] = useState(false);
@@ -13,22 +12,17 @@ const Login = () => {
     password: "",
   });
   const [rememberMe, setRememberMe] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
   const navigate = useNavigate();
+  const { login, error, loading } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
 
     try {
-      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+      await login(formData.email, formData.password);
       navigate("/home");
     } catch (err) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
+      // Error is handled in useAuth
     }
   };
 
@@ -39,16 +33,6 @@ const Login = () => {
       [name]: value,
     }));
   };
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      if (user) {
-        navigate("/home");
-      }
-    });
-
-    return () => unsubscribe();
-  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-background relative">

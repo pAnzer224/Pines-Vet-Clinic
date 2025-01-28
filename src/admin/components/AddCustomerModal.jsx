@@ -22,6 +22,13 @@ function AddCustomerModal({
   useEffect(() => {
     if (customerToEdit) {
       setCustomerData(customerToEdit);
+    } else {
+      setCustomerData({
+        fullName: "",
+        email: "",
+        phone: "",
+        status: "Active",
+      });
     }
   }, [customerToEdit]);
 
@@ -79,8 +86,8 @@ function AddCustomerModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-text/50 z-[100] flex items-center justify-center">
-      <div className="bg-background w-full max-w-md mx-4 rounded-xl shadow-xl relative">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+      <div className="bg-background w-full max-w-md mx-4 rounded-xl shadow-xl relative border-green2/30 border-2">
         {/* Close Button */}
         <button
           onClick={onClose}

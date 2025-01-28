@@ -11,18 +11,24 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [showPromptModal, setShowPromptModal] = useState(false);
   const [timeSlots, setTimeSlots] = useState([]);
+  const [scheduledAppointments, setScheduledAppointments] = useState([]);
   const modalRef = useRef();
   const { currentUser } = useAuth();
 
   useEffect(() => {
-    const fetchTimeSlots = async () => {
+    const fetchTimeSlotsAndAppointments = async () => {
       try {
         const timeSlotsRef = collection(db, "timeSlots");
-        const snapshot = await getDocs(timeSlotsRef);
-        const slots = snapshot.docs.map((doc) => ({
+        const appointmentsRef = collection(db, "timeScheduling");
+
+        const [timeSlotsSnapshot, appointmentsSnapshot] = await Promise.all([
+          getDocs(timeSlotsRef),
+          getDocs(appointmentsRef),
+        ]);
+
+        const slots = timeSlotsSnapshot.docs.map((doc) => ({
           id: doc.id,
           ...doc.data(),
-          scheduleId: doc.id,
         }));
         setTimeSlots(
           slots.sort((a, b) => {
@@ -31,13 +37,19 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
             return timeA - timeB;
           })
         );
+
+        const appointments = appointmentsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setScheduledAppointments(appointments);
       } catch (error) {
-        console.error("Error fetching time slots:", error);
+        console.error("Error fetching data:", error);
       }
     };
 
     if (isOpen) {
-      fetchTimeSlots();
+      fetchTimeSlotsAndAppointments();
     }
   }, [isOpen]);
 
@@ -69,6 +81,36 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
     return { daysInMonth, startingDay };
   };
 
+  const isDayScheduled = (date) => {
+    return scheduledAppointments.some(
+      (appointment) =>
+        new Date(appointment.date).toDateString() === date.toDateString()
+    );
+  };
+
+  const isTimeSlotScheduled = (slotDate, slotTime) => {
+    // Ensure slotDate is a valid Date object
+    if (!slotDate || !slotTime) return false;
+
+    const parsedDate =
+      typeof slotDate === "string" || typeof slotDate === "number"
+        ? new Date(slotDate)
+        : slotDate;
+
+    if (isNaN(parsedDate)) return false;
+
+    const formattedDate = parsedDate.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    return scheduledAppointments.some(
+      (appointment) =>
+        appointment.date === formattedDate && appointment.time === slotTime
+    );
+  };
+
   const generateCalendarDays = () => {
     const { daysInMonth, startingDay } = getDaysInMonth(currentMonth);
     const days = [];
@@ -89,11 +131,13 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
         date.getMonth() === selectedDay.getMonth() &&
         date.getFullYear() === selectedDay.getFullYear();
 
+      const scheduled = isDayScheduled(date);
+
       days.push(
         <button
           key={day}
           onClick={() => setSelectedDay(date)}
-          className={`p-3 text-center rounded-2xl transition-colors
+          className={`p-3 text-center rounded-2xl transition-colors relative
             ${
               isSelected
                 ? "bg-green3 text-text border-[1.6px] border-green2"
@@ -107,6 +151,9 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
           disabled={date < new Date()}
         >
           {day}
+          {scheduled && (
+            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-green3 rounded-full"></div>
+          )}
         </button>
       );
     }
@@ -140,7 +187,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
 
       try {
         const selectedSlot = timeSlots[selectedTime];
-        const scheduleRef = doc(db, "timeScheduling", selectedSlot.scheduleId);
+        const scheduleRef = doc(db, "timeScheduling", selectedSlot.id);
 
         await setDoc(scheduleRef, {
           time: selectedSlot.time,
@@ -154,8 +201,21 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
         onSchedule({
           date: selectedDate,
           time: selectedSlot.time,
-          scheduleId: selectedSlot.scheduleId,
+          scheduleId: selectedSlot.id,
         });
+
+        // Update the scheduledAppointments state
+        setScheduledAppointments([
+          ...scheduledAppointments,
+          {
+            time: selectedSlot.time,
+            date: selectedDate,
+            userId: currentUser.uid,
+            isAvailable: false,
+            bookedAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+          },
+        ]);
       } catch (error) {
         console.error("Error scheduling appointment:", error);
       }
@@ -239,12 +299,16 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
                 <button
                   key={index}
                   onClick={() => setSelectedTime(index)}
-                  className={`p-3 text-center border-[1.6px] border-green2 rounded-2xl transition-colors text-text
+                  className={`p-3 text-center border-[1.6px] border-green2 rounded-2xl transition-colors
                     ${
-                      selectedTime === index
-                        ? "bg-green3"
-                        : "hover:bg-green3/10"
-                    }`}
+                      isTimeSlotScheduled(selectedDay, slot.time)
+                        ? "border-green2/20 bg-green2/20 hover:bg-green3/30 text-text/60 cursor-not-allowed"
+                        : selectedTime === index
+                        ? "bg-green3 text-text"
+                        : "hover:bg-green3/10 text-text"
+                    }
+                  `}
+                  disabled={isTimeSlotScheduled(selectedDay, slot.time)}
                 >
                   {slot.time}
                 </button>
@@ -254,7 +318,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
             <button
               onClick={handleSchedule}
               disabled={!selectedDay || selectedTime === null}
-              className={`mt-8 w-full px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors text-text
+              className={`mt-8 w-full px-6 py-2 rounded-full border-[1.6px] border-green2 transition-colors
                 ${
                   selectedDay && selectedTime !== null
                     ? "bg-green3 hover:bg-green3/80"

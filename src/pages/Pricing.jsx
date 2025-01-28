@@ -5,46 +5,45 @@ import { Check } from "lucide-react";
 const PricingPage = () => {
   const pricingTiers = [
     {
-      name: "Basic Care",
-      price: "₱1,000",
-      period: "per visit",
-      description: "Essential veterinary services for your pet's basic needs",
+      name: "Basic Plan",
+      price: "₱599",
+      period: "per month",
+      description: "Essential veterinary care for budget-conscious pet owners",
       features: [
-        "General health check-up",
-        "Basic vaccinations",
-        "Parasite prevention",
-        "Basic grooming services",
-        "Email support",
+        "2 consultations per month",
+        "10% discount on products",
+        "Basic appointment reminders",
+        "Access to pet wellness tips",
       ],
       highlighted: false,
     },
     {
-      name: "Premium Care",
-      price: "₱2,000",
-      period: "per visit",
-      description: "Comprehensive care package with priority services",
+      name: "Standard Plan",
+      price: "₱1,199",
+      period: "per month",
+      description: "Enhanced care with added benefits for your pet",
       features: [
-        "All Basic Care features",
-        "Priority scheduling",
-        "Health screenings",
-        "Dental cleaning",
-        "Emergency care",
+        "Basic Care features",
+        "4 consultations per month",
+        "1 grooming service per month",
+        "15% discount on products",
+        "Priority appointment scheduling",
+        "Monthly dental check-ups",
       ],
       highlighted: true,
     },
     {
-      name: "Ultimate Care",
-      price: "₱3,000",
-      period: "per visit",
+      name: "Premium Plan",
+      price: "₱1,599",
+      period: "per month",
       description: "Complete pet healthcare with exclusive benefits",
       features: [
-        "All Premium Care features",
-        "Home visits",
-        "Specialized treatments",
-        "Pet insurance",
-        "Unlimited consultations",
-        "Personal vet",
-        "VIP emergency response",
+        "Standard Care features",
+        "6 consultations per month",
+        "2 grooming services per month",
+        "20% discount on products",
+        "Personalized pet health tracking",
+        "Priority emergency services",
       ],
       highlighted: false,
     },
@@ -55,10 +54,10 @@ const PricingPage = () => {
       <div className="container mx-auto px-6 pb-20 font-nunito-bold">
         <div className="max-w-5xl mx-auto sm:pt-20 lg:pt-0">
           <h1 className="text-4xl font-bold text-text mb-2 tracking-wide text-center">
-            Simple, Transparent Pricing
+            Pines Vet Clinic Membership Plans
           </h1>
           <p className="text-text/80 mb-12 tracking-wide font-nunito-semibold text-center max-w-2xl mx-auto">
-            Choose the perfect care package for your beloved pet. All plans
+            Choose the perfect monthly membership plan for your pet. All plans
             include our commitment to exceptional veterinary care.
           </p>
 
@@ -129,9 +128,12 @@ const PricingPage = () => {
           </div>
 
           <p className="text-text/60 text-sm text-center mt-12">
-            All plans come with a 100% satisfaction guarantee. Prices may vary
-            based on pet size and specific needs. Contact us for a personalized
-            quote.
+            All plans include a 30-day satisfaction guarantee. Small pets
+            include cats and dogs under 15kg. Basic grooming includes bath &
+            brush service. Full-service grooming includes complete grooming
+            package. Emergency services surcharge applies for holidays.
+            Additional fees may apply for specialized treatments or services not
+            covered in the plan. Contact us for more details.
           </p>
         </div>
       </div>
