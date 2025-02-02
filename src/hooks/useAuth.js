@@ -35,6 +35,7 @@ export const useAuth = () => {
       // Create a user document in Firestore
       await setDoc(doc(db, "users", user.uid), {
         email: user.email,
+        plan: "free",
         createdAt: new Date(),
         isActive: true,
         ...additionalData,
@@ -42,7 +43,6 @@ export const useAuth = () => {
 
       return user;
     } catch (err) {
-     
       let errorMessage = "Signup failed. Please try again.";
       switch (err.code) {
         case "auth/email-already-in-use":

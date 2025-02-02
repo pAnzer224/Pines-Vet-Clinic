@@ -208,10 +208,10 @@ const Footer = () => {
               <div className="flex items-center gap-2">
                 <FaEnvelope className="text-background/60" />
                 <a
-                  href="mailto:info@petvibes.com"
+                  href="mailto:info@pinesvetclinic.com"
                   className="text-background/80 hover:text-background transition-colors"
                 >
-                  info@petvibes.com
+                  info@pinesvetclinic.com
                 </a>
               </div>
             </div>

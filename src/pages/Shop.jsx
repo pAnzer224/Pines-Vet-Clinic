@@ -38,6 +38,7 @@ const Shop = () => {
   const [lastProduct, setLastProduct] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
+  const [userPlan, setUserPlan] = useState({ plan: "free", discount: 0 });
   const { currentUser } = useAuth();
   const [overlaySettings, setOverlaySettings] = useState({
     isEnabled: false,
@@ -78,6 +79,23 @@ const Shop = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [overlaySettings.isEnabled]);
+
+  // Fetch user's plan
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const unsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (doc) => {
+      if (doc.exists()) {
+        const userData = doc.data();
+        setUserPlan({
+          plan: userData.plan || "free",
+          discount: userData.discount || 0,
+        });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [currentUser]);
 
   useEffect(() => {
     const initialQuery = query(
@@ -171,11 +189,18 @@ const Shop = () => {
 
       const cartSnapshot = await getDocs(cartQuery);
 
+      // Calculate discounted price
+      const discountedPrice = Math.round(
+        product.price * (1 - (userPlan.discount || 0))
+      );
+
       if (!cartSnapshot.empty) {
         const cartItem = cartSnapshot.docs[0];
         await updateDoc(doc(db, "cart", cartItem.id), {
           quantity: cartItem.data().quantity + 1,
           updatedAt: serverTimestamp(),
+          price: discountedPrice,
+          originalPrice: product.price,
         });
       } else {
         await addDoc(collection(db, "cart"), {
@@ -183,7 +208,8 @@ const Shop = () => {
           productId: product.id,
           productName: product.name,
           productImage: product.image,
-          price: product.price,
+          price: discountedPrice,
+          originalPrice: product.price,
           quantity: 1,
           createdAt: serverTimestamp(),
           userName: currentUser.displayName || "Unknown User",
@@ -210,9 +236,20 @@ const Shop = () => {
           product.description
             .toLowerCase()
             .includes(searchQuery.toLowerCase()));
-      return matchesCategory && matchesSearch;
+
+      if (matchesCategory && matchesSearch) {
+        const discountedPrice = Math.round(
+          product.price * (1 - (userPlan.discount || 0))
+        );
+        return {
+          ...product,
+          originalPrice: product.price,
+          price: discountedPrice,
+        };
+      }
+      return false;
     });
-  }, [products, selectedCategory, searchQuery]);
+  }, [products, selectedCategory, searchQuery, userPlan.discount]);
 
   return (
     <div className="min-h-screen bg-background/40">
@@ -232,6 +269,16 @@ const Shop = () => {
             place.
           </p>
         </div>
+
+        {userPlan.discount > 0 && (
+          <div className="bg-green3/20 border-l-4 border-green2 p-4 mb-8 max-w-7xl mx-auto">
+            <p className="text-text font-nunito-semibold">
+              Your{" "}
+              {userPlan.plan.charAt(0).toUpperCase() + userPlan.plan.slice(1)}{" "}
+              Plan Discount: {userPlan.discount * 100}% off all products!
+            </p>
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 relative max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -330,9 +377,25 @@ const Shop = () => {
                   {product.description}
                 </p>
 
-                <p className="text-lg font-semibold text-primary mb-4">
-                  ₱{product.price}
-                </p>
+                <div className="mb-4">
+                  {userPlan.discount > 0 ? (
+                    <>
+                      <p className="text-text/60 text-sm line-through">
+                        ₱{product.originalPrice}
+                      </p>
+                      <p className="text-lg font-semibold text-primary">
+                        ₱{product.price}
+                        <span className="text-sm text-green2 ml-2">
+                          ({userPlan.discount * 100}% off)
+                        </span>
+                      </p>
+                    </>
+                  ) : (
+                    <p className="text-lg font-semibold text-primary">
+                      ₱{product.price}
+                    </p>
+                  )}
+                </div>
 
                 <button
                   onClick={() => handleAddToCart(product)}

@@ -66,6 +66,11 @@ const SignUp = () => {
     try {
       await signup(formData.email, formData.password, {
         fullName: formData.fullName,
+        plan: "free",
+        remainingConsultations: 0,
+        remainingGrooming: 0,
+        remainingDentalCheckups: 0,
+        discount: 0,
       });
       navigate("/home");
     } catch (err) {

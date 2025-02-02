@@ -67,21 +67,12 @@ export const getStoredAppointments = async () => {
         orderBy("createdAt", "desc")
       );
       const querySnapshot = await getDocs(q);
-      const appointments = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      }));
-
-      const currentDate = new Date();
-      return appointments.filter((apt) => {
-        const aptDate = new Date(apt.date);
-        if (aptDate < currentDate && apt.status === "Pending") {
-          const appointmentRef = doc(db, "appointments", apt.id);
-          deleteDoc(appointmentRef);
-          return false;
-        }
-        return apt.status !== "Cancelled"; // Filter out canceled appointments
-      });
+      return querySnapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((apt) => apt.status !== "Cancelled");
     }
 
     if (!auth.currentUser) {
@@ -95,21 +86,12 @@ export const getStoredAppointments = async () => {
     );
 
     const querySnapshot = await getDocs(q);
-    const appointments = querySnapshot.docs.map((doc) => ({
-      id: doc.id,
-      ...doc.data(),
-    }));
-
-    const currentDate = new Date();
-    return appointments.filter((apt) => {
-      const aptDate = new Date(apt.date);
-      if (aptDate < currentDate && apt.status === "Pending") {
-        const appointmentRef = doc(db, "appointments", apt.id);
-        deleteDoc(appointmentRef);
-        return false;
-      }
-      return apt.status !== "Cancelled"; // Filter out canceled appointments
-    });
+    return querySnapshot.docs
+      .map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }))
+      .filter((apt) => apt.status !== "Cancelled");
   } catch (error) {
     console.error("Error fetching appointments:", error);
     toast.error("Failed to fetch appointments. Please try again.");

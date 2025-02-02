@@ -7,13 +7,15 @@ import {
   cancelAppointment,
 } from "../pages/appointmentsUtils";
 import { getPets } from "../pages/petsUtils";
-import { auth } from "../firebase-config";
+import { auth, db } from "../firebase-config";
 import { onAuthStateChanged } from "firebase/auth";
 import AppointmentSchedulerModal from "../pages/AppointmentSchedulerModal";
 import ServiceSelectionModal from "../pages/ServiceSelectionModal";
 import PetAddModal from "../components/PetAddModal";
 import PromptModal from "../components/promptModal";
 import FeatureOverlay from "../components/FeauterOverlay";
+import RemainingBenefits from "../components/BenefitsTracker";
+import { getDoc, doc } from "@firebase/firestore";
 import { toast } from "react-toastify";
 
 export default function Appointments() {
@@ -29,6 +31,13 @@ export default function Appointments() {
   const [selectedServiceDetails, setSelectedServiceDetails] = useState(null);
   const [currentUser, setCurrentUser] = useState(null);
   const [overlaySettings, setOverlaySettings] = useState(null);
+  const [userPlan, setUserPlan] = useState("free");
+  const [showBenefits, setShowBenefits] = useState(true);
+  const [remainingBenefits, setRemainingBenefits] = useState({
+    consultations: 0,
+    grooming: 0,
+    dentalCheckups: 0,
+  });
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -52,9 +61,51 @@ export default function Appointments() {
             (apt) => apt.userId === currentUser.uid
           );
 
-          const fetchedPets = await getPets();
+          const userDoc = await getDoc(doc(db, "users", currentUser.uid));
+          const userData = userDoc.data();
+
+          // Count used benefits from non-cancelled appointments
+          const usedConsultations = userAppointments.filter(
+            (apt) =>
+              apt.service?.toLowerCase().includes("consultation") &&
+              apt.price === "FREE"
+          ).length;
+
+          const usedGrooming = userAppointments.filter(
+            (apt) =>
+              apt.service?.toLowerCase().includes("grooming") &&
+              apt.price === "FREE"
+          ).length;
+
+          const usedDental = userAppointments.filter(
+            (apt) =>
+              apt.service?.toLowerCase().includes("dental") &&
+              apt.price === "FREE"
+          ).length;
+
+          // Calculate remaining benefits
+          const planBenefits = {
+            basic: { consultations: 2, grooming: 0, dental: 0 },
+            standard: { consultations: 4, grooming: 1, dental: 1 },
+            premium: { consultations: 6, grooming: 2, dental: 2 },
+            free: { consultations: 0, grooming: 0, dental: 0 },
+          };
+
+          const plan = userData?.plan || "free";
+          const totalBenefits = planBenefits[plan];
+
+          setUserPlan(plan);
+          setRemainingBenefits({
+            consultations: Math.max(
+              0,
+              totalBenefits.consultations - usedConsultations
+            ),
+            grooming: Math.max(0, totalBenefits.grooming - usedGrooming),
+            dentalCheckups: Math.max(0, totalBenefits.dental - usedDental),
+          });
 
           setAppointments(userAppointments);
+          const fetchedPets = await getPets();
           setPets(Array.isArray(fetchedPets) ? fetchedPets : []);
         } catch (error) {
           toast.error("Failed to fetch data");
@@ -95,6 +146,40 @@ export default function Appointments() {
 
     if (selectedService && scheduledDateTime && selectedPet) {
       try {
+        const serviceCategory = selectedServiceDetails?.category.toLowerCase();
+        let price = selectedServiceDetails?.price;
+        // Check if the service should be free based on remaining benefits
+        if (
+          serviceCategory === "consultation" &&
+          remainingBenefits.consultations > 0
+        ) {
+          price = "FREE";
+          setRemainingBenefits((prev) => ({
+            ...prev,
+            consultations: prev.consultations - 1,
+          }));
+        } else if (
+          serviceCategory === "grooming" &&
+          remainingBenefits.grooming > 0
+        ) {
+          price = "FREE";
+          setRemainingBenefits((prev) => ({
+            ...prev,
+            grooming: prev.grooming - 1,
+          }));
+        } else if (
+          serviceCategory === "dental care" &&
+          selectedServiceDetails.name === "Dental Check-up" &&
+          remainingBenefits.dentalCheckups > 0 &&
+          (userPlan === "standard" || userPlan === "premium")
+        ) {
+          price = "FREE";
+          setRemainingBenefits((prev) => ({
+            ...prev,
+            dentalCheckups: prev.dentalCheckups - 1,
+          }));
+        }
+
         const newAppointment = {
           service: selectedServiceDetails
             ? `${selectedServiceDetails.category} - ${selectedServiceDetails.name}`
@@ -102,8 +187,8 @@ export default function Appointments() {
           date: `${scheduledDateTime.date}, ${scheduledDateTime.time}`,
           petName: selectedPet.name,
           petId: selectedPet.id,
-          paymentMethod: "Cash",
-          price: selectedServiceDetails?.price || "Price varies",
+          paymentMethod: price === "FREE" ? "Plan Benefit" : "Cash",
+          price,
           duration: selectedServiceDetails?.duration || "Duration varies",
           userName: currentUser.displayName || "Unknown User",
           userId: currentUser.uid,
@@ -171,7 +256,23 @@ export default function Appointments() {
           message={overlaySettings.appointments.message}
         />
       )}
-
+      <AnimatePresence>
+        {currentUser && showBenefits && (
+          <motion.div
+            initial={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -100 }}
+            transition={{ duration: 0.3, ease: "easeOut" }}
+          >
+            <RemainingBenefits
+              plan={userPlan}
+              remainingConsultations={remainingBenefits.consultations}
+              remainingGrooming={remainingBenefits.grooming}
+              remainingDentalCheckups={remainingBenefits.dentalCheckups}
+              onClose={() => setShowBenefits(false)}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
         <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
           <h2 className="text-lg font-bold text-text mb-8 tracking-wide">
@@ -355,7 +456,6 @@ export default function Appointments() {
           )}
         </div>
       </div>
-
       <ServiceSelectionModal
         isOpen={isServiceModalOpen}
         onClose={() => setIsServiceModalOpen(false)}
