@@ -158,7 +158,7 @@ function Appointments() {
                 />
               ))
             ) : (
-              <p className="text-center text-text/60">
+              <p className="text-center text-primary/50 font-nunito-semibold ">
                 No upcoming appointments
               </p>
             )}
@@ -184,7 +184,9 @@ function Appointments() {
                 <ActivityCard key={activity.id} activity={activity} />
               ))
             ) : (
-              <p className="text-center text-text/60">No recent activities</p>
+              <p className="text-center text-primary/50 font-nunito-semibold">
+                No recent activities
+              </p>
             )}
           </div>
           <button className="w-full mt-4 px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30">

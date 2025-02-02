@@ -57,7 +57,7 @@ function AdminLogin() {
       <div className="w-full max-w-md p-8 space-y-6 bg-background border-2 border-green3/80 rounded-xl shadow-sm">
         <div className="text-center">
           <img
-            src="/images/HPLogo.svg"
+            src="/images/PVClogo.svg"
             alt="Logo"
             className="mx-auto h-16 mb-4"
           />

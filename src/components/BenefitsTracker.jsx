@@ -1,6 +1,7 @@
 import React from "react";
 import { Calendar, Scissors, Stethoscope, PawPrint, X } from "lucide-react";
 import { Link } from "react-router-dom";
+import { ArrowRight } from "lucide-react";
 
 const RemainingBenefits = ({
   plan,
@@ -81,9 +82,14 @@ const RemainingBenefits = ({
             </p>
             <Link
               to="/pricing"
-              className="inline-block bg-green2 text-white px-6 py-2 rounded-lg hover:bg-green2/90 transition-colors text-sm"
+              className="group relative inline-flex h-10 items-center justify-center overflow-hidden rounded-lg bg-green2 px-6 py-2 text-sm font-nunito-semibold text-background transition-colors hover:bg-green2/90"
             >
-              View Plans
+              <span className="translate-x-0 opacity-100 transition group-hover:-translate-x-[150%] group-hover:opacity-0">
+                View Plans
+              </span>
+              <span className="absolute translate-x-[150%] opacity-0 transition group-hover:translate-x-0 group-hover:opacity-100">
+                <ArrowRight className="w-5 h-5" />
+              </span>
             </Link>
           </div>
         ) : (

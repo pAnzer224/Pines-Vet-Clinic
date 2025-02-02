@@ -23,8 +23,8 @@ function MainHeader() {
     <header className="fixed top-0 left-0 right-0 z-50 h-[60px] bg-background py-4 px-4 sm:px-8 md:px-20 flex justify-between items-center border-b font-nunito-bold tracking-wide">
       <Link to="/">
         <img
-          src="/images/HPLogo.svg"
-          alt="Pines Vet Clinic temp logo"
+          src="/images/PVClogo.svg"
+          alt="Pines Vet Clinic Logo"
           className="h-8 md:h-12"
         />
       </Link>

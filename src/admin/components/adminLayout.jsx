@@ -76,7 +76,7 @@ function AdminLayout() {
       >
         <div className="flex items-center justify-between h-[60px] px-4 border-b border-green3/30">
           <Link to="/admin/dashboard" className="flex items-center space-x-2">
-            <img src="/images/HPLogo.svg" alt="Logo" className="pl-2 h-10" />
+            <img src="/images/PVClogo.svg" alt="Logo" className="pl-2 h-10" />
           </Link>
           <button
             onClick={() => setIsSidebarOpen(false)}

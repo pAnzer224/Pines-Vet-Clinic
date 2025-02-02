@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Check, AlertCircle, Lightbulb, Info } from "lucide-react";
+import { Check, AlertCircle, Lightbulb } from "lucide-react";
 import { auth } from "../firebase-config";
 import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase-config";
@@ -244,7 +244,6 @@ const PricingPage = () => {
               </div>
               {nextMonthPlan && (
                 <div className="mt-2 flex items-start gap-2">
-                  <Info className="h-4 w-4 text-yellow-600 flex-shrink-0 mt-0.5" />
                   <p className="text-sm text-yellow-700">
                     Your plan will be changed to {nextMonthPlan.toUpperCase()}{" "}
                     on the first day of next month. Until then, you'll continue
@@ -270,7 +269,7 @@ const PricingPage = () => {
                   className={`relative rounded-2xl border-[1.6px] border-green2 p-6
                     ${
                       tier.highlighted
-                        ? "bg-green3/30 shadow-xl scale-105"
+                        ? "bg-green3/50 shadow-xl scale-105"
                         : "bg-background/95 shadow-lg"
                     }
                     transition-all hover:shadow-xl

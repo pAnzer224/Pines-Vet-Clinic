@@ -5,8 +5,6 @@ import {
   PawPrint,
   UserCircle,
   ChevronRight,
-  Activity,
-  AlertCircle,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
@@ -14,6 +12,8 @@ import { getStoredAppointments } from "../../pages/appointmentsUtils";
 import { toast } from "react-toastify";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase-config";
+import PlanDetailsCard from "../components/PlanDetailsCard";
+import WellnessTipsCard from "../components/WellnessTipsCard";
 
 function WelcomeCard({ userData }) {
   return (
@@ -85,7 +85,7 @@ function AppointmentCard({ appointments }) {
             </div>
           ))
         ) : (
-          <p className="text-sm text-primary/50 text-center">
+          <p className="text-sm text-primary/50 text-center font-nunito-semibold">
             No upcoming appointments
           </p>
         )}
@@ -102,43 +102,19 @@ function AppointmentCard({ appointments }) {
   );
 }
 
-function WellnessTipsCard() {
-  return (
-    <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2">
-          <Activity className="text-green2" size={24} />
-          <h2 className="text-lg font-nunito-bold text-green2">
-            Pet Wellness Tips
-          </h2>
-        </div>
-      </div>
-      <div className="flex items-start space-x-4 p-4 bg-green3/10 rounded-lg">
-        <div className="p-2 rounded-full bg-green3/20 text-green2">
-          <AlertCircle size={20} />
-        </div>
-        <div>
-          <p className="text-sm font-nunito-bold text-green2">
-            Dental Care Reminder
-          </p>
-          <p className="text-sm font-nunito-semibold text-primary/50">
-            Remember to brush Max's teeth regularly to maintain good oral
-            health!
-          </p>
-        </div>
-      </div>
-      <div className="mt-4">
-        <button className="w-full px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30">
-          View All Tips
-        </button>
-      </div>
-    </div>
-  );
-}
-
 function UserDashboard() {
   const [userData, setUserData] = useState(null);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [planData, setPlanData] = useState({
+    plan: "free",
+    nextMonthPlan: null,
+    nextMonthPlanDate: null,
+    remainingBenefits: {
+      consultations: 0,
+      grooming: 0,
+      dentalCheckups: 0,
+    },
+  });
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
 
@@ -155,30 +131,35 @@ function UserDashboard() {
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
-          setUserData(userDoc.data());
+          const data = userDoc.data();
+          setUserData(data);
+          setPlanData({
+            plan: data.plan || "free",
+            nextMonthPlan: data.nextMonthPlan || null,
+            nextMonthPlanDate: data.nextMonthPlanDate || null,
+            remainingBenefits: {
+              consultations: data.remainingConsultations || 0,
+              grooming: data.remainingGrooming || 0,
+              dentalCheckups: data.remainingDentalCheckups || 0,
+            },
+          });
         }
 
-        // Fetch all appointments
+        // Fetch appointments
         const allAppointments = await getStoredAppointments();
+        const userAppointments = allAppointments
+          .filter((apt) => apt.userId === currentUser.uid)
+          .sort((a, b) => {
+            const dateA = a.createdAt
+              ? new Date(a.createdAt.toDate())
+              : new Date(0);
+            const dateB = b.createdAt
+              ? new Date(b.createdAt.toDate())
+              : new Date(0);
+            return dateB - dateA;
+          });
 
-        // Filter appointments for current user
-        const userAppointments = allAppointments.filter(
-          (apt) => apt.userId === currentUser.uid
-        );
-
-        // Sort appointments by date (most recent first)
-        const sortedAppointments = userAppointments.sort((a, b) => {
-          const dateA = a.createdAt
-            ? new Date(a.createdAt.toDate())
-            : new Date(0);
-          const dateB = b.createdAt
-            ? new Date(b.createdAt.toDate())
-            : new Date(0);
-          return dateB - dateA;
-        });
-
-        // Take first 2 appointments as upcoming
-        setUpcomingAppointments(sortedAppointments.slice(0, 2));
+        setUpcomingAppointments(userAppointments.slice(0, 2));
       } catch (error) {
         toast.error("Failed to fetch dashboard data");
         console.error(error);
@@ -213,9 +194,11 @@ function UserDashboard() {
       {userData && <WelcomeCard userData={userData} />}
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <PlanDetailsCard planData={planData} />
         <AppointmentCard appointments={upcomingAppointments} />
-        <WellnessTipsCard />
       </div>
+
+      <WellnessTipsCard />
     </div>
   );
 }

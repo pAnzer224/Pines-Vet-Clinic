@@ -1,0 +1,139 @@
+CONSULTATION|General Check-up|dog|Regular exercise needs vary by breed - large dogs need 1-2 hours daily while small breeds may need 30 minutes
+CONSULTATION|General Check-up|dog|Watch for signs of joint stiffness in senior dogs, especially when getting up or after exercise
+CONSULTATION|General Check-up|dog|Monitor your dog's water intake - sudden changes can indicate health issues
+CONSULTATION|General Check-up|dog|Check your dog's gums monthly - they should be pink, not white or red
+CONSULTATION|General Check-up|dog|Feel for lumps and bumps during grooming sessions - early detection is key
+
+CONSULTATION|General Check-up|cat|Watch for changes in litter box habits as they can indicate health issues
+CONSULTATION|General Check-up|cat|Monitor your cat's grooming habits - excessive or reduced grooming can signal problems
+CONSULTATION|General Check-up|cat|Check your cat's ears weekly for signs of mites or infection
+CONSULTATION|General Check-up|cat|Note any changes in sleeping patterns or favorite resting spots
+CONSULTATION|General Check-up|cat|Pay attention to your cat's appetite and water consumption patterns
+
+CONSULTATION|General Check-up|bird|Look for bright, alert eyes and clean feathers as signs of good health
+CONSULTATION|General Check-up|bird|Monitor droppings daily - changes in color or consistency need attention
+CONSULTATION|General Check-up|bird|Check flight feathers weekly for proper alignment and condition
+CONSULTATION|General Check-up|bird|Watch for changes in vocalization patterns or energy levels
+CONSULTATION|General Check-up|bird|Monitor beak and nail growth - overgrowth can indicate health issues
+
+CONSULTATION|General Check-up|rabbit|Monitor their droppings daily - changes can indicate digestive issues
+CONSULTATION|General Check-up|rabbit|Check teeth alignment weekly - malocclusion needs immediate attention
+CONSULTATION|General Check-up|rabbit|Watch for wet patches around eyes or nose which could indicate infection
+CONSULTATION|General Check-up|rabbit|Monitor hay consumption - reduced intake needs veterinary attention
+CONSULTATION|General Check-up|rabbit|Check ears weekly for mites or buildup
+
+CONSULTATION|General Check-up|hamster|Watch for signs of wet tail, especially in young hamsters
+CONSULTATION|General Check-up|hamster|Check for proper teeth alignment weekly
+CONSULTATION|General Check-up|hamster|Monitor wheel usage - reduced activity may indicate health issues
+CONSULTATION|General Check-up|hamster|Watch for signs of hair loss or skin problems
+CONSULTATION|General Check-up|hamster|Check bedding daily for signs of illness or unusual droppings
+
+CONSULTATION|General Check-up|fish|Monitor water parameters daily - pH, ammonia, and nitrite levels are crucial
+CONSULTATION|General Check-up|fish|Watch for changes in swimming patterns or behavior
+CONSULTATION|General Check-up|fish|Check fins and scales for signs of disease or parasites
+CONSULTATION|General Check-up|fish|Monitor eating habits and respond quickly to reduced appetite
+CONSULTATION|General Check-up|fish|Look for signs of stress like rapid gill movement or hiding
+
+CONSULTATION|General Check-up|default|Keep a health journal noting any changes in appetite, behavior, or energy levels
+CONSULTATION|General Check-up|default|Take photos of any concerning symptoms to show your vet
+CONSULTATION|General Check-up|default|Maintain a regular wellness check schedule appropriate for your pet's age
+CONSULTATION|General Check-up|default|Keep track of weight changes - sudden changes need attention
+CONSULTATION|General Check-up|default|Document any environmental changes that might affect your pet's health
+
+CONSULTATION|Vaccination|dog|Puppies need vaccines at 6, 8, 12, and 16 weeks for optimal protection
+CONSULTATION|Vaccination|dog|Adult dogs need regular boosters - keep a vaccination calendar
+CONSULTATION|Vaccination|dog|Consider lifestyle vaccines based on exposure risks
+CONSULTATION|Vaccination|dog|Watch for any vaccine reactions in the first 24 hours
+CONSULTATION|Vaccination|dog|Keep vaccination records in a safe, accessible place
+
+CONSULTATION|Vaccination|cat|Indoor cats still need core vaccinations to prevent common feline diseases
+CONSULTATION|Vaccination|cat|Kittens need a series of vaccinations in their first year
+CONSULTATION|Vaccination|cat|Update rabies vaccines according to local regulations
+CONSULTATION|Vaccination|cat|Consider FeLV vaccine based on lifestyle risks
+CONSULTATION|Vaccination|cat|Monitor for vaccine reactions, especially in young kittens
+
+CONSULTATION|Medical Assessment|dog|Note any changes in drinking habits - excessive thirst can signal health issues
+CONSULTATION|Medical Assessment|dog|Track exercise tolerance - reduced stamina needs evaluation
+CONSULTATION|Medical Assessment|dog|Monitor joint mobility in larger breeds
+CONSULTATION|Medical Assessment|dog|Watch for signs of dental disease like bad breath
+CONSULTATION|Medical Assessment|dog|Check skin and coat condition regularly
+
+CONSULTATION|Medical Assessment|cat|Track your cat's weight monthly - sudden changes warrant attention
+CONSULTATION|Medical Assessment|cat|Monitor breathing rate during rest
+CONSULTATION|Medical Assessment|cat|Check for signs of dental disease regularly
+CONSULTATION|Medical Assessment|cat|Watch for changes in jumping ability or mobility
+CONSULTATION|Medical Assessment|cat|Note any changes in litterbox habits
+
+GROOMING|Basic Grooming|dog|Brush your dog's teeth between grooming visits to maintain oral health
+GROOMING|Basic Grooming|dog|Use appropriate brushes for your dog's coat type
+GROOMING|Basic Grooming|dog|Check and clean ears weekly to prevent infections
+GROOMING|Basic Grooming|dog|Trim nails every 2-4 weeks or when you hear clicking on the floor
+GROOMING|Basic Grooming|dog|Brush daily during shedding seasons
+
+GROOMING|Basic Grooming|cat|Regular brushing reduces hairballs and strengthens your bond
+GROOMING|Basic Grooming|cat|Check ears weekly for signs of mites or infection
+GROOMING|Basic Grooming|cat|Trim nails every 2-3 weeks if they don't wear naturally
+GROOMING|Basic Grooming|cat|Use cat-specific toothbrush and paste for oral care
+GROOMING|Basic Grooming|cat|Watch for matted fur, especially in long-haired cats
+
+GROOMING|Full Service Grooming|dog|Maintain regular grooming schedules for coat health
+GROOMING|Full Service Grooming|dog|Book appointments 4-6 weeks apart for most breeds
+GROOMING|Full Service Grooming|dog|Consider seasonal grooming needs
+GROOMING|Full Service Grooming|dog|Alert groomer to any skin sensitivities
+GROOMING|Full Service Grooming|dog|Request thorough ear cleaning and nail check
+
+DENTAL|Dental Check-up|dog|Rope toys help clean teeth naturally between dental visits
+DENTAL|Dental Check-up|dog|Bad breath isn't normal - schedule a dental check
+DENTAL|Dental Check-up|dog|Look for signs of gum inflammation or bleeding
+DENTAL|Dental Check-up|dog|Check for broken or discolored teeth regularly
+DENTAL|Dental Check-up|dog|Use dental wipes between brushings
+
+DENTAL|Dental Check-up|cat|Dental treats can help reduce tartar buildup
+DENTAL|Dental Check-up|cat|Watch for drooling or difficulty eating
+DENTAL|Dental Check-up|cat|Check for red or swollen gums monthly
+DENTAL|Dental Check-up|cat|Note any changes in eating habits
+DENTAL|Dental Check-up|cat|Consider annual professional dental cleanings
+
+DEFAULT|general|Keep emergency vet contacts easily accessible
+DEFAULT|general|Create a pet first-aid kit for your home
+DEFAULT|general|Consider pet insurance while your pet is young and healthy
+DEFAULT|general|Microchip your pets for identification
+DEFAULT|general|Keep photos of your pet updated for identification
+DEFAULT|general|Store medical records digitally for easy access
+DEFAULT|general|Learn your pet's normal vital signs
+DEFAULT|general|Have an emergency evacuation plan for your pets
+DEFAULT|general|Keep basic first aid supplies on hand
+DEFAULT|general|Know the location of 24-hour emergency vets
+
+DEFAULT|nutrition|Always introduce new foods gradually
+DEFAULT|nutrition|Fresh water should be available 24/7
+DEFAULT|nutrition|Research proper portion sizes for your pet's breed and age
+DEFAULT|nutrition|Store pet food properly to maintain freshness
+DEFAULT|nutrition|Monitor treat intake - they should be less than 10% of diet
+DEFAULT|nutrition|Learn which human foods are toxic to your pet
+DEFAULT|nutrition|Consider age-appropriate dietary needs
+DEFAULT|nutrition|Watch for food allergies or sensitivities
+DEFAULT|nutrition|Measure meals consistently to prevent obesity
+DEFAULT|nutrition|Use food puzzles for mental stimulation
+
+DEFAULT|safety|Pet-proof your home before bringing a new pet
+DEFAULT|safety|Research toxic plants before adding houseplants
+DEFAULT|safety|Keep medications and cleaning supplies securely stored
+DEFAULT|safety|Secure trash cans to prevent access
+DEFAULT|safety|Check fencing regularly for escape routes
+DEFAULT|safety|Use appropriate restraints during car travel
+DEFAULT|safety|Keep small objects out of reach
+DEFAULT|safety|Secure window screens in high-rise buildings
+DEFAULT|safety|Have an emergency kit ready
+DEFAULT|safety|Keep identification tags updated
+
+DEFAULT|preventive|Regular check-ups can catch health issues early
+DEFAULT|preventive|Keep a calendar for vaccination due dates
+DEFAULT|preventive|Monitor weight changes monthly
+DEFAULT|preventive|Schedule regular dental cleanings
+DEFAULT|preventive|Keep parasite prevention up-to-date
+DEFAULT|preventive|Exercise regularly for weight management
+DEFAULT|preventive|Maintain grooming schedules
+DEFAULT|preventive|Watch for age-related changes
+DEFAULT|preventive|Keep socialization appropriate and regular
+DEFAULT|preventive|Update microchip information as needed
