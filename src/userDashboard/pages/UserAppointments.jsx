@@ -184,7 +184,7 @@ function Appointments() {
                 <ActivityCard key={activity.id} activity={activity} />
               ))
             ) : (
-              <p className="text-center text-primary/50 font-nunito-semibold">
+              <p className="text-center text-primary/50 font-nunito-semibold  ">
                 No recent activities
               </p>
             )}

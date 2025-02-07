@@ -28,7 +28,7 @@ const PlanDetailsCard = ({ planData }) => {
       case "premium":
         return <Crown strokeWidth={2} className="size-5 text-[#DD47BC]" />;
       case "standard":
-        return <Shield className="size-5" />;
+        return <Shield strokeWidth={2.5} className="size-5 text-[#54E25A]" />;
       case "basic":
         return <Calendar className="size-5" />;
       default:
@@ -38,6 +38,20 @@ const PlanDetailsCard = ({ planData }) => {
 
   const getNextBillingDate = () => {
     const today = new Date();
+
+    if (planData.billingPeriod === "yearly") {
+      const nextYearRenewal = new Date(
+        today.getFullYear() + 1,
+        today.getMonth(),
+        today.getDate()
+      );
+      return nextYearRenewal.toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+    }
+
     const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
     return nextMonth.toLocaleDateString("en-US", {
       year: "numeric",
@@ -184,7 +198,9 @@ const PlanDetailsCard = ({ planData }) => {
         <div className="flex items-center gap-2">
           <Tag size={16} strokeWidth={2.5} className="text-primary/60" />
           <span className="text-sm text-primary/60 font-nunito-bold">
-            Monthly subscription
+            {planData.billingPeriod === "yearly"
+              ? "Yearly subscription (-16%)"
+              : "Monthly subscription"}
           </span>
         </div>
       </div>

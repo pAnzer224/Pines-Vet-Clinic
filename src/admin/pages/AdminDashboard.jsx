@@ -345,7 +345,7 @@ function Dashboard() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 mt-12">
       <div>
         <h1 className="text-2xl font-nunito-bold text-green2">Dashboard</h1>
         <div className="flex items-center mt-5">

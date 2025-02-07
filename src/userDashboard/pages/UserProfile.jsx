@@ -43,6 +43,16 @@ function PersonalInformation() {
     newPassword: "",
     confirmPassword: "",
   });
+  const [userInfo, setUserInfo] = useState({
+    preferredBranch: "Pines Vet Clinic - Maginhawa",
+    memberSince: "",
+    preferredVet: "Dr. Sarah Smith",
+    paymentMethod: "Cash",
+    notificationPreferences: "Email & SMS",
+    appointmentReminders: "24 hours before",
+    careLevel: "",
+    lastVisit: "May 1, 2024",
+  });
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -58,6 +68,27 @@ function PersonalInformation() {
             const phone = data.phone || "Add Now";
             const email = user.email || "Add Now";
 
+            // Format member since date
+            const memberSinceDate = new Date(user.metadata.creationTime);
+            const memberSinceYear = memberSinceDate.getFullYear();
+
+            // Get care plan level
+            let carePlan;
+            if (data.plan) {
+              carePlan = `${
+                data.plan.charAt(0).toUpperCase() + data.plan.slice(1)
+              } Care Plan`;
+            } else {
+              carePlan = (
+                <a
+                  href="/pricing"
+                  className="text-primary hover:text-primary/80"
+                >
+                  See Available Plans
+                </a>
+              );
+            }
+
             setUserData({
               fullName,
               email,
@@ -69,6 +100,12 @@ function PersonalInformation() {
               email,
               phone,
             });
+
+            setUserInfo((prev) => ({
+              ...prev,
+              memberSince: memberSinceYear.toString(),
+              careLevel: carePlan,
+            }));
           } else {
             await setDoc(userDocRef, {
               fullName: "Add Now",
@@ -186,17 +223,6 @@ function PersonalInformation() {
       console.error("Unexpected error changing password:", error);
       toast.error("An unexpected error occurred");
     }
-  };
-
-  const userInfo = {
-    preferredBranch: "Highland PetVibes - Maginhawa",
-    memberSince: "January 2020",
-    preferredVet: "Dr. Sarah Smith",
-    paymentMethod: "Credit Card ending in 4242",
-    notificationPreferences: "Email & SMS",
-    appointmentReminders: "24 hours before",
-    careLevel: "Premium Care Plan",
-    lastVisit: "May 1, 2024",
   };
 
   return (

@@ -369,7 +369,7 @@ function AdminShop() {
                       onClick={() => deleteItem(product.id)}
                       className="text-red/80 hover:text-red transition-colors"
                     >
-                      <Trash2 className="w-5 h-5" />
+                      <Trash2 className="size-5" />
                     </button>
                   </div>
                 </td>

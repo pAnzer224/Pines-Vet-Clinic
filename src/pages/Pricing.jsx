@@ -2,17 +2,27 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, AlertCircle, Lightbulb } from "lucide-react";
 import { auth } from "../firebase-config";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
+import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebase-config";
+import PromptModal from "../components/promptModal";
+import {
+  pricingTiers,
+  handleSubscriptionRequest,
+  checkPhoneNumber,
+} from "./plansUtils";
 import { toast } from "react-toastify";
 
 const PricingPage = () => {
-  const [currentPlan, setCurrentPlan] = useState("free");
+  const [currentPlan, setCurrentPlan] = useState({
+    name: "free",
+    billingPeriod: "monthly",
+  });
+  const [showPhonePrompt, setShowPhonePrompt] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [nextMonthPlan, setNextMonthPlan] = useState(null);
-  const [showDowngradeWarning, setShowDowngradeWarning] = useState(false);
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [processingSubscription, setProcessingSubscription] = useState(false);
+  const [processingRequest, setProcessingRequest] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState("monthly");
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
+  const [planStatus, setPlanStatus] = useState(null);
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
@@ -20,187 +30,46 @@ const PricingPage = () => {
       if (user) {
         const userDoc = await getDoc(doc(db, "users", user.uid));
         const userData = userDoc.data();
-        setCurrentPlan(userData?.plan || "free");
-        setNextMonthPlan(userData?.nextMonthPlan || null);
+        const currentUserPlan = userData?.plan || "free";
+        const userBillingPeriod = userData?.billingPeriod || "monthly";
+        setCurrentPlan({
+          name: currentUserPlan,
+          billingPeriod: userBillingPeriod,
+        });
+        setBillingPeriod(userBillingPeriod);
+        setPlanStatus(userData?.planStatus || null);
       }
     });
     return () => unsubscribe();
   }, []);
 
-  const getPlanValue = (plan) => {
-    const values = {
-      premium: 3,
-      standard: 2,
-      basic: 1,
-      free: 0,
-    };
-    return values[plan];
-  };
-
-  const isDowngrade = (newPlan) => {
-    return getPlanValue(newPlan) < getPlanValue(currentPlan);
-  };
-
-  const handleSubscription = async (plan) => {
-    if (!isAuthenticated) return;
-
-    try {
-      setProcessingSubscription(true);
-
-      const planBenefits = {
-        basic: { consultations: 2, grooming: 0, discount: 0.1 },
-        standard: { consultations: 4, grooming: 1, discount: 0.15 },
-        premium: { consultations: 6, grooming: 2, discount: 0.2 },
-        free: { consultations: 0, grooming: 0, discount: 0 },
-      };
-
-      const benefits = planBenefits[plan];
-      const now = new Date();
-      const subscriptionDate = now.toISOString();
-
-      if (isDowngrade(plan)) {
-        // For downgrades, set the next month's plan
-        const firstDayNextMonth = new Date(
-          now.getFullYear(),
-          now.getMonth() + 1,
-          1
-        );
-
-        await updateDoc(doc(db, "users", auth.currentUser.uid), {
-          nextMonthPlan: plan,
-          nextMonthPlanDate: firstDayNextMonth.toISOString(),
-          subscriptionHistory: {
-            lastChanged: subscriptionDate,
-            previousPlan: currentPlan,
-            newPlan: plan,
-            effectiveDate: firstDayNextMonth.toISOString(),
-            type: "downgrade",
-          },
-        });
-
-        setNextMonthPlan(plan);
-        toast.success(
-          `Your plan will be downgraded to ${plan} on ${firstDayNextMonth.toLocaleDateString()}`
-        );
-      } else {
-        // For upgrades or same-level changes, apply immediately
-        await updateDoc(doc(db, "users", auth.currentUser.uid), {
-          plan: plan,
-          remainingConsultations: benefits.consultations,
-          remainingGrooming: benefits.grooming,
-          discount: benefits.discount,
-          nextMonthPlan: null,
-          nextMonthPlanDate: null,
-          subscriptionHistory: {
-            lastChanged: subscriptionDate,
-            previousPlan: currentPlan,
-            newPlan: plan,
-            effectiveDate: subscriptionDate,
-            type: "upgrade",
-          },
-        });
-
-        setCurrentPlan(plan);
-        setNextMonthPlan(null);
-        toast.success(`Successfully upgraded to ${plan} plan!`);
-      }
-
-      // Store the subscription transaction
-      await updateDoc(doc(db, "transactions", auth.currentUser.uid), {
-        subscriptions: [
-          {
-            date: subscriptionDate,
-            plan: plan,
-            amount: pricingTiers.find((tier) =>
-              tier.name.toLowerCase().includes(plan)
-            ).price,
-            paymentMethod: "Cash",
-            status: "Completed",
-          },
-        ],
-      });
-    } catch (error) {
-      toast.error("Error updating plan");
-    } finally {
-      setProcessingSubscription(false);
-      setShowDowngradeWarning(false);
-      setSelectedPlan(null);
-    }
-  };
-
-  const handlePlanSelection = (plan) => {
+  const handlePlanSelection = async (plan) => {
     const planName = plan.toLowerCase().replace(" care", "");
-
-    if (currentPlan === planName) return;
-
-    if (isDowngrade(planName)) {
-      setSelectedPlan(planName);
-      setShowDowngradeWarning(true);
-    } else {
-      handleSubscription(planName);
+    if (!isAuthenticated) {
+      setShowAuthPrompt(true);
+      return;
     }
+    if (!(await checkPhoneNumber(auth))) {
+      setShowPhonePrompt(true);
+      return;
+    }
+    if (
+      currentPlan.name === planName &&
+      currentPlan.billingPeriod === billingPeriod
+    ) {
+      return;
+    }
+    if (planStatus === "Pending") {
+      toast.info("You already have a pending plan request");
+      return;
+    }
+    handleSubscriptionRequest({
+      plan: planName,
+      billingPeriod,
+      auth,
+      setProcessingRequest,
+    });
   };
-
-  const pricingTiers = [
-    {
-      name: "Basic Care",
-      price: "₱599",
-      period: "per month",
-      description: "Essential veterinary care for budget-conscious pet owners",
-      features: [
-        "2 consultations per month",
-        "10% discount on products",
-        "Basic appointment reminders",
-        "Access to pet wellness tips",
-      ],
-      benefits: {
-        consultations: 2,
-        grooming: 0,
-        discount: 0.1,
-      },
-      highlighted: false,
-    },
-    {
-      name: "Standard Care",
-      price: "₱1,199",
-      period: "per month",
-      description: "Enhanced care with added benefits for your pet",
-      features: [
-        "Basic Care features",
-        "4 consultations per month",
-        "1 grooming service per month",
-        "15% discount on products",
-        "Priority appointment scheduling",
-        "Monthly dental check-ups",
-      ],
-      benefits: {
-        consultations: 4,
-        grooming: 1,
-        discount: 0.15,
-      },
-      highlighted: true,
-    },
-    {
-      name: "Premium Care",
-      price: "₱1,599",
-      period: "per month",
-      description: "Complete pet healthcare with exclusive benefits",
-      features: [
-        "Standard Care features",
-        "6 consultations per month",
-        "2 grooming services per month",
-        "20% discount on products",
-        "Personalized pet health tracking",
-        "Priority emergency services",
-      ],
-      benefits: {
-        consultations: 6,
-        grooming: 2,
-        discount: 0.2,
-      },
-      highlighted: false,
-    },
-  ];
 
   return (
     <div id="pricing" className="min-h-screen bg-transparent">
@@ -214,6 +83,46 @@ const PricingPage = () => {
             include our commitment to exceptional veterinary care.
           </p>
 
+          <div className="flex justify-center max-w-[14rem] m-auto mb-8">
+            <div className="relative flex w-full p-1 bg-pantone/70 rounded-full">
+              <span
+                className="absolute inset-0 m-1 pointer-events-none"
+                aria-hidden="true"
+              >
+                <span
+                  className={`absolute inset-0 w-1/2 bg-green3 rounded-full shadow-sm shadow-green3/50 transform transition-transform duration-150 ease-in-out ${
+                    billingPeriod === "yearly"
+                      ? "translate-x-full"
+                      : "translate-x-0"
+                  }`}
+                />
+              </span>
+              <button
+                onClick={() => setBillingPeriod("monthly")}
+                className={`relative flex-1 text-sm font-medium h-8 rounded-full focus-visible:outline-none focus-visible:ring focus-visible:ring-green3/30 transition-colors duration-150 ease-in-out ${
+                  billingPeriod === "monthly" ? "text-text" : "text-text/60"
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingPeriod("yearly")}
+                className={`relative flex-1 text-sm font-medium h-8 rounded-full focus-visible:outline-none focus-visible:ring focus-visible:ring-green3/30 transition-colors duration-150 ease-in-out ${
+                  billingPeriod === "yearly" ? "text-text" : "text-text/60"
+                }`}
+              >
+                Yearly{" "}
+                <span
+                  className={`ml-1 text-xs ${
+                    billingPeriod === "yearly" ? "text-primary" : "text-text/40"
+                  }`}
+                >
+                  -16%
+                </span>
+              </button>
+            </div>
+          </div>
+
           {isAuthenticated && (
             <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 max-w-5xl mx-auto">
               <div className="flex items-center">
@@ -222,13 +131,9 @@ const PricingPage = () => {
                   <p className="text-yellow-800 font-nunito-semibold">
                     Current Plan:{" "}
                     <span className="font-nunito-bold">
-                      {currentPlan.toUpperCase()}
+                      {currentPlan.name.toUpperCase()} (
+                      {currentPlan.billingPeriod})
                     </span>
-                    {nextMonthPlan && (
-                      <span className="ml-2 text-sm">
-                        (Changing to {nextMonthPlan.toUpperCase()} next month)
-                      </span>
-                    )}
                   </p>
                 </div>
                 <div className="relative group">
@@ -236,29 +141,38 @@ const PricingPage = () => {
                   <div className="tracking-wide font-nunito-semibold absolute z-10 p-3 -mt-2 text-sm text-background bg-[#8BB1A0] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none w-64 right-0">
                     {pricingTiers
                       .find((tier) =>
-                        tier.name.toLowerCase().includes(currentPlan)
+                        tier.name.toLowerCase().includes(currentPlan.name)
                       )
                       ?.features.join(", ") || "Free plan limitations apply"}
                   </div>
                 </div>
               </div>
-              {nextMonthPlan && (
-                <div className="mt-2 flex items-start gap-2">
-                  <p className="text-sm text-yellow-700">
-                    Your plan will be changed to {nextMonthPlan.toUpperCase()}{" "}
-                    on the first day of next month. Until then, you'll continue
-                    to enjoy your current plan benefits.
+            </div>
+          )}
+
+          {isAuthenticated && planStatus === "Pending" && (
+            <div className="bg-red/20 border-l-4 border-red p-2 mb-8 max-w-5xl mx-auto">
+              <div className="flex items-center">
+                <AlertCircle
+                  strokeWidth={3}
+                  className="size-5 text-red/80 mr-3 ml-2"
+                />
+                <div className="flex-grow">
+                  <p className="text-red font-nunito-semibold text-sm">
+                    You have a pending plan request. Please wait for admin
+                    approval.
                   </p>
                 </div>
-              )}
+              </div>
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {pricingTiers.map((tier, index) => {
               const tierName = tier.name.toLowerCase().replace(" care", "");
-              const isCurrentPlan = currentPlan === tierName;
-              const isDisabled = isDowngrade(tierName) && !showDowngradeWarning;
+              const isCurrentPlan =
+                currentPlan.name === tierName &&
+                currentPlan.billingPeriod === billingPeriod;
 
               return (
                 <motion.div
@@ -266,14 +180,13 @@ const PricingPage = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className={`relative rounded-2xl border-[1.6px] border-green2 p-6
-                    ${
-                      tier.highlighted
-                        ? "bg-green3/50 shadow-xl scale-105"
-                        : "bg-background/95 shadow-lg"
-                    }
-                    transition-all hover:shadow-xl
-                    ${isDisabled ? "opacity-50" : ""}`}
+                  className={`relative rounded-2xl ${
+                    isCurrentPlan
+                      ? "border-transparent bg-background/80 shadow-2xl before:bg-gradient-to-b before:from-primary/70 before:via-green3/20 before:to-green3/90 before:absolute before:inset-0 before:m-[-6.2px] before:rounded-2xl before:-z-10"
+                      : tier.highlighted
+                      ? "border-green2 bg-green3/50 shadow-xl scale-105"
+                      : "border-green2 bg-background/95 shadow-lg"
+                  } p-6 transition-all hover:shadow-xl border-[1.6px]`}
                 >
                   {tier.highlighted && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary px-4 py-1 rounded-full text-background text-sm">
@@ -286,9 +199,13 @@ const PricingPage = () => {
                       {tier.name}
                     </h3>
                     <div className="text-3xl font-bold text-primary mb-1">
-                      {tier.price}
+                      {billingPeriod === "monthly"
+                        ? tier.monthlyPrice
+                        : tier.yearlyPrice}
                     </div>
-                    <div className="text-text/60 text-sm">{tier.period}</div>
+                    <div className="text-text/60 text-sm">
+                      {billingPeriod === "monthly" ? "per month" : "per year"}
+                    </div>
                   </div>
 
                   <p className="text-text/80 text-md text-center mb-6">
@@ -309,64 +226,77 @@ const PricingPage = () => {
 
                   <button
                     onClick={() => handlePlanSelection(tier.name)}
-                    disabled={isCurrentPlan || processingSubscription}
-                    className={`
-                      w-full px-4 py-2 rounded-full border-[1.6px] border-green2
-                      transition-colors
-                      ${
-                        isCurrentPlan
-                          ? "bg-green3/60 cursor-not-allowed"
-                          : processingSubscription
-                          ? "bg-gray-200 cursor-wait"
-                          : isDisabled
-                          ? "bg-gray-200 cursor-not-allowed"
-                          : tier.highlighted
-                          ? "bg-green3 text-text hover:bg-green3/80"
-                          : "bg-background text-text hover:bg-green3/20"
-                      }
-                    `}
+                    disabled={
+                      isCurrentPlan ||
+                      processingRequest ||
+                      planStatus === "Pending"
+                    }
+                    className={`w-full px-4 py-2 rounded-full border-[1.6px] border-green2 transition-colors ${
+                      isCurrentPlan
+                        ? "bg-green3/60 cursor-not-allowed"
+                        : processingRequest
+                        ? "bg-gray-200 cursor-wait"
+                        : planStatus === "Pending"
+                        ? "bg-gray-200 cursor-not-allowed"
+                        : tier.highlighted
+                        ? "bg-green3 text-text hover:bg-green3/80"
+                        : "bg-background text-text hover:bg-green3/20"
+                    }`}
+                    style={{
+                      display:
+                        planStatus === "Pending" && !isCurrentPlan
+                          ? "none"
+                          : "block",
+                    }}
                   >
                     {isCurrentPlan
                       ? "Current Plan"
-                      : processingSubscription
+                      : processingRequest
                       ? "Processing..."
-                      : "Choose Plan"}
+                      : planStatus === "Pending" && isCurrentPlan
+                      ? "Awaiting Confirmation"
+                      : "Request Plan"}
                   </button>
                 </motion.div>
               );
             })}
           </div>
 
-          {showDowngradeWarning && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-white p-6 rounded-2xl max-w-md mx-4">
+          {showPhonePrompt && (
+            <div className="fixed inset-0 bg-text/50 flex items-center justify-center z-50">
+              <div className="bg-background p-6 rounded-2xl max-w-md mx-4">
                 <h3 className="text-lg font-bold text-text mb-4">
-                  Downgrade Confirmation
+                  Phone Number Required
                 </h3>
                 <p className="text-text/80 mb-6 font-nunito-semibold">
-                  You are about to downgrade from {currentPlan.toUpperCase()} to{" "}
-                  {selectedPlan.toUpperCase()}. This change will take effect on
-                  the first day of next month. Until then, you'll continue to
-                  enjoy your current plan benefits. You will be charged the new
-                  plan rate now.
+                  Please add your phone number in your profile before selecting
+                  a plan. This helps us provide better service and emergency
+                  contact options.
                 </p>
                 <div className="flex justify-end gap-4">
                   <button
-                    onClick={() => setShowDowngradeWarning(false)}
+                    onClick={() => setShowPhonePrompt(false)}
                     className="px-4 py-2 text-text/80 hover:text-text"
                   >
                     Cancel
                   </button>
-                  <button
-                    onClick={() => handleSubscription(selectedPlan)}
+                  <a
+                    href="/user/profile"
                     className="px-4 py-2 bg-green3 text-text rounded-lg hover:bg-green3/80"
                   >
-                    Confirm Downgrade
-                  </button>
+                    Go to Profile
+                  </a>
                 </div>
               </div>
             </div>
           )}
+
+          <PromptModal
+            isOpen={showAuthPrompt}
+            onClose={() => setShowAuthPrompt(false)}
+            title="Sign up now to choose a plan"
+            message="Create an account or log in to select a membership plan for your pet's healthcare."
+          />
         </div>
       </div>
     </div>

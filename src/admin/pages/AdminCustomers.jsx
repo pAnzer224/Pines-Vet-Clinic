@@ -1,246 +1,224 @@
 import React, { useState } from "react";
-import {
-  Users,
-  UserPlus,
-  PlusCircle,
-  Edit,
-  Trash2,
-  Search,
-} from "lucide-react";
+import { Users, Check, Search, XCircle } from "lucide-react";
+import { doc, updateDoc, getDoc } from "firebase/firestore";
+import { db } from "../../firebase-config";
 import { toast } from "react-toastify";
 import StatusDropdown from "../../components/StatusDropdown";
-import AddCustomerModal from "../components/AddCustomerModal";
-import PetAddModal from "../../components/PetAddModal";
 import CustomerDetailsModal from "../components/CustomerDetailsModal";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import useFirestoreCrud from "../../hooks/useFirestoreCrud";
 
-function CustomerCard({
+const CarePlanCard = ({
   customer,
-  onAddPet,
-  onEditCustomer,
-  onDeleteCustomer,
   onViewDetails,
-  onDeletePet,
-}) {
-  const [showAllPets, setShowAllPets] = useState(false);
+  onHandlePlanRequest,
+  onHandleAssignPlan,
+  processingRequest,
+}) => {
+  const planOptions = ["Basic", "Standard", "Premium"];
+
   const statusColors = {
-    Active: "bg-green3/50 text-green-800",
-    Inactive: "bg-primary/30 text-text/80",
-  };
-
-  const displayPets = showAllPets ? customer.pets : customer.pets.slice(0, 1);
-
-  const handlePetsClick = (e) => {
-    e.stopPropagation();
-    setShowAllPets(!showAllPets);
+    Approved: "bg-green3/50 text-green-800",
+    Rejected: "bg-red/30 text-red",
+    Pending: "bg-yellow-100 text-yellow-800",
   };
 
   return (
     <div
-      className="bg-pantone/20  p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group cursor-pointer"
+      className="bg-pantone/20 p-4 rounded-lg border-2 border-green3 hover:border-primary/70 transition-colors relative group cursor-pointer"
       onClick={() => onViewDetails(customer)}
     >
-      <div className="absolute top-2 right-2 flex space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            onEditCustomer(customer);
-          }}
-          className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
-        >
-          <Edit className="size-5" />
-        </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (
-              window.confirm(
-                `Are you sure you want to delete ${customer.name}?`
-              )
-            ) {
-              onDeleteCustomer(customer.id);
-            }
-          }}
-          className="text-primary hover:bg-red/20 rounded-full p-1 transition-colors"
-        >
-          <Trash2 className="size-5 text-red/80" />
-        </button>
-      </div>
-
       <div className="flex justify-between items-start mb-3">
         <div>
-          <h3 className="font-nunito-bold text-green2">{customer.name}</h3>
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-nunito-bold ${
-              statusColors[customer.status]
-            }`}
-          >
-            {customer.status}
-          </span>
+          <h3 className="font-nunito-bold text-green2">
+            {customer.fullName || "Unknown"}
+          </h3>
+          <div className="text-sm text-text/60">{customer.email}</div>
+          <div className="mt-2">
+            <span className="text-sm font-nunito-bold text-text/80">
+              Current Plan:{" "}
+            </span>
+            <span className="inline-flex px-3 py-1 rounded-full text-xs font-nunito-bold bg-green3/50 text-green-800">
+              {customer.plan?.charAt(0).toUpperCase() +
+                customer.plan?.slice(1) || "Free"}
+            </span>
+          </div>
+          {customer.planStatus && (
+            <div className="mt-2">
+              <span className="text-sm font-nunito-bold text-text/80">
+                Status:{" "}
+              </span>
+              <span
+                className={`inline-flex px-3 py-1 rounded-full text-xs font-nunito-bold ${
+                  statusColors[customer.planStatus]
+                }`}
+              >
+                {customer.planStatus}
+              </span>
+            </div>
+          )}
         </div>
-      </div>
 
-      <div className="space-y-2">
-        <div className="text-sm text-text/60">{customer.email}</div>
-        {customer.phone && (
-          <div className="text-sm text-text/60">{customer.phone}</div>
-        )}
-        <div className="font-nunito-bold text-xs text-text/80">
-          <span className="font-nunito-bold text-text/80">Pets:</span>{" "}
-          {customer.pets.length > 0 ? (
-            <div className="mt-2 space-y-2">
-              {displayPets.map((pet, index) => (
-                <div
-                  key={index}
-                  className="bg-green3/30 px-2 py-1 rounded-full text-xs inline-block mr-2"
-                >
-                  {pet.name} ({pet.type})
-                </div>
-              ))}
-              {customer.pets.length > 1 && !showAllPets && (
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
+          {customer.planStatus === "Pending" ? (
+            <>
+              <select
+                onChange={(e) =>
+                  onHandlePlanRequest(customer.id, "approve", e.target.value)
+                }
+                disabled={processingRequest}
+                className="px-3 py-1.5 border-2 border-green3/50 rounded-lg focus:outline-none focus:border-green2 font-nunito bg-background text-sm"
+              >
+                <option value="">Select Plan</option>
+                {planOptions.map((plan) => (
+                  <option key={plan} value={plan.toLowerCase()}>
+                    {plan}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => onHandlePlanRequest(customer.id, "reject")}
+                disabled={processingRequest}
+                className="px-3 py-1.5 bg-red/10 text-red rounded-full hover:bg-red/20 transition-colors border border-red/60 flex items-center gap-1.5 text-sm"
+              >
+                <XCircle className="size-4" />
+                Reject
+              </button>
+            </>
+          ) : (
+            <>
+              <select
+                onChange={(e) =>
+                  onHandleAssignPlan(customer.id, e.target.value)
+                }
+                disabled={processingRequest}
+                className="px-3 py-1.5 border-2 border-green3/50 rounded-lg focus:outline-none focus:border-green2 font-nunito bg-background text-sm"
+              >
+                <option value="">Assign Plan</option>
+                {planOptions.map((plan) => (
+                  <option key={plan} value={plan.toLowerCase()}>
+                    {plan}
+                  </option>
+                ))}
+              </select>
+              {customer.plan && customer.plan !== "free" && (
                 <button
-                  onClick={handlePetsClick}
-                  className="text-primary hover:text-primary/80 text-xs ml-1"
+                  onClick={() => onHandlePlanRequest(customer.id, "remove")}
+                  disabled={processingRequest}
+                  className="px-3 py-1.5 bg-red/10 text-red rounded-full hover:bg-red/20 transition-colors border border-red/60 flex items-center gap-1.5 text-sm"
                 >
-                  See all ({customer.pets.length})
+                  <XCircle className="size-4" />
+                  Remove
                 </button>
               )}
-            </div>
-          ) : (
-            <div className="mt-2 flex items-center">
-              <span className="text-text/60 mr-2">No pets</span>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onAddPet(customer.id);
-                }}
-                className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
-              >
-                <PlusCircle className="w-5 h-5" />
-              </button>
-            </div>
+            </>
           )}
         </div>
       </div>
     </div>
   );
-}
+};
 
-function Customers() {
+const AdminCarePlans = () => {
   const [selectedStatus, setSelectedStatus] = useState("All Status");
   const [searchQuery, setSearchQuery] = useState("");
   const [isCustomerModalOpen, setIsCustomerModalOpen] = useState(false);
-  const [isCustomerDetailsModalOpen, setIsCustomerDetailsModalOpen] =
-    useState(false);
-  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
-  const [selectedCustomerId, setSelectedCustomerId] = useState(null);
-  const [selectedCustomerForDetails, setSelectedCustomerForDetails] =
-    useState(null);
-  const [customerToEdit, setCustomerToEdit] = useState(null);
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [processingRequest, setProcessingRequest] = useState(false);
 
-  const statusOptions = ["All Status", "Active", "Inactive"];
+  const statusOptions = ["All Status", "Pending", "Approved", "Rejected"];
 
-  const {
-    items: customers,
-    loading,
-    deleteItem: deleteCustomer,
-  } = useFirestoreCrud("users");
-  const { items: allPets, deleteItem: deletePet } = useFirestoreCrud("pets", {
-    where: { field: "userId", operator: "!=", value: "" },
-  });
+  const { items: customers, loading } = useFirestoreCrud("users");
 
-  const handleAddPet = (customerId) => {
-    setSelectedCustomerId(customerId);
-    setIsPetModalOpen(true);
-  };
-
-  const handlePetAdded = (newPet) => {
-    toast.success("Pet added successfully");
-    setIsPetModalOpen(false);
-  };
-
-  const handleEditCustomer = (customer) => {
-    setCustomerToEdit(customer);
-    setIsCustomerModalOpen(true);
-  };
-
-  const handleDeleteCustomer = async (customerId) => {
+  const handlePlanRequest = async (customerId, action, newPlan = null) => {
     try {
-      const customerPets = allPets.filter((pet) => pet.userId === customerId);
-      const deletePromises = customerPets.map((pet) => deletePet(pet.id));
-      await Promise.all(deletePromises);
-      await deleteCustomer(customerId);
-      toast.success("Customer and associated pets deleted successfully");
+      setProcessingRequest(true);
+      const userRef = doc(db, "users", customerId);
+      const userDoc = await getDoc(userRef);
+
+      let updateData = {};
+
+      if (action === "approve") {
+        updateData = {
+          plan: newPlan,
+          planStatus: "Approved",
+          planRequestDate: new Date().toISOString(),
+        };
+        toast.success(`Care plan ${newPlan} approved successfully`);
+      } else if (action === "reject") {
+        updateData = {
+          planStatus: "Rejected",
+          planRequestDate: new Date().toISOString(),
+        };
+        toast.success("Care plan request rejected");
+      } else if (action === "remove") {
+        updateData = {
+          plan: "free",
+          planStatus: null,
+          planRequestDate: null,
+        };
+        toast.success("Care plan removed successfully");
+      }
+
+      await updateDoc(userRef, updateData);
     } catch (error) {
-      console.error("Error deleting customer:", error);
-      toast.error("Failed to delete customer");
+      toast.error("Error processing request");
+      console.error("Error:", error);
+    } finally {
+      setProcessingRequest(false);
     }
   };
 
-  const handleDeletePet = async (customerId, petId) => {
+  const handleAssignPlan = async (customerId, plan) => {
     try {
-      await deletePet(petId);
-      toast.success("Pet deleted successfully");
+      setProcessingRequest(true);
+      const userRef = doc(db, "users", customerId);
+
+      await updateDoc(userRef, {
+        plan: plan,
+        planStatus: "Approved",
+        planRequestDate: new Date().toISOString(),
+      });
+
+      toast.success(`${plan} plan assigned successfully`);
     } catch (error) {
-      console.error("Error deleting pet:", error);
-      toast.error("Failed to delete pet");
+      toast.error("Error assigning plan");
+      console.error("Error:", error);
+    } finally {
+      setProcessingRequest(false);
     }
   };
 
   const handleViewCustomerDetails = (customer) => {
-    setSelectedCustomerForDetails(customer);
-    setIsCustomerDetailsModalOpen(true);
+    setSelectedCustomer(customer);
+    setIsCustomerModalOpen(true);
   };
 
-  const enrichedCustomers = customers.map((customer) => ({
-    ...customer,
-    name: customer.fullName || "Unknown",
-    pets: allPets
-      .filter((pet) => pet.userId === customer.id)
-      .map((pet) => ({
-        id: pet.id,
-        name: pet.name,
-        type: `${pet.species} ${pet.breed || ""}`.trim(),
-      })),
-    joinedDate: customer.createdAt
-      ? new Date(customer.createdAt.seconds * 1000).toLocaleDateString(
-          "en-US",
-          {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          }
-        )
-      : "Unknown",
-    status: customer.status || "Active",
-  }));
-
-  const filteredCustomers = enrichedCustomers
+  const filteredCustomers = customers
     .filter((customer) =>
       selectedStatus === "All Status"
         ? true
-        : customer.status === selectedStatus
+        : customer.planStatus === selectedStatus
     )
     .filter((customer) =>
       searchQuery
-        ? (customer?.name?.toLowerCase()?.includes(searchQuery.toLowerCase()) ||
-            customer?.email
-              ?.toLowerCase()
-              ?.includes(searchQuery.toLowerCase()) ||
-            customer?.phone?.includes(searchQuery)) ??
-          false
+        ? customer.fullName
+            ?.toLowerCase()
+            .includes(searchQuery.toLowerCase()) ||
+          customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
         : true
     );
 
   return (
     <div className="space-y-6 mt-12">
       <div>
-        <h1 className="text-2xl font-nunito-bold text-green2">Customers</h1>
+        <h1 className="text-2xl font-nunito-bold text-green2">
+          Care Plans Management
+        </h1>
         <div className="flex items-center mt-5">
           <Users className="mr-2 text-primary size-7" />
           <p className="text-xl text-primary font-nunito-bold tracking-wide">
-            Manage your customer base
+            Manage customer care plans
           </p>
         </div>
       </div>
@@ -253,7 +231,7 @@ function Customers() {
               placeholder="Search customers..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border-2 border-green3/50 rounded-lg focus:outline-none focus:border-green2 font-nunito-b"
+              className="w-full pl-10 pr-4 py-2 border-2 border-green3/50 rounded-lg focus:outline-none focus:border-green2 font-nunito"
             />
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-text/60 size-5" />
           </div>
@@ -263,17 +241,6 @@ function Customers() {
             onStatusChange={setSelectedStatus}
           />
         </div>
-
-        <button
-          onClick={() => {
-            setCustomerToEdit(null);
-            setIsCustomerModalOpen(true);
-          }}
-          className="w-full md:w-auto flex items-center justify-center px-4 py-2 bg-green2 text-background rounded-full hover:bg-green2/80 transition-colors font-nunito-semibold"
-        >
-          <UserPlus className="size-4 mr-2" />
-          Add Customer
-        </button>
       </div>
 
       {loading ? (
@@ -285,60 +252,32 @@ function Customers() {
             : "No customers found"}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4">
           {filteredCustomers.map((customer) => (
-            <CustomerCard
+            <CarePlanCard
               key={customer.id}
               customer={customer}
-              onAddPet={handleAddPet}
-              onEditCustomer={handleEditCustomer}
-              onDeleteCustomer={handleDeleteCustomer}
               onViewDetails={handleViewCustomerDetails}
-              onDeletePet={handleDeletePet}
+              onHandlePlanRequest={handlePlanRequest}
+              onHandleAssignPlan={handleAssignPlan}
+              processingRequest={processingRequest}
             />
           ))}
         </div>
       )}
 
-      <AddCustomerModal
-        isOpen={isCustomerModalOpen}
-        onClose={() => {
-          setIsCustomerModalOpen(false);
-          setCustomerToEdit(null);
-        }}
-        onCustomerAdded={() => {
-          toast.success("Customer added successfully");
-          setIsCustomerModalOpen(false);
-        }}
-        customerToEdit={customerToEdit}
-      />
-
-      <PetAddModal
-        isOpen={isPetModalOpen}
-        onClose={() => {
-          setIsPetModalOpen(false);
-          setSelectedCustomerId(null);
-        }}
-        onPetAdded={handlePetAdded}
-        userId={selectedCustomerId}
-      />
-
-      {selectedCustomerForDetails && (
+      {selectedCustomer && (
         <CustomerDetailsModal
-          isOpen={isCustomerDetailsModalOpen}
+          isOpen={isCustomerModalOpen}
           onClose={() => {
-            setIsCustomerDetailsModalOpen(false);
-            setSelectedCustomerForDetails(null);
+            setIsCustomerModalOpen(false);
+            setSelectedCustomer(null);
           }}
-          customer={selectedCustomerForDetails}
-          onEditCustomer={handleEditCustomer}
-          onDeleteCustomer={handleDeleteCustomer}
-          onAddPet={handleAddPet}
-          onDeletePet={handleDeletePet}
+          customer={selectedCustomer}
         />
       )}
     </div>
   );
-}
+};
 
-export default Customers;
+export default AdminCarePlans;
