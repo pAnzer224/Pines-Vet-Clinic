@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Calendar, PawPrint, Trash2 } from "lucide-react";
-import { toast } from "react-toastify";
 import StatusDropdown from "../../components/StatusDropdown";
 import { db } from "../../firebase-config";
 import {
@@ -15,7 +14,6 @@ import {
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ToggleSwitch from "../../components/ToggleSwitch";
 
-// New AppointmentDetailsModal component
 function AppointmentDetailsModal({
   appointment,
   onClose,
@@ -205,7 +203,6 @@ function AdminAppointments() {
 
           setAppointments(sortedAppointments);
         } catch (error) {
-          toast.error("Failed to fetch appointments");
           console.error("Appointments fetch error:", error);
         } finally {
           setLoading(false);
@@ -220,10 +217,8 @@ function AdminAppointments() {
     try {
       const appointmentRef = doc(db, "appointments", appointmentId);
       await deleteDoc(appointmentRef);
-      toast.success("Appointment deleted successfully");
     } catch (error) {
       console.error("Error deleting appointment:", error);
-      toast.error("Failed to delete appointment");
     }
   };
 
@@ -234,10 +229,8 @@ function AdminAppointments() {
         status: "Confirmed",
         confirmedAt: serverTimestamp(),
       });
-      toast.success("Appointment confirmed successfully");
     } catch (error) {
       console.error("Error confirming appointment:", error);
-      toast.error("Failed to confirm appointment");
     }
   };
 

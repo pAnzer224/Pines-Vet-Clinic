@@ -15,7 +15,7 @@ export const handleSubscriptionRequest = async ({
     const updateData = {
       planRequest: {
         requestedPlan: plan,
-        requestedBillingPeriod: billingPeriod,
+        billingPeriod: billingPeriod,
         requestDate: subscriptionDate,
       },
       planStatus: "Pending",

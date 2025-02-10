@@ -10,7 +10,6 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../firebase-config";
-import { toast } from "react-toastify";
 
 function CustomerDetailsModal({
   isOpen,
@@ -20,6 +19,7 @@ function CustomerDetailsModal({
   onDeleteCustomer,
   onAddPet,
   onDeletePet,
+  hideAddPet = false,
 }) {
   const [isEditing, setIsEditing] = useState(false);
   const [editedCustomer, setEditedCustomer] = useState(customer);
@@ -70,12 +70,10 @@ function CustomerDetailsModal({
         ];
 
         await Promise.all(deletePromises);
-        toast.success("Customer and associated pets deleted successfully");
         onDeleteCustomer(customer.id);
         onClose();
       } catch (error) {
         console.error("Error deleting customer:", error);
-        toast.error("Failed to delete customer");
       }
     }
   };
@@ -84,9 +82,8 @@ function CustomerDetailsModal({
     try {
       await onEditCustomer(editedCustomer);
       setIsEditing(false);
-      toast.success("Customer updated successfully");
     } catch (error) {
-      toast.error("Failed to update customer");
+      console.error("Error updating customer:", error);
     }
   };
 
@@ -94,19 +91,21 @@ function CustomerDetailsModal({
     if (window.confirm("Are you sure you want to delete this pet?")) {
       try {
         await onDeletePet(customer.id, petId);
-        toast.success("Pet deleted successfully");
       } catch (error) {
-        toast.error("Failed to delete pet");
+        console.error("Error deleting pet:", error);
       }
     }
   };
 
   const displayPets = showAllPets ? pets : pets.slice(0, 1);
+  const planExpiryDate = customer?.nextBillingDate
+    ? new Date(customer.nextBillingDate).toLocaleDateString()
+    : "N/A";
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
       <div className="bg-background w-full max-w-md mx-4 rounded-xl shadow-xl relative border-green2/30 border-2">
         <button
           onClick={onClose}
@@ -178,7 +177,7 @@ function CustomerDetailsModal({
             <div className="space-y-4">
               <div className="pb-4 border-b border-green3/30">
                 <h3 className="text-lg font-nunito-bold text-green2 mb-2">
-                  {customer.name}
+                  {customer.fullName}
                 </h3>
                 <div className="space-y-2 text-sm">
                   <div>
@@ -205,6 +204,21 @@ function CustomerDetailsModal({
                       {customer.joinedDate}
                     </span>
                   </div>
+                  <div>
+                    <span className="font-nunito-bold text-text/80">
+                      Current Plan:
+                    </span>
+                    <span className="ml-2 text-text/60">
+                      {customer.plan?.charAt(0).toUpperCase() +
+                        customer.plan?.slice(1) || "Free"}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="font-nunito-bold text-text/80">
+                      Plan Expires:
+                    </span>
+                    <span className="ml-2 text-text/60">{planExpiryDate}</span>
+                  </div>
                   <div className="flex items-center">
                     <span className="font-nunito-bold text-text/80 mr-2">
                       Status:
@@ -222,57 +236,59 @@ function CustomerDetailsModal({
                 </div>
               </div>
 
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <h4 className="font-nunito-bold text-text/80">Pets</h4>
-                  <button
-                    onClick={() => onAddPet(customer.id)}
-                    className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
-                  >
-                    <PlusCircle className="w-5 h-5" />
-                  </button>
-                </div>
-
-                <div className="space-y-2">
-                  {displayPets.map((pet) => (
-                    <div
-                      key={pet.id}
-                      className="bg-green3/30 px-3 py-2 rounded-lg text-sm flex items-center justify-between group"
-                      onMouseEnter={() => setSelectedPet(pet.id)}
-                      onMouseLeave={() => setSelectedPet(null)}
-                    >
-                      <span>
-                        {pet.name} ({`${pet.species} ${pet.breed || ""}`.trim()}
-                        )
-                      </span>
-                      {selectedPet === pet.id && (
-                        <button
-                          onClick={() => handleDeletePet(pet.id)}
-                          className="text-red/90 hover:text-red transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4 text-red" />
-                        </button>
-                      )}
-                    </div>
-                  ))}
-
-                  {pets.length > 1 && !showAllPets && (
+              {!hideAddPet && (
+                <div>
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-nunito-bold text-text/80">Pets</h4>
                     <button
-                      onClick={() => setShowAllPets(true)}
-                      className="text-primary hover:text-primary/80 text-sm flex items-center"
+                      onClick={() => onAddPet(customer.id)}
+                      className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
                     >
-                      See all ({pets.length}) pets
-                      <ChevronRight className="w-4 h-4 ml-1" />
+                      <PlusCircle className="w-5 h-5" />
                     </button>
-                  )}
+                  </div>
 
-                  {pets.length === 0 && (
-                    <span className="text-text/60 text-sm">
-                      No pets added yet
-                    </span>
-                  )}
+                  <div className="space-y-2">
+                    {displayPets.map((pet) => (
+                      <div
+                        key={pet.id}
+                        className="bg-green3/30 px-3 py-2 rounded-lg text-sm flex items-center justify-between group"
+                        onMouseEnter={() => setSelectedPet(pet.id)}
+                        onMouseLeave={() => setSelectedPet(null)}
+                      >
+                        <span>
+                          {pet.name} (
+                          {`${pet.species} ${pet.breed || ""}`.trim()})
+                        </span>
+                        {selectedPet === pet.id && (
+                          <button
+                            onClick={() => handleDeletePet(pet.id)}
+                            className="text-red/90 hover:text-red transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4 text-red" />
+                          </button>
+                        )}
+                      </div>
+                    ))}
+
+                    {pets.length > 1 && !showAllPets && (
+                      <button
+                        onClick={() => setShowAllPets(true)}
+                        className="text-primary hover:text-primary/80 text-sm flex items-center"
+                      >
+                        See all ({pets.length}) pets
+                        <ChevronRight className="w-4 h-4 ml-1" />
+                      </button>
+                    )}
+
+                    {pets.length === 0 && (
+                      <span className="text-text/60 text-sm">
+                        No pets added yet
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
+              )}
             </div>
           )}
 

@@ -9,7 +9,6 @@ import {
   serverTimestamp,
   orderBy,
   updateDoc,
-  deleteDoc,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 

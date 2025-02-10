@@ -10,7 +10,6 @@ import {
   PawPrint,
   Shield,
 } from "lucide-react";
-import { toast } from "react-toastify";
 import {
   collection,
   query,
@@ -161,7 +160,6 @@ function Dashboard() {
         });
       } catch (error) {
         console.error("Error fetching metrics:", error);
-        toast.error("Failed to load dashboard metrics");
       }
     };
 
@@ -176,7 +174,6 @@ function Dashboard() {
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               const activity = change.doc.data();
-              toast.info(activity.title);
               activityItems.set(change.doc.id, {
                 id: change.doc.id,
                 type: "security",
@@ -198,9 +195,6 @@ function Dashboard() {
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               const appointment = change.doc.data();
-              toast.success(
-                `New appointment scheduled for ${appointment.petName}`
-              );
               activityItems.set(change.doc.id, {
                 id: change.doc.id,
                 type: "appointment",
@@ -233,7 +227,6 @@ function Dashboard() {
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               const order = change.doc.data();
-              toast.success(`New order received: #${change.doc.id}`);
               activityItems.set(change.doc.id, {
                 id: change.doc.id,
                 type: "order",
@@ -265,7 +258,6 @@ function Dashboard() {
           snapshot.docChanges().forEach((change) => {
             if (change.type === "added") {
               const user = change.doc.data();
-              toast.success(`New customer registered: ${user.name}`);
               activityItems.set(change.doc.id, {
                 id: change.doc.id,
                 type: "customer",

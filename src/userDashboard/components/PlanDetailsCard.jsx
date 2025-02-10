@@ -3,7 +3,7 @@ import {
   Crown,
   Calendar,
   Sparkles,
-  Shield,
+  ShieldPlus,
   Clock,
   Tag,
   ChevronRight,
@@ -28,31 +28,53 @@ const PlanDetailsCard = ({ planData }) => {
       case "premium":
         return <Crown strokeWidth={2} className="size-5 text-[#DD47BC]" />;
       case "standard":
-        return <Shield strokeWidth={2.5} className="size-5 text-[#54E25A]" />;
+        return (
+          <ShieldPlus strokeWidth={2.5} className="size-5 text-[#54E25A]" />
+        );
       case "basic":
-        return <Calendar className="size-5" />;
+        return <Calendar strokeWidth={2.5} className="size-5 text-[#478CDD]" />;
       default:
         return <AlertCircle className="size-5" />;
     }
   };
 
   const getNextBillingDate = () => {
+    // Check for subscription date in different possible locations
+    const subscriptionDate =
+      planData.subscriptionHistory?.lastChanged ||
+      planData.subscriptionHistory?.effectiveDate;
+
+    if (!subscriptionDate) return "Not available";
+
+    const startDate = new Date(subscriptionDate);
     const today = new Date();
 
-    if (planData.billingPeriod === "yearly") {
-      const nextYearRenewal = new Date(
-        today.getFullYear() + 1,
-        today.getMonth(),
-        today.getDate()
-      );
-      return nextYearRenewal.toLocaleDateString("en-US", {
+    // For yearly subscriptions
+    if (planData.billingPeriod?.toLowerCase() === "yearly") {
+      let nextRenewal = new Date(startDate);
+      nextRenewal.setFullYear(startDate.getFullYear() + 1);
+
+      // If the calculated renewal date is in the past, add years until it's in the future
+      while (nextRenewal < today) {
+        nextRenewal.setFullYear(nextRenewal.getFullYear() + 1);
+      }
+
+      return nextRenewal.toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
       });
     }
 
-    const nextMonth = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+    // For monthly subscriptions
+    let nextMonth = new Date(startDate);
+    nextMonth.setMonth(nextMonth.getMonth() + 1);
+
+    // If the calculated date is in the past, keep adding months until we get a future date
+    while (nextMonth < today) {
+      nextMonth.setMonth(nextMonth.getMonth() + 1);
+    }
+
     return nextMonth.toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
@@ -98,7 +120,7 @@ const PlanDetailsCard = ({ planData }) => {
     return features[plan] || features.free;
   };
 
-  if (planData.plan === "free") {
+  if (!planData || planData.plan === "free") {
     return (
       <div className="bg-pantone/80 p-6 rounded-lg shadow-sm border-2 border-green3/60">
         <div className="flex items-center justify-between mb-6">
@@ -198,7 +220,7 @@ const PlanDetailsCard = ({ planData }) => {
         <div className="flex items-center gap-2">
           <Tag size={16} strokeWidth={2.5} className="text-primary/60" />
           <span className="text-sm text-primary/60 font-nunito-bold">
-            {planData.billingPeriod === "yearly"
+            {planData.billingPeriod?.toLowerCase() === "yearly"
               ? "Yearly subscription (-16%)"
               : "Monthly subscription"}
           </span>

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { X, UserPlus } from "lucide-react";
 import { Timestamp } from "firebase/firestore";
-import { toast } from "react-toastify";
 import useFirestoreCrud from "../../hooks/useFirestoreCrud";
 
 function AddCustomerModal({
@@ -45,7 +44,7 @@ function AddCustomerModal({
 
     // Basic validation
     if (!customerData.fullName || !customerData.email) {
-      toast.error("Name and email are required");
+      console.error("Name and email are required");
       return;
     }
 
@@ -56,14 +55,12 @@ function AddCustomerModal({
           ...customerData,
           updatedAt: Timestamp.now(),
         });
-        toast.success("Customer updated successfully");
       } else {
         // Add new customer
         await createItem({
           ...customerData,
           createdAt: Timestamp.now(),
         });
-        toast.success("Customer added successfully");
       }
 
       // Reset form and close modal
@@ -79,7 +76,6 @@ function AddCustomerModal({
       onClose();
     } catch (error) {
       console.error("Error adding/updating customer:", error);
-      toast.error("Failed to add/update customer");
     }
   };
 

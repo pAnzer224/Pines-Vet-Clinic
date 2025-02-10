@@ -16,7 +16,14 @@ const AdminCarePlans = () => {
   const [processingRequest, setProcessingRequest] = useState(false);
 
   const statusOptions = ["All Status", "Pending", "Approved", "Rejected"];
-  const planOptions = ["Basic", "Standard", "Premium"];
+  const planOptions = [
+    "Basic (Monthly)",
+    "Basic (Yearly)",
+    "Standard (Monthly)",
+    "Standard (Yearly)",
+    "Premium (Monthly)",
+    "Premium (Yearly)",
+  ];
 
   const { items: customers, loading } = useFirestoreCrud("users");
 
@@ -24,7 +31,11 @@ const AdminCarePlans = () => {
     if (status === "Pending") {
       return "bg-yellow-100 text-yellow-800";
     }
-    switch (plan?.toLowerCase()) {
+
+    // Extract the base plan name without billing period
+    const basePlan = plan?.split(" ")[0]?.toLowerCase();
+
+    switch (basePlan) {
       case "basic":
         return "bg-[#478CDD]/40 text-blue-900";
       case "standard":
@@ -34,17 +45,6 @@ const AdminCarePlans = () => {
       default:
         return "bg-text/10 text-text/70";
     }
-  };
-  const getCurrentPlanDisplay = (customer) => {
-    if (customer.planStatus === "Pending") {
-      return (
-        <div className="flex flex-col items-center text-center">
-          <span className="text-xs text-text/80">Requesting</span>
-          <span>{customer.planRequest?.requestedPlan || "N/A"}</span>
-        </div>
-      );
-    }
-    return customer.plan || "Free";
   };
 
   const handlePlanRequest = async (customerId, action, newPlan = null) => {
@@ -104,6 +104,11 @@ const AdminCarePlans = () => {
         : true
     );
 
+  const formatPlanDisplay = (plan, billingPeriod) => {
+    if (!plan || plan === "free") return "Free";
+    return `${plan} (${billingPeriod || "monthly"})`;
+  };
+
   return (
     <div className="space-y-6 mt-12">
       <div>
@@ -142,19 +147,15 @@ const AdminCarePlans = () => {
           <table className="w-full bg-background border-collapse">
             <thead>
               <tr className="bg-green3/20 font-nunito-bold text-text">
-                <th className="p-3 text-left text-base min-w-[200px]">
+                <th className="p-3 text-left text-md min-w-[200px]">
                   Customer Name
                 </th>
-                <th className="p-3 text-left text-base min-w-[200px]">Email</th>
-                <th className="p-3 text-left text-base min-w-[120px]">
+                <th className="p-3 text-left text-md w-48">Email</th>
+                <th className="p-3 text-left text-md min-w-[120px]">
                   Current Plan
                 </th>
-                <th className="p-3 text-left text-base min-w-[100px]">
-                  Status
-                </th>
-                <th className="p-3 text-left text-base min-w-[200px]">
-                  Actions
-                </th>
+                <th className="p-3 text-left text-md min-w-[100px]">Status</th>
+                <th className="p-3 text-left text-md min-w-[200px]">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -164,14 +165,15 @@ const AdminCarePlans = () => {
                   className="border-b border-green3/30 hover:bg-green3/10 font-nunito-semibold text-text/80"
                 >
                   <td
-                    className="p-3 font-nunito-bold text-base cursor-pointer"
+                    className="p-3 font-nunito-bold text-md cursor-pointer"
                     onClick={() => handleViewCustomerDetails(customer)}
                   >
                     {customer.fullName}
                   </td>
                   <td
-                    className="p-3 text-base cursor-pointer"
+                    className="p-3 text-md cursor-pointer truncate max-w-[15rem]"
                     onClick={() => handleViewCustomerDetails(customer)}
+                    title={customer.email}
                   >
                     {customer.email}
                   </td>
@@ -179,14 +181,26 @@ const AdminCarePlans = () => {
                     className="p-3 cursor-pointer"
                     onClick={() => handleViewCustomerDetails(customer)}
                   >
-                    <span
-                      className={`inline-flex px-3 py-1 rounded-full text-sm font-nunito-bold ${getPlanColor(
-                        customer.plan,
-                        customer.planStatus
-                      )}`}
-                    >
-                      {getCurrentPlanDisplay(customer)}
-                    </span>
+                    {customer.planStatus === "Pending" && (
+                      <div className="text-sm text-yellow-800 text-left mb-1">
+                        Requesting {customer.planRequest?.billingPeriod}
+                      </div>
+                    )}
+                    <div className="flex">
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-nunito-bold whitespace-nowrap ${getPlanColor(
+                          customer.plan,
+                          customer.planStatus
+                        )}`}
+                      >
+                        {customer.planStatus === "Pending"
+                          ? customer.planRequest?.requestedPlan
+                          : formatPlanDisplay(
+                              customer.plan,
+                              customer.billingPeriod
+                            )}
+                      </span>
+                    </div>
                   </td>
                   <td
                     className="p-3 cursor-pointer"
@@ -194,7 +208,7 @@ const AdminCarePlans = () => {
                   >
                     <span
                       className={`
-                        inline-flex px-3 py-1 rounded-full text-xs font-nunito-semibold
+                        inline-flex px-3 py-1 rounded-full text-xs font-nunito-semibold whitespace-nowrap
                         ${
                           customer.planStatus === "Approved"
                             ? "bg-green3/50 text-primary tracking-wide"
@@ -220,7 +234,7 @@ const AdminCarePlans = () => {
                               handlePlanRequest(
                                 customer.id,
                                 "approve",
-                                plan.toLowerCase()
+                                plan.split(" ")[0].toLowerCase()
                               )
                             }
                             className="w-32"
@@ -231,7 +245,7 @@ const AdminCarePlans = () => {
                               handlePlanRequest(customer.id, "reject");
                             }}
                             disabled={processingRequest}
-                            className="px-3 py-1.5 bg-red/10 text-red rounded-lg hover:bg-red/20 transition-colors border border-red/60 text-sm"
+                            className="px-3 py-1.5 bg-red/80 text-background/80 rounded-lg hover:bg-red/60 hover:text-background transition-colors border border-red/60 text-sm"
                           >
                             Reject
                           </button>
@@ -244,7 +258,7 @@ const AdminCarePlans = () => {
                             handlePlanRequest(
                               customer.id,
                               "approve",
-                              plan.toLowerCase()
+                              plan.split(" ")[0].toLowerCase()
                             )
                           }
                           className="w-32"
@@ -280,6 +294,7 @@ const AdminCarePlans = () => {
             setSelectedCustomer(null);
           }}
           customer={selectedCustomer}
+          hideAddPet={true}
         />
       )}
     </div>

@@ -58,7 +58,7 @@ const Login = () => {
           </h1>
 
           <p className="text-text/80 mb-8 text-center tracking-wide font-nunito-semibold">
-            Sign in to access your Highland PetVibes account
+            Sign in to access your Pines Vet Clinic Account
           </p>
 
           {error && (

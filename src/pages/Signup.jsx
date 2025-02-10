@@ -71,6 +71,7 @@ const SignUp = () => {
         remainingGrooming: 0,
         remainingDentalCheckups: 0,
         discount: 0,
+        welcomeShown: false,
       });
       navigate("/home");
     } catch (err) {
@@ -102,7 +103,7 @@ const SignUp = () => {
           </h1>
 
           <p className="text-text/80 mb-12 text-center tracking-wide font-nunito-semibold">
-            Sign up to access your Highland PetVibes account
+            Sign up to access your Pines Vet Clinic account
           </p>
 
           {error && (

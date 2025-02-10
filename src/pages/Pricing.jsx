@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Check, AlertCircle, Lightbulb } from "lucide-react";
 import { auth } from "../firebase-config";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { db } from "../firebase-config";
 import PromptModal from "../components/promptModal";
 import {
   pricingTiers,
   handleSubscriptionRequest,
+  isDowngrade,
   checkPhoneNumber,
 } from "./plansUtils";
-import { toast } from "react-toastify";
 
 const PricingPage = () => {
   const [currentPlan, setCurrentPlan] = useState({
@@ -19,6 +19,8 @@ const PricingPage = () => {
   });
   const [showPhonePrompt, setShowPhonePrompt] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showDowngradeWarning, setShowDowngradeWarning] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState(null);
   const [processingRequest, setProcessingRequest] = useState(false);
   const [billingPeriod, setBillingPeriod] = useState("monthly");
   const [showAuthPrompt, setShowAuthPrompt] = useState(false);
@@ -28,48 +30,65 @@ const PricingPage = () => {
     const unsubscribe = auth.onAuthStateChanged(async (user) => {
       setIsAuthenticated(!!user);
       if (user) {
-        const userDoc = await getDoc(doc(db, "users", user.uid));
-        const userData = userDoc.data();
-        const currentUserPlan = userData?.plan || "free";
-        const userBillingPeriod = userData?.billingPeriod || "monthly";
-        setCurrentPlan({
-          name: currentUserPlan,
-          billingPeriod: userBillingPeriod,
+        const userDocRef = doc(db, "users", user.uid);
+        const unsubscribeDoc = onSnapshot(userDocRef, (doc) => {
+          const userData = doc.data();
+          const currentUserPlan = userData?.plan || "free";
+          const userBillingPeriod = userData?.billingPeriod || "monthly";
+          setCurrentPlan({
+            name: currentUserPlan,
+            billingPeriod: userBillingPeriod,
+          });
+          setBillingPeriod(userBillingPeriod);
+          setPlanStatus(userData?.planStatus || null);
         });
-        setBillingPeriod(userBillingPeriod);
-        setPlanStatus(userData?.planStatus || null);
+
+        return () => unsubscribeDoc();
       }
     });
+
     return () => unsubscribe();
   }, []);
 
   const handlePlanSelection = async (plan) => {
     const planName = plan.toLowerCase().replace(" care", "");
+
     if (!isAuthenticated) {
       setShowAuthPrompt(true);
       return;
     }
+
     if (!(await checkPhoneNumber(auth))) {
       setShowPhonePrompt(true);
       return;
     }
+
     if (
       currentPlan.name === planName &&
       currentPlan.billingPeriod === billingPeriod
     ) {
       return;
     }
+
     if (planStatus === "Pending") {
-      toast.info("You already have a pending plan request");
       return;
     }
-    handleSubscriptionRequest({
-      plan: planName,
-      billingPeriod,
-      auth,
-      setProcessingRequest,
-    });
+
+    if (isDowngrade(planName, currentPlan.name)) {
+      setSelectedPlan(planName);
+      setShowDowngradeWarning(true);
+    } else {
+      handleSubscriptionRequest({
+        plan: planName,
+        billingPeriod,
+        auth,
+        setProcessingRequest,
+      });
+    }
   };
+
+  const shouldShowHighlight =
+    currentPlan.name === "free" && planStatus !== "Pending";
 
   return (
     <div id="pricing" className="min-h-screen bg-transparent">
@@ -124,7 +143,7 @@ const PricingPage = () => {
           </div>
 
           {isAuthenticated && (
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-8 max-w-5xl mx-auto">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 max-w-5xl mx-auto">
               <div className="flex items-center">
                 <AlertCircle className="h-6 w-6 text-yellow-600 mr-4" />
                 <div className="flex-grow">
@@ -151,8 +170,22 @@ const PricingPage = () => {
           )}
 
           {isAuthenticated && planStatus === "Pending" && (
-            <div className="bg-red/20 border-l-4 border-red p-2 mb-8 max-w-5xl mx-auto">
-              <div className="flex items-center">
+            <motion.div
+              initial={{ opacity: 0, height: 0, y: -20 }}
+              animate={{ opacity: 1, height: "auto", y: 0 }}
+              exit={{ opacity: 0, height: 0, y: -20 }}
+              transition={{
+                duration: 0.3,
+                ease: "easeInOut",
+              }}
+              className="bg-red/20 border-l-4 border-red p-2 max-w-5xl mx-auto rounded-ee-lg rounded-bl-lg"
+            >
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="flex items-center"
+              >
                 <AlertCircle
                   strokeWidth={3}
                   className="size-5 text-red/80 mr-3 ml-2"
@@ -163,11 +196,11 @@ const PricingPage = () => {
                     approval.
                   </p>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mt-8">
             {pricingTiers.map((tier, index) => {
               const tierName = tier.name.toLowerCase().replace(" care", "");
               const isCurrentPlan =
@@ -183,12 +216,12 @@ const PricingPage = () => {
                   className={`relative rounded-2xl ${
                     isCurrentPlan
                       ? "border-transparent bg-background/80 shadow-2xl before:bg-gradient-to-b before:from-primary/70 before:via-green3/20 before:to-green3/90 before:absolute before:inset-0 before:m-[-6.2px] before:rounded-2xl before:-z-10"
-                      : tier.highlighted
+                      : tier.highlighted && shouldShowHighlight
                       ? "border-green2 bg-green3/50 shadow-xl scale-105"
                       : "border-green2 bg-background/95 shadow-lg"
                   } p-6 transition-all hover:shadow-xl border-[1.6px]`}
                 >
-                  {tier.highlighted && (
+                  {tier.highlighted && shouldShowHighlight && (
                     <div className="absolute -top-4 left-1/2 transform -translate-x-1/2 bg-primary px-4 py-1 rounded-full text-background text-sm">
                       Most Popular
                     </div>
@@ -238,7 +271,7 @@ const PricingPage = () => {
                         ? "bg-gray-200 cursor-wait"
                         : planStatus === "Pending"
                         ? "bg-gray-200 cursor-not-allowed"
-                        : tier.highlighted
+                        : tier.highlighted && shouldShowHighlight
                         ? "bg-green3 text-text hover:bg-green3/80"
                         : "bg-background text-text hover:bg-green3/20"
                     }`}
@@ -261,6 +294,45 @@ const PricingPage = () => {
               );
             })}
           </div>
+
+          {showDowngradeWarning && (
+            <div className="fixed inset-0 bg-text/50 flex items-center justify-center z-50">
+              <div className="bg-background p-6 rounded-2xl max-w-md mx-4">
+                <h3 className="text-lg font-bold text-text mb-4">
+                  Downgrade Confirmation
+                </h3>
+                <p className="text-text/80 mb-6 font-nunito-semibold">
+                  You are about to request a downgrade from{" "}
+                  {currentPlan.name.toUpperCase()} to{" "}
+                  {selectedPlan.toUpperCase()}. This request will need admin
+                  approval. Once approved, you'll continue to enjoy your current
+                  plan benefits until the change takes effect.
+                </p>
+                <div className="flex justify-end gap-4">
+                  <button
+                    onClick={() => setShowDowngradeWarning(false)}
+                    className="px-4 py-2 text-text/80 hover:text-text"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleSubscriptionRequest({
+                        plan: selectedPlan,
+                        billingPeriod,
+                        auth,
+                        setProcessingRequest,
+                      });
+                      setShowDowngradeWarning(false);
+                    }}
+                    className="px-4 py-2 bg-green3 text-text rounded-lg hover:bg-green3/80"
+                  >
+                    Confirm Downgrade Request
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {showPhonePrompt && (
             <div className="fixed inset-0 bg-text/50 flex items-center justify-center z-50">
