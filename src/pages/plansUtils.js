@@ -2,6 +2,12 @@ import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebase-config";
 import { toast } from "react-toastify";
 
+export const getPlanExpirationDate = (nextBillingDate) => {
+  if (!nextBillingDate) return "N/A";
+  const expiryDate = new Date(nextBillingDate);
+  return expiryDate.toLocaleDateString();
+};
+
 export const handleSubscriptionRequest = async ({
   plan,
   billingPeriod,
@@ -10,19 +16,28 @@ export const handleSubscriptionRequest = async ({
 }) => {
   try {
     setProcessingRequest(true);
-    const subscriptionDate = new Date().toISOString();
+    const subscriptionDate = new Date();
+    const expiryDate = new Date(subscriptionDate);
+    if (billingPeriod === "monthly") {
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+      if (subscriptionDate.getDate() !== expiryDate.getDate()) {
+        expiryDate.setDate(0);
+      }
+    } else if (billingPeriod === "yearly") {
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    }
 
     const updateData = {
       planRequest: {
         requestedPlan: plan,
         billingPeriod: billingPeriod,
-        requestDate: subscriptionDate,
+        requestDate: subscriptionDate.toISOString(),
+        expiryDate: expiryDate.toISOString(),
       },
       planStatus: "Pending",
     };
 
     await updateDoc(doc(db, "users", auth.currentUser.uid), updateData);
-
     toast.success(
       "Plan request submitted successfully! Awaiting admin approval."
     );
@@ -132,17 +147,31 @@ export const handleSubscription = async ({
     const now = new Date();
     const subscriptionDate = now.toISOString();
 
+    // expiry date
+    const expiryDate = new Date(now);
+    if (billingPeriod === "monthly") {
+      expiryDate.setMonth(expiryDate.getMonth() + 1);
+      if (now.getDate() !== expiryDate.getDate()) {
+        expiryDate.setDate(0);
+      }
+    } else if (billingPeriod === "yearly") {
+      expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+    }
+
     const updateData = {
       billingPeriod: billingPeriod,
       remainingConsultations: benefits.consultations,
       remainingGrooming: benefits.grooming,
       discount: benefits.discount,
+      subscriptionStartDate: subscriptionDate,
+      subscriptionExpiryDate: expiryDate.toISOString(),
       subscriptionHistory: {
         lastChanged: subscriptionDate,
         previousPlan: currentPlan.name,
         newPlan: plan,
         billingPeriod: billingPeriod,
         effectiveDate: subscriptionDate,
+        expiryDate: expiryDate.toISOString(),
         type: "change",
       },
     };
@@ -184,13 +213,15 @@ export const handleSubscription = async ({
           plan: plan,
           amount: pricingTiers.find((tier) =>
             tier.name.toLowerCase().includes(plan)
-          ).price,
+          )[billingPeriod === "monthly" ? "monthlyPrice" : "yearlyPrice"],
           paymentMethod: "Cash",
           status: "Completed",
+          expiryDate: expiryDate.toISOString(),
         },
       ],
     });
   } catch (error) {
+    console.error("Error updating plan:", error);
     toast.error("Error updating plan");
   } finally {
     setProcessingSubscription(false);

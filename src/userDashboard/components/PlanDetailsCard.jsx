@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import {
   Crown,
   Calendar,
@@ -9,10 +9,31 @@ import {
   ChevronRight,
   AlertCircle,
   ArrowRight,
+  CalendarCheck,
 } from "lucide-react";
 import { Link } from "react-router-dom";
+import { auth, db } from "../../firebase-config";
+import { doc, onSnapshot } from "firebase/firestore";
+import { pricingTiers } from "../../pages/plansUtils";
 
-const PlanDetailsCard = ({ planData }) => {
+const PlanDetailsCard = () => {
+  const [userData, setUserData] = useState(null);
+
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged((user) => {
+      if (user) {
+        const userDocRef = doc(db, "users", user.uid);
+        const unsubscribeDoc = onSnapshot(userDocRef, (doc) => {
+          if (doc.exists()) {
+            setUserData(doc.data());
+          }
+        });
+        return () => unsubscribeDoc();
+      }
+    });
+    return () => unsubscribe();
+  }, []);
+
   const getPlanColor = (plan) => {
     const colors = {
       premium: "text-[#DD47BC]",
@@ -38,44 +59,9 @@ const PlanDetailsCard = ({ planData }) => {
     }
   };
 
-  const getNextBillingDate = () => {
-    // Check for subscription date in different possible locations
-    const subscriptionDate =
-      planData.subscriptionHistory?.lastChanged ||
-      planData.subscriptionHistory?.effectiveDate;
-
-    if (!subscriptionDate) return "Not available";
-
-    const startDate = new Date(subscriptionDate);
-    const today = new Date();
-
-    // For yearly subscriptions
-    if (planData.billingPeriod?.toLowerCase() === "yearly") {
-      let nextRenewal = new Date(startDate);
-      nextRenewal.setFullYear(startDate.getFullYear() + 1);
-
-      // If the calculated renewal date is in the past, add years until it's in the future
-      while (nextRenewal < today) {
-        nextRenewal.setFullYear(nextRenewal.getFullYear() + 1);
-      }
-
-      return nextRenewal.toLocaleDateString("en-US", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-    }
-
-    // For monthly subscriptions
-    let nextMonth = new Date(startDate);
-    nextMonth.setMonth(nextMonth.getMonth() + 1);
-
-    // If the calculated date is in the past, keep adding months until we get a future date
-    while (nextMonth < today) {
-      nextMonth.setMonth(nextMonth.getMonth() + 1);
-    }
-
-    return nextMonth.toLocaleDateString("en-US", {
+  const formatDate = (dateString) => {
+    if (!dateString) return "Not available";
+    return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -83,44 +69,11 @@ const PlanDetailsCard = ({ planData }) => {
   };
 
   const getPlanFeatures = (plan) => {
-    const features = {
-      premium: [
-        "6 consultations per month",
-        "2 grooming services",
-        "20% discount on products",
-        "Priority emergency services",
-        "Monthly dental check-ups",
-        "Personalized health tracking",
-      ],
-      standard: [
-        "4 consultations per month",
-        "1 grooming service",
-        "15% discount on products",
-        "Priority scheduling",
-        "Monthly dental check-up",
-        "Basic health tracking",
-      ],
-      basic: [
-        "2 consultations per month",
-        "No grooming services",
-        "10% discount on products",
-        "Regular scheduling",
-        "Basic appointment reminders",
-        "Access to wellness tips",
-      ],
-      free: [
-        "Pay-per-visit consultations",
-        "Regular pricing for services",
-        "No included benefits",
-        "Regular scheduling",
-        "Basic appointment system",
-        "Limited features access",
-      ],
-    };
-    return features[plan] || features.free;
+    const tier = pricingTiers.find((t) => t.name.toLowerCase().includes(plan));
+    return tier ? tier.features : [];
   };
 
-  if (!planData || planData.plan === "free") {
+  if (!userData || userData.plan === "free") {
     return (
       <div className="bg-pantone/80 p-6 rounded-lg shadow-sm border-2 border-green3/60">
         <div className="flex items-center justify-between mb-6">
@@ -187,30 +140,43 @@ const PlanDetailsCard = ({ planData }) => {
       <div className="border-2 border-primary/40 bg-green3/20 rounded-lg p-4 mb-6">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            {getPlanIcon(planData.plan)}
+            {getPlanIcon(userData.plan)}
             <span
               className={`text-lg font-nunito-bold ${getPlanColor(
-                planData.plan
+                userData.plan
               )}`}
             >
-              {planData.plan.charAt(0).toUpperCase() + planData.plan.slice(1)}{" "}
+              {userData.plan.charAt(0).toUpperCase() + userData.plan.slice(1)}{" "}
               Plan
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock size={16} strokeWidth={2} className="text-primary/60" />
-            <span className="text-sm text-primary/60 font-nunito-bold">
-              Renews {getNextBillingDate()}
+          <div className="flex items-center gap-1 text-yellow-600 tracking-wide font-nunito-semibold">
+            <Clock strokeWidth={2.3} className=" size-3" />
+            <span className="text-xs">
+              {userData.planRequest?.expiryDate
+                ? `Renews ${formatDate(userData.planRequest.expiryDate)}`
+                : `Expires ${formatDate(userData.subscriptionExpiryDate)}`}
             </span>
           </div>
         </div>
 
-        {planData.nextMonthPlan && (
+        <div className="flex items-center gap-2 mb-4">
+          <CalendarCheck
+            size={16}
+            strokeWidth={2}
+            className="text-primary/60"
+          />
+          <span className="text-sm text-primary/60 font-nunito-bold">
+            Subscribed on: {formatDate(userData.subscriptionStartDate)}
+          </span>
+        </div>
+
+        {userData.nextMonthPlan && (
           <div className="bg-yellow-50 border-l-4 border-yellow-400 p-3 rounded-r mb-4">
             <div className="flex items-center text-sm">
               <AlertCircle className="size-4 text-yellow-600 mr-2" />
               <span className="text-yellow-800 font-nunito-semibold tracking-wide">
-                Changing to {planData.nextMonthPlan.toUpperCase()} plan next
+                Changing to {userData.nextMonthPlan.toUpperCase()} plan next
                 month
               </span>
             </div>
@@ -220,7 +186,7 @@ const PlanDetailsCard = ({ planData }) => {
         <div className="flex items-center gap-2">
           <Tag size={16} strokeWidth={2.5} className="text-primary/60" />
           <span className="text-sm text-primary/60 font-nunito-bold">
-            {planData.billingPeriod?.toLowerCase() === "yearly"
+            {userData.billingPeriod?.toLowerCase() === "yearly"
               ? "Yearly subscription (-16%)"
               : "Monthly subscription"}
           </span>
@@ -232,7 +198,7 @@ const PlanDetailsCard = ({ planData }) => {
           Current Plan Benefits:
         </h3>
         <div className="grid grid-cols-2 gap-4">
-          {getPlanFeatures(planData.plan).map((feature, index) => (
+          {getPlanFeatures(userData.plan).map((feature, index) => (
             <div key={index} className="flex items-center gap-2">
               <div className="size-1.5 rounded-full bg-green2" />
               <span className="text-sm text-primary/60 font-nunito-bold">

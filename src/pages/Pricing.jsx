@@ -38,6 +38,7 @@ const PricingPage = () => {
           setCurrentPlan({
             name: currentUserPlan,
             billingPeriod: userBillingPeriod,
+            expiryDate: userData?.planRequest?.expiryDate,
           });
           setBillingPeriod(userBillingPeriod);
           setPlanStatus(userData?.planStatus || null);
@@ -158,11 +159,32 @@ const PricingPage = () => {
                 <div className="relative group">
                   <Lightbulb className="h-5 w-5 text-yellow-600 cursor-pointer" />
                   <div className="tracking-wide font-nunito-semibold absolute z-10 p-3 -mt-2 text-sm text-background bg-[#8BB1A0] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none w-64 right-0">
-                    {pricingTiers
-                      .find((tier) =>
-                        tier.name.toLowerCase().includes(currentPlan.name)
-                      )
-                      ?.features.join(", ") || "Free plan limitations apply"}
+                    {currentPlan.name !== "free" ? (
+                      <>
+                        <p className="mb-2">
+                          Plan Features:{" "}
+                          {pricingTiers
+                            .find((tier) =>
+                              tier.name.toLowerCase().includes(currentPlan.name)
+                            )
+                            ?.features.join(", ")}
+                        </p>
+                        <p className="font-nunito-semibold text-md tracking-wide text-background">
+                          - Expires:{" "}
+                          {new Date(
+                            Date.now() + 30 * 24 * 60 * 60 * 1000
+                          ).toLocaleDateString()}
+                        </p>
+                        <p className="font-nunito-semibold text-md tracking-wide text-background">
+                          - Auto-renews:{" "}
+                          {new Date(
+                            Date.now() + 30 * 24 * 60 * 60 * 1000
+                          ).toLocaleDateString()}
+                        </p>
+                      </>
+                    ) : (
+                      "Free plan limitations apply"
+                    )}
                   </div>
                 </div>
               </div>

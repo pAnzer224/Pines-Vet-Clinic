@@ -18,22 +18,34 @@ const AdminCarePlans = () => {
   const statusOptions = ["All Status", "Pending", "Approved", "Rejected"];
   const planOptions = [
     "Basic (Monthly)",
-    "Basic (Yearly)",
     "Standard (Monthly)",
-    "Standard (Yearly)",
     "Premium (Monthly)",
+    "Basic (Yearly)",
+    "Standard (Yearly)",
     "Premium (Yearly)",
   ];
 
   const { items: customers, loading } = useFirestoreCrud("users");
+  const { items: allPets } = useFirestoreCrud("pets", {
+    where: { field: "userId", operator: "!=", value: "" },
+  });
+
+  const getStatusPriority = (status) => {
+    const priorities = {
+      Pending: 0,
+      Approved: 1,
+      Rejected: 2,
+      "No Request": 3,
+    };
+    return priorities[status] ?? 4;
+  };
 
   const getPlanColor = (plan, status) => {
-    if (status === "Pending") {
-      return "bg-yellow-100 text-yellow-800";
-    }
+    if (!plan) return "bg-text/10 text-text/70";
+    if (status === "Pending") return "bg-yellow-100 text-yellow-800";
 
-    // Extract the base plan name without billing period
-    const basePlan = plan?.split(" ")[0]?.toLowerCase();
+    const basePlan =
+      typeof plan === "string" ? plan.split(" ")[0]?.toLowerCase() : "free";
 
     switch (basePlan) {
       case "basic":
@@ -47,19 +59,47 @@ const AdminCarePlans = () => {
     }
   };
 
-  const handlePlanRequest = async (customerId, action, newPlan = null) => {
+  const handlePlanRequest = async (
+    customerId,
+    action,
+    planSelection = null
+  ) => {
     try {
       setProcessingRequest(true);
       const userRef = doc(db, "users", customerId);
 
       let updateData = {};
       if (action === "approve") {
+        const [planWithParentheses, billingPeriodWithParentheses] =
+          planSelection.split(" ");
+        const plan = planWithParentheses.toLowerCase();
+        const billingPeriod = billingPeriodWithParentheses
+          .replace(/[()]/g, "")
+          .toLowerCase();
+
+        const subscriptionDate = new Date();
+        const expiryDate = new Date(subscriptionDate);
+
+        if (billingPeriod === "monthly") {
+          expiryDate.setMonth(expiryDate.getMonth() + 1);
+          if (subscriptionDate.getDate() !== expiryDate.getDate()) {
+            expiryDate.setDate(0);
+          }
+        } else if (billingPeriod === "yearly") {
+          expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+        }
+
         updateData = {
-          plan: newPlan,
+          plan: plan,
+          billingPeriod: billingPeriod,
           planStatus: "Approved",
-          planRequestDate: new Date().toISOString(),
+          planRequestDate: subscriptionDate.toISOString(),
+          subscriptionStartDate: subscriptionDate.toISOString(),
+          subscriptionExpiryDate: expiryDate.toISOString(),
         };
-        toast.success(`Care plan ${newPlan} approved successfully`);
+        toast.success(
+          `Care plan ${plan} (${billingPeriod}) approved successfully`
+        );
       } else if (action === "reject") {
         updateData = {
           planStatus: "Rejected",
@@ -69,8 +109,11 @@ const AdminCarePlans = () => {
       } else if (action === "remove") {
         updateData = {
           plan: "free",
+          billingPeriod: null,
           planStatus: null,
           planRequestDate: null,
+          subscriptionStartDate: null,
+          subscriptionExpiryDate: null,
         };
         toast.success("Care plan removed successfully");
       }
@@ -85,29 +128,79 @@ const AdminCarePlans = () => {
   };
 
   const handleViewCustomerDetails = (customer) => {
-    setSelectedCustomer(customer);
+    // Enrich the customer data before showing modal
+    const enrichedCustomer = {
+      ...customer,
+      name: customer.fullName || "Unknown",
+      pets: allPets
+        .filter((pet) => pet.userId === customer.id)
+        .map((pet) => ({
+          id: pet.id,
+          name: pet.name,
+          type: `${pet.species} ${pet.breed || ""}`.trim(),
+        })),
+      joinedDate: customer.createdAt
+        ? new Date(customer.createdAt.seconds * 1000).toLocaleDateString(
+            "en-US",
+            {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            }
+          )
+        : "Unknown",
+      status: customer.status || "Active",
+      billingPeriod: customer.billingPeriod || "monthly",
+      plan: customer.plan || "free",
+      planStatus: getPlanStatus(customer.planStatus),
+      subscriptionExpiryDate: customer.subscriptionExpiryDate,
+      planRequest: customer.planRequest,
+      totalUsers: customer.totalUsers,
+    };
+
+    setSelectedCustomer(enrichedCustomer);
     setIsCustomerModalOpen(true);
+  };
+
+  const getDisplayValue = (value) => {
+    if (value === null || value === undefined) return "";
+    if (typeof value === "object") return JSON.stringify(value);
+    return String(value);
+  };
+
+  const getPlanStatus = (status) => {
+    if (!status) return "No Request";
+    if (typeof status === "object") return "Pending";
+    return status;
+  };
+
+  const formatPlanDisplay = (plan, billingPeriod) => {
+    if (!plan || plan === "free") return "Free";
+    if (typeof plan === "object") return "Unknown Plan";
+    return `${plan} (${billingPeriod || "monthly"})`;
   };
 
   const filteredCustomers = customers
     .filter((customer) =>
       selectedStatus === "All Status"
         ? true
-        : customer.planStatus === selectedStatus
+        : getPlanStatus(customer.planStatus) === selectedStatus
     )
     .filter((customer) =>
       searchQuery
-        ? customer.fullName
-            ?.toLowerCase()
+        ? getDisplayValue(customer.fullName)
+            .toLowerCase()
             .includes(searchQuery.toLowerCase()) ||
-          customer.email?.toLowerCase().includes(searchQuery.toLowerCase())
+          getDisplayValue(customer.email)
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())
         : true
-    );
-
-  const formatPlanDisplay = (plan, billingPeriod) => {
-    if (!plan || plan === "free") return "Free";
-    return `${plan} (${billingPeriod || "monthly"})`;
-  };
+    )
+    .sort((a, b) => {
+      const statusA = getPlanStatus(a.planStatus);
+      const statusB = getPlanStatus(b.planStatus);
+      return getStatusPriority(statusA) - getStatusPriority(statusB);
+    });
 
   return (
     <div className="space-y-6 mt-12">
@@ -168,33 +261,34 @@ const AdminCarePlans = () => {
                     className="p-3 font-nunito-bold text-md cursor-pointer"
                     onClick={() => handleViewCustomerDetails(customer)}
                   >
-                    {customer.fullName}
+                    {getDisplayValue(customer.fullName)}
                   </td>
                   <td
                     className="p-3 text-md cursor-pointer truncate max-w-[15rem]"
                     onClick={() => handleViewCustomerDetails(customer)}
-                    title={customer.email}
+                    title={getDisplayValue(customer.email)}
                   >
-                    {customer.email}
+                    {getDisplayValue(customer.email)}
                   </td>
                   <td
                     className="p-3 cursor-pointer"
                     onClick={() => handleViewCustomerDetails(customer)}
                   >
-                    {customer.planStatus === "Pending" && (
+                    {getPlanStatus(customer.planStatus) === "Pending" && (
                       <div className="text-sm text-yellow-800 text-left mb-1">
-                        Requesting {customer.planRequest?.billingPeriod}
+                        Requesting{" "}
+                        {getDisplayValue(customer.planRequest?.billingPeriod)}
                       </div>
                     )}
                     <div className="flex">
                       <span
                         className={`px-3 py-1 rounded-full text-sm font-nunito-bold whitespace-nowrap ${getPlanColor(
                           customer.plan,
-                          customer.planStatus
+                          getPlanStatus(customer.planStatus)
                         )}`}
                       >
-                        {customer.planStatus === "Pending"
-                          ? customer.planRequest?.requestedPlan
+                        {getPlanStatus(customer.planStatus) === "Pending"
+                          ? getDisplayValue(customer.planRequest?.requestedPlan)
                           : formatPlanDisplay(
                               customer.plan,
                               customer.billingPeriod
@@ -210,32 +304,28 @@ const AdminCarePlans = () => {
                       className={`
                         inline-flex px-3 py-1 rounded-full text-xs font-nunito-semibold whitespace-nowrap
                         ${
-                          customer.planStatus === "Approved"
+                          getPlanStatus(customer.planStatus) === "Approved"
                             ? "bg-green3/50 text-primary tracking-wide"
-                            : customer.planStatus === "Rejected"
+                            : getPlanStatus(customer.planStatus) === "Rejected"
                             ? "bg-red/30 text-red"
-                            : customer.planStatus === "Pending"
+                            : getPlanStatus(customer.planStatus) === "Pending"
                             ? "bg-yellow-100 text-yellow-800"
                             : "bg-gray-200/90 text-primary"
                         }
                       `}
                     >
-                      {customer.planStatus || "No Request"}
+                      {getPlanStatus(customer.planStatus)}
                     </span>
                   </td>
                   <td className="p-3">
                     <div className="flex items-center gap-2">
-                      {customer.planStatus === "Pending" ? (
+                      {getPlanStatus(customer.planStatus) === "Pending" ? (
                         <>
                           <StatusDropdown
                             statusOptions={planOptions}
                             selectedStatus="Select Plan"
                             onStatusChange={(plan) =>
-                              handlePlanRequest(
-                                customer.id,
-                                "approve",
-                                plan.split(" ")[0].toLowerCase()
-                              )
+                              handlePlanRequest(customer.id, "approve", plan)
                             }
                             className="w-32"
                           />
@@ -255,11 +345,7 @@ const AdminCarePlans = () => {
                           statusOptions={planOptions}
                           selectedStatus="Change Plan"
                           onStatusChange={(plan) =>
-                            handlePlanRequest(
-                              customer.id,
-                              "approve",
-                              plan.split(" ")[0].toLowerCase()
-                            )
+                            handlePlanRequest(customer.id, "approve", plan)
                           }
                           className="w-32"
                         />

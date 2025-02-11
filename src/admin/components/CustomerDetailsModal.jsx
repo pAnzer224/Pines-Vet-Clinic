@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { X, Edit, Trash2, Users, PlusCircle, ChevronRight } from "lucide-react";
 import {
   deleteDoc,
@@ -26,6 +26,23 @@ function CustomerDetailsModal({
   const [showAllPets, setShowAllPets] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
   const [pets, setPets] = useState([]);
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   useEffect(() => {
     if (customer?.id) {
@@ -98,15 +115,34 @@ function CustomerDetailsModal({
   };
 
   const displayPets = showAllPets ? pets : pets.slice(0, 1);
-  const planExpiryDate = customer?.nextBillingDate
-    ? new Date(customer.nextBillingDate).toLocaleDateString()
-    : "N/A";
 
   if (!isOpen) return null;
 
+  // First try planRequest.expiryDate, then subscriptionExpiryDate, then nextBillingDate
+  const getExpiryDate = () => {
+    if (customer?.planRequest?.expiryDate) {
+      return customer.planRequest.expiryDate;
+    }
+    if (customer?.subscriptionExpiryDate) {
+      return customer.subscriptionExpiryDate;
+    }
+    if (customer?.nextBillingDate) {
+      return customer.nextBillingDate;
+    }
+    return null;
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return "N/A";
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50">
-      <div className="bg-background w-full max-w-md mx-4 rounded-xl shadow-xl relative border-green2/30 border-2">
+      <div
+        ref={modalRef}
+        className="bg-background w-full max-w-md mx-4 rounded-xl shadow-xl relative border-green2/30 border-2"
+      >
         <button
           onClick={onClose}
           className="absolute top-4 right-4 text-text/60 hover:text-text transition-colors"
@@ -209,15 +245,21 @@ function CustomerDetailsModal({
                       Current Plan:
                     </span>
                     <span className="ml-2 text-text/60">
-                      {customer.plan?.charAt(0).toUpperCase() +
-                        customer.plan?.slice(1) || "Free"}
+                      {customer.plan
+                        ? `${
+                            customer.plan?.charAt(0).toUpperCase() +
+                            customer.plan?.slice(1)
+                          } (${customer.billingPeriod || "monthly"})`
+                        : "Free"}
                     </span>
                   </div>
                   <div>
                     <span className="font-nunito-bold text-text/80">
                       Plan Expires:
                     </span>
-                    <span className="ml-2 text-text/60">{planExpiryDate}</span>
+                    <span className="ml-2 text-text/60">
+                      {formatDate(getExpiryDate())}
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <span className="font-nunito-bold text-text/80 mr-2">
