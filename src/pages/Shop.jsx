@@ -26,6 +26,13 @@ import PromptModal from "../components/promptModal";
 
 const PRODUCTS_PER_PAGE = 12;
 
+const planDiscounts = {
+  premium: 0.2,
+  standard: 0.15,
+  basic: 0.1,
+  free: 0,
+};
+
 const Shop = () => {
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -38,7 +45,10 @@ const Shop = () => {
   const [lastProduct, setLastProduct] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
-  const [userPlan, setUserPlan] = useState({ plan: "free", discount: 0 });
+  const [userPlan, setUserPlan] = useState({
+    name: "free",
+    discount: 0,
+  });
   const { currentUser } = useAuth();
   const [overlaySettings, setOverlaySettings] = useState({
     isEnabled: false,
@@ -80,16 +90,16 @@ const Shop = () => {
     return () => clearTimeout(timer);
   }, [overlaySettings.isEnabled]);
 
-  // Fetch user's plan
   useEffect(() => {
     if (!currentUser) return;
 
     const unsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (doc) => {
       if (doc.exists()) {
         const userData = doc.data();
+        const planName = userData.plan || "free";
         setUserPlan({
-          plan: userData.plan || "free",
-          discount: userData.discount || 0,
+          name: planName,
+          discount: planDiscounts[planName] || 0,
         });
       }
     });
@@ -189,7 +199,6 @@ const Shop = () => {
 
       const cartSnapshot = await getDocs(cartQuery);
 
-      // Calculate discounted price
       const discountedPrice = Math.round(
         product.price * (1 - (userPlan.discount || 0))
       );
@@ -270,12 +279,12 @@ const Shop = () => {
           </p>
         </div>
 
-        {userPlan.discount > 0 && (
+        {userPlan.name !== "free" && (
           <div className="bg-green3/20 border-l-4 border-green2 p-4 mb-8 max-w-7xl mx-auto">
-            <p className="text-text font-nunito-semibold">
+            <p className="text-primary font-nunito-semibold tracking-wide">
               Your{" "}
-              {userPlan.plan.charAt(0).toUpperCase() + userPlan.plan.slice(1)}{" "}
-              Plan Discount: {userPlan.discount * 100}% off all products!
+              {userPlan.name.charAt(0).toUpperCase() + userPlan.name.slice(1)}{" "}
+              Plan discount: {userPlan.discount * 100}% off all products!
             </p>
           </div>
         )}

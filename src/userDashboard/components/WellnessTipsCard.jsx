@@ -24,7 +24,6 @@ const WellnessTipsCard = () => {
       const text = await response.text();
       const lines = text.split("\n").filter((line) => line.trim());
 
-      // this part finds the specific tip
       let matchingLine = lines.find((line) => {
         const [cat, serv, pet] = line.split("|");
         return (
@@ -34,7 +33,6 @@ const WellnessTipsCard = () => {
         );
       });
 
-      // If no specific tip found, try default tip for the service
       if (!matchingLine) {
         matchingLine = lines.find((line) => {
           const [cat, serv, pet] = line.split("|");
@@ -46,7 +44,6 @@ const WellnessTipsCard = () => {
         });
       }
 
-      // If still no tip found, get random default tip
       if (!matchingLine) {
         const defaultTips = lines.filter((line) => line.startsWith("DEFAULT"));
         matchingLine =
@@ -65,14 +62,12 @@ const WellnessTipsCard = () => {
       if (!currentUser) return;
 
       try {
-        // Get user's plan
         const userDoc = await getDoc(doc(db, "users", currentUser.uid));
         const userData = userDoc.data();
         setUserPlan(userData?.plan || "free");
 
         if (userData?.plan === "free") return;
 
-        // Get user's pets and appointments
         const [petsSnapshot, appointmentsSnapshot] = await Promise.all([
           getDocs(
             query(
@@ -92,7 +87,6 @@ const WellnessTipsCard = () => {
         const pets = petsSnapshot.docs.map((doc) => doc.data());
         const appointments = appointmentsSnapshot.docs.map((doc) => doc.data());
 
-        // Generate tips
         const currentTips = [];
         for (const apt of appointments) {
           const serviceCategory = apt.service?.toLowerCase();
@@ -107,7 +101,14 @@ const WellnessTipsCard = () => {
 
           if (category) {
             const tip = await getTipFromText(category, apt.service, petType);
-            if (tip) currentTips.push(tip);
+            if (tip) {
+              // If we already have 3 tips, replace the last one
+              if (currentTips.length >= 3) {
+                currentTips[2] = tip;
+              } else {
+                currentTips.push(tip);
+              }
+            }
           }
         }
 
@@ -121,14 +122,14 @@ const WellnessTipsCard = () => {
           if (defaultTip) currentTips.push(defaultTip);
         }
 
-        setTips(currentTips);
+        // Ensure we never have more than 3 tips
+        setTips(currentTips.slice(0, 3));
         setLastChecked(new Date().toISOString());
       } catch (error) {
         console.error("Error loading wellness tips:", error);
       }
     };
 
-    // Load tips initially and every 8 hours
     const now = new Date();
     const lastCheck = lastChecked ? new Date(lastChecked) : null;
     if (!lastCheck || now - lastCheck >= 8 * 60 * 60 * 1000) {
@@ -155,7 +156,7 @@ const WellnessTipsCard = () => {
       <div className="space-y-4">
         {tips.map((tip, index) => (
           <div
-            key={index}
+            key={`${tip}-${index}`}
             className="flex items-start space-x-4 p-4 bg-green3/10 rounded-lg"
           >
             <div className="p-2 rounded-full bg-green3/20 text-green2">

@@ -9,15 +9,19 @@ function MainHeader() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
+  const firstName = currentUser?.displayName
+    ? currentUser.displayName.split(" ")[0]
+    : "User";
+
   const handleProfileClick = () => {
-    navigate("/dashboard");
+    navigate("/user/profile");
     setIsMenuOpen(false);
   };
 
   const handleLogout = () => {
     logout();
     setIsMenuOpen(false);
-    navigate("/");
+    navigate("/login");
   };
 
   return (
@@ -69,22 +73,37 @@ function MainHeader() {
             </>
           ) : (
             <>
-              <Link
-                to="user"
-                onClick={handleProfileClick}
-                className="flex items-center gap-2 text-green2 hover:text-primary w-full md:w-auto justify-center"
-              >
-                <img
-                  src="/images/profile.svg"
-                  alt="Profile"
-                  className="size-6 mb-[0.4px]"
-                />
-                <span>Profile</span>
-              </Link>
+              <div className="relative group md:hover-trigger">
+                <Link
+                  to="/user/profile"
+                  className="flex items-center gap-2 text-green2 hover:text-primary w-full md:w-auto justify-center"
+                >
+                  <img
+                    src="/images/profile.svg"
+                    alt="Profile"
+                    className="size-6 mb-[0.4px]"
+                  />
+                  <span>Hi, {firstName}</span>
+                </Link>
+                <div className="hidden md:group-hover:block absolute top-full left-0 pt-2">
+                  <button
+                    className="w-full bg-background border border-background rounded-md p-2 shadow-md flex items-center justify-center text-green2 hover:text-background hover:bg-[#A5D4AE] whitespace-nowrap"
+                    onClick={handleProfileClick}
+                  >
+                    <span>View Profile</span>
+                  </button>
+                </div>
+                <button
+                  className="md:hidden ml-[5px] w-[157px] mt-4 bg-background border-2 border-green2 rounded-md p-2 flex items-center justify-center text-green2 hover:text-primary"
+                  onClick={handleProfileClick}
+                >
+                  <span>View Profile</span>
+                </button>
+              </div>
 
               <button
                 onClick={handleLogout}
-                className="ml-1 text-background hover:text-primary flex items-center gap-1 border px-5 py-2 rounded-md bg-green3 hover:bg-green3/80 w-full md:w-auto justify-center"
+                className="ml-1 text-background hover:text-primary flex items-center gap-1 border-2  px-5 py-2 rounded-md bg-green3 hover:bg-green3/80 w-full md:w-auto justify-center"
               >
                 <span>Log out</span>
                 <ArrowRight className="size-5" />
