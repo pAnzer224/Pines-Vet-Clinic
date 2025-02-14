@@ -41,8 +41,6 @@ const filterDataByMonth = (data, selectedMonth) => {
 
   const targetDate = new Date(selectedMonth);
   const targetMonth = targetDate.getMonth();
-
-  // Get previous and next month indices
   const prevMonth = targetMonth === 0 ? 11 : targetMonth - 1;
   const nextMonth = targetMonth === 11 ? 0 : targetMonth + 1;
 
@@ -187,11 +185,34 @@ export function ProductsSoldChart({ data, selectedMonth }) {
 }
 
 export function ServicesPerformedChart({ data, selectedMonth }) {
-  const filteredData = sortByMonth(filterDataByMonth(data, selectedMonth));
+  const getFilteredData = (data, selectedMonth) => {
+    if (selectedMonth === "all") {
+      return sortByMonth(data);
+    }
+
+    const targetDate = new Date(selectedMonth);
+    const targetMonth = monthNames[targetDate.getMonth()];
+    const monthData = data.find((item) => item.month === targetMonth);
+
+    if (!monthData) return [];
+
+    return SERVICE_CATEGORIES.map((service, index) => ({
+      month: monthData.month,
+      name: service,
+      value: monthData[service] || 0,
+      fill: COLORS[index % COLORS.length],
+    }));
+  };
+
+  const filteredData = getFilteredData(data, selectedMonth);
+  const title =
+    selectedMonth === "all"
+      ? "Services Performed"
+      : `Services Performed - ${filteredData[0]?.month || ""}`;
 
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <h3 className="font-nunito-bold text-green2 mb-6">Services Performed</h3>
+      <h3 className="font-nunito-bold text-green2 mb-6">{title}</h3>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
@@ -199,7 +220,34 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
             margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
-            <XAxis dataKey="month" stroke="#5B9279" />
+            {selectedMonth === "all" ? (
+              <>
+                <XAxis dataKey="month" stroke="#5B9279" />
+                {SERVICE_CATEGORIES.map((category, index) => (
+                  <Bar
+                    key={category}
+                    dataKey={category}
+                    name={category}
+                    fill={COLORS[index % COLORS.length]}
+                    opacity={0.9}
+                  />
+                ))}
+              </>
+            ) : (
+              <>
+                <XAxis dataKey="name" stroke="#5B9279" />
+                <Bar
+                  dataKey="value"
+                  fill="#235840"
+                  opacity={0.9}
+                  name="Services"
+                >
+                  {filteredData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Bar>
+              </>
+            )}
             <YAxis stroke="#5B9279" allowDecimals={false} />
             <Tooltip
               contentStyle={{
@@ -208,15 +256,6 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
               }}
             />
             <Legend />
-            {SERVICE_CATEGORIES.map((category, index) => (
-              <Bar
-                key={category}
-                dataKey={category}
-                name={category}
-                fill={COLORS[index % COLORS.length]}
-                opacity={0.8}
-              />
-            ))}
           </BarChart>
         </ResponsiveContainer>
       </div>
