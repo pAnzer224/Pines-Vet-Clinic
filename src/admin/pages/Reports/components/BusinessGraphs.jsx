@@ -10,6 +10,9 @@ import {
   Cell,
   ResponsiveContainer,
   CartesianGrid,
+  BarChart,
+  Bar,
+  Legend,
 } from "recharts";
 
 const COLORS = ["#235840", "#5B9279", "#8FCB9B", "#D1E8D5"];
@@ -191,7 +194,7 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
       <h3 className="font-nunito-bold text-green2 mb-6">Services Performed</h3>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
+          <BarChart
             data={filteredData}
             margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
           >
@@ -204,18 +207,17 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
                 border: "2px solid #5B9279",
               }}
             />
+            <Legend />
             {SERVICE_CATEGORIES.map((category, index) => (
-              <Line
+              <Bar
                 key={category}
-                type="monotone"
                 dataKey={category}
                 name={category}
-                stroke={COLORS[index % COLORS.length]}
-                strokeWidth={3.5}
-                opacity={1}
+                fill={COLORS[index % COLORS.length]}
+                opacity={0.8}
               />
             ))}
-          </LineChart>
+          </BarChart>
         </ResponsiveContainer>
       </div>
     </div>
