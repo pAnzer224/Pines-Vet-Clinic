@@ -12,11 +12,6 @@ const Services = () => {
         "A centralized platform for easy access to reliable veterinary clinics and streamlined appointment booking, reducing confusion and saving time.",
     },
     {
-      title: "Navigation Assistance, Educational Resources & AI Integration",
-      content:
-        "Comprehensive navigation tools and educational materials enhanced with AI technology to provide better pet care guidance.",
-    },
-    {
       title: "Community Connections",
       content:
         "Platform for connecting pet owners with local resources and community initiatives.",
@@ -25,7 +20,7 @@ const Services = () => {
 
   return (
     <div id="services" className="min-h-screen bg-transparent">
-      <div className="container mx-auto px-6 pb-20  font-nunito-bold">
+      <div className="container mx-auto px-6 pb-20 font-nunito-bold">
         <div className="max-w-5xl mx-auto pt-20 lg:pt-0">
           <h1 className="text-4xl font-bold text-text mb-8 tracking-wide">
             What Pines Vet Clinic has to offer
@@ -120,6 +115,7 @@ const Services = () => {
                 </div>
               </div>
             </div>
+
             {showMore && (
               <>
                 <div className="flex flex-col md:flex-row gap-8 items-center">
@@ -144,13 +140,13 @@ const Services = () => {
                 </div>
 
                 <div className="flex flex-col md:flex-row gap-8 items-center">
-                  <div className="w-full md:w-1/2">
+                  <div className="w-full md:w-1/2 order-2 md:order-1">
                     <h3 className="text-2xl font-semibold text-text mb-4">
                       Dental Care
                     </h3>
                     <p className="text-text/80 leading-relaxed tracking-wide">
                       Regular dental check-ups and cleanings help maintain your
-                      pet's oral health and overall well-being."
+                      pet's oral health and overall well-being.
                     </p>
                   </div>
                   <div className="w-full md:w-1/2 border-[1.6px] border-green2 rounded-2xl order-1 md:order-2">
@@ -158,6 +154,94 @@ const Services = () => {
                       <img
                         src="/images/card4.jpg"
                         alt="Dental Care"
+                        className="w-full h-full object-cover rounded-2xl"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8 items-center">
+                  <div className="w-full md:w-1/2 border-[1.6px] border-green2 rounded-2xl">
+                    <div className="flex items-center justify-center h-50 bg-green3/10">
+                      <img
+                        src="/images/card5.jpg"
+                        alt="Pet Grooming"
+                        className="w-full h-full object-cover rounded-2xl"
+                      />
+                    </div>
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <h3 className="text-2xl font-semibold text-text mb-4">
+                      Pet Grooming
+                    </h3>
+                    <p className="text-text/80 leading-relaxed tracking-wide">
+                      Professional grooming services to keep your pets clean,
+                      healthy, and looking their best with specialized care for
+                      all breeds.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8 items-center">
+                  <div className="w-full md:w-1/2 order-2 md:order-1">
+                    <h3 className="text-2xl font-semibold text-text mb-4">
+                      Pet Boarding
+                    </h3>
+                    <p className="text-text/80 leading-relaxed tracking-wide">
+                      Safe and comfortable accommodation for your pets when
+                      you're away, with 24/7 monitoring and personalized care
+                      routines.
+                    </p>
+                  </div>
+                  <div className="w-full md:w-1/2 border-[1.6px] border-green2 rounded-2xl order-1 md:order-2">
+                    <div className="flex items-center justify-center h-full bg-green3/10">
+                      <img
+                        src="/images/card6.jpg"
+                        alt="Pet Boarding"
+                        className="w-full h-full object-cover rounded-2xl"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8 items-center">
+                  <div className="w-full md:w-1/2 border-[1.6px] border-green2 rounded-2xl">
+                    <div className="flex items-center justify-center h-50 bg-green3/10">
+                      <img
+                        src="/images/card7.jpg"
+                        alt="Home Service"
+                        className="w-full h-full object-cover rounded-2xl"
+                      />
+                    </div>
+                  </div>
+                  <div className="w-full md:w-1/2">
+                    <h3 className="text-2xl font-semibold text-text mb-4">
+                      Home Service
+                    </h3>
+                    <p className="text-text/80 leading-relaxed tracking-wide">
+                      Convenient veterinary care at your doorstep, perfect for
+                      routine check-ups and pets who are more comfortable at
+                      home.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex flex-col md:flex-row gap-8 items-center">
+                  <div className="w-full md:w-1/2 order-2 md:order-1">
+                    <h3 className="text-2xl font-semibold text-text mb-4">
+                      Emergency Cases
+                    </h3>
+                    <p className="text-text/80 leading-relaxed tracking-wide">
+                      Round-the-clock emergency veterinary care for urgent
+                      cases, with quick response times and critical care
+                      facilities.
+                    </p>
+                  </div>
+                  <div className="w-full md:w-1/2 border-[1.6px] border-green2 rounded-2xl order-1 md:order-2">
+                    <div className="flex items-center justify-center h-full bg-green3/10">
+                      <img
+                        src="/images/card8.jpg"
+                        alt="Emergency Cases"
                         className="w-full h-full object-cover rounded-2xl"
                       />
                     </div>

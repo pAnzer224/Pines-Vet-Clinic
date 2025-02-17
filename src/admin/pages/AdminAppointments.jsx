@@ -171,7 +171,13 @@ function AdminAppointments() {
   const [appointments, setAppointments] = useState([]);
   const [showPastAppointments, setShowPastAppointments] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
-  const statusOptions = ["All Status", "Confirmed", "Pending", "Cancelled"];
+  const statusOptions = [
+    "All Status",
+    "Confirmed",
+    "Pending",
+    "Cancelled",
+    "Concluded",
+  ];
 
   useEffect(() => {
     const appointmentsCollectionRef = collection(db, "appointments");
