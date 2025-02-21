@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 function OrderAccordion({ order, isOpen, onToggle }) {
   return (
@@ -77,6 +83,18 @@ function OrderAccordion({ order, isOpen, onToggle }) {
 function OrderHistory({ orders }) {
   const [isOpen, setIsOpen] = useState(false);
   const [openOrderId, setOpenOrderId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 10;
+
+  const totalPages = Math.ceil(orders.length / ordersPerPage);
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
+  const currentOrders = orders.slice(indexOfFirstOrder, indexOfLastOrder);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    setOpenOrderId(null);
+  };
 
   return (
     <div className="bg-background rounded-lg shadow-sm border-2 border-green3/60">
@@ -92,19 +110,57 @@ function OrderHistory({ orders }) {
         )}
       </button>
       {isOpen && (
-        <div className="p-6 space-y-2">
-          {orders.map((order) => (
-            <OrderAccordion
-              key={order.orderId}
-              order={order}
-              isOpen={openOrderId === order.orderId}
-              onToggle={() =>
-                setOpenOrderId(
-                  openOrderId === order.orderId ? null : order.orderId
-                )
-              }
-            />
-          ))}
+        <div className="p-6">
+          <div className="space-y-2">
+            {currentOrders.map((order) => (
+              <OrderAccordion
+                key={order.orderId}
+                order={order}
+                isOpen={openOrderId === order.orderId}
+                onToggle={() =>
+                  setOpenOrderId(
+                    openOrderId === order.orderId ? null : order.orderId
+                  )
+                }
+              />
+            ))}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-1 rounded-md hover:bg-green3/10 disabled:opacity-50 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft className="w-5 h-5 text-green2" />
+              </button>
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === page
+                          ? "bg-green3/20 text-green2"
+                          : "hover:bg-green3/10 text-text"
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  )
+                )}
+              </div>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded-md hover:bg-green3/10 disabled:opacity-50 disabled:hover:bg-transparent"
+              >
+                <ChevronRight className="w-5 h-5 text-green2" />
+              </button>
+            </div>
+          )}
         </div>
       )}
     </div>

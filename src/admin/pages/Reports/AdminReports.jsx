@@ -76,7 +76,7 @@ function MetricCard({ title, value, icon: Icon, isToggleable = false }) {
             )}
           </div>
           <p className="text-2xl font-nunito-bold mt-2 text-primary">
-            {isToggleable ? (isVisible ? value : "***") : value}
+            {isToggleable ? (isVisible ? value : "*****") : value}
           </p>
         </div>
         <div className="p-3 rounded-full bg-green3/10 text-green2">
@@ -98,6 +98,7 @@ function Reports() {
     monthlyProducts: [],
     monthlyServices: [],
     serviceBreakdown: [],
+    serviceBreakdownByMonth: {},
   });
   const [orders, setOrders] = useState([]);
   const [appointments, setAppointments] = useState([]);
@@ -160,11 +161,15 @@ function Reports() {
       return acc;
     }, {});
 
+    // Track service breakdown by month
+    const serviceBreakdownByMonth = {};
+
     let appointmentRevenue = 0;
 
     appointmentsData.forEach((appointment) => {
       const appointmentDate = new Date(appointment.date);
       const monthKey = monthNames[appointmentDate.getMonth()];
+      const yearMonthKey = appointmentDate.toISOString().slice(0, 7);
       const price = parseInt(appointment.price?.replace(/[^\d]/g, "")) || 0;
 
       appointmentRevenue += price;
@@ -172,6 +177,17 @@ function Reports() {
 
       if (!serviceMonthlyData[monthKey]) {
         serviceMonthlyData[monthKey] = SERVICE_CATEGORIES.reduce(
+          (acc, category) => {
+            acc[category] = 0;
+            return acc;
+          },
+          {}
+        );
+      }
+
+      // Initialize month-specific service tracking
+      if (!serviceBreakdownByMonth[yearMonthKey]) {
+        serviceBreakdownByMonth[yearMonthKey] = SERVICE_CATEGORIES.reduce(
           (acc, category) => {
             acc[category] = 0;
             return acc;
@@ -195,6 +211,7 @@ function Reports() {
         if (category) {
           serviceCategories[category]++;
           serviceMonthlyData[monthKey][category]++;
+          serviceBreakdownByMonth[yearMonthKey][category]++;
         }
       }
     });
@@ -254,6 +271,7 @@ function Reports() {
       monthlyProducts: productsData,
       monthlyServices: servicesData,
       serviceBreakdown,
+      serviceBreakdownByMonth,
     });
 
     setOrders(Object.values(orderGroups).sort((a, b) => b.date - a.date));
@@ -334,6 +352,30 @@ function Reports() {
 
   const filteredOrders = filterDataByMonth(orders, selectedMonth);
   const filteredAppointments = filterDataByMonth(appointments, selectedMonth);
+
+  // Get month-specific service breakdown
+  const getFilteredServiceBreakdown = () => {
+    if (selectedMonth === "all") {
+      return metrics.serviceBreakdown;
+    }
+
+    const monthData = metrics.serviceBreakdownByMonth[selectedMonth];
+    if (!monthData) return [];
+
+    const totalMonthServices = Object.values(monthData).reduce(
+      (a, b) => a + b,
+      0
+    );
+    return Object.entries(monthData)
+      .map(([name, value]) => ({
+        name,
+        value:
+          totalMonthServices > 0
+            ? Math.round((value / totalMonthServices) * 100)
+            : 0,
+      }))
+      .filter((item) => item.value > 0);
+  };
 
   const filteredMetrics = {
     ...metrics,
@@ -444,7 +486,7 @@ function Reports() {
           selectedMonth={selectedMonth}
         />
         <ServiceBreakdownChart
-          data={metrics.serviceBreakdown}
+          data={getFilteredServiceBreakdown()}
           selectedMonth={selectedMonth}
         />
       </div>

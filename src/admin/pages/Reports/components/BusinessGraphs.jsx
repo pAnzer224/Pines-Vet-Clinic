@@ -102,12 +102,21 @@ export function MonthlyRevenueChart({ data, selectedMonth }) {
   );
 }
 
-export function ServiceBreakdownChart({ data }) {
+export function ServiceBreakdownChart({ data, selectedMonth }) {
   const filteredData = data.filter((item) => item.value > 0);
+
+  // Adjust title based on whether we're showing filtered data
+  const title =
+    selectedMonth === "all"
+      ? "Service Breakdown"
+      : `Service Breakdown (${new Date(selectedMonth).toLocaleString(
+          "default",
+          { month: "long", year: "numeric" }
+        )})`;
 
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <h3 className="font-nunito-bold text-green2 mb-6">Service Breakdown</h3>
+      <h3 className="font-nunito-bold text-green2 mb-6">{title}</h3>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <PieChart>

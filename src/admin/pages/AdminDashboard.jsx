@@ -86,7 +86,7 @@ function Dashboard() {
     const fetchMetrics = async () => {
       try {
         const now = new Date();
-        const startOfToday = new Date(
+        const today = new Date(
           now.getFullYear(),
           now.getMonth(),
           now.getDate()
@@ -97,17 +97,22 @@ function Dashboard() {
           now.getMonth() - 1,
           1
         );
+        const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
 
+        // Get users count
         const usersSnapshot = await getDocs(collection(db, "users"));
         const totalCustomers = usersSnapshot.size;
 
+        // Get today's appointments
         const appointmentsQuery = query(
           collection(db, "appointments"),
-          where("date", ">=", startOfToday.toISOString().split("T")[0])
+          where("date", "==", today.toISOString().split("T")[0]),
+          where("status", "in", ["Pending", "Confirmed"])
         );
         const appointmentsSnapshot = await getDocs(appointmentsQuery);
         const appointmentsToday = appointmentsSnapshot.size;
 
+        // Get current and last month's orders and revenue
         const ordersQuery = query(
           collection(db, "orders"),
           where("status", "in", ["Confirmed", "Received"])
@@ -129,7 +134,7 @@ function Dashboard() {
             currentMonthRevenue += orderTotal;
           } else if (
             orderDate >= startOfLastMonth &&
-            orderDate < startOfThisMonth
+            orderDate <= endOfLastMonth
           ) {
             lastMonthOrders++;
             lastMonthRevenue += orderTotal;

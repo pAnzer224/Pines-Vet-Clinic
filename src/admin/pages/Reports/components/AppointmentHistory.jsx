@@ -1,5 +1,11 @@
 import React, { useState } from "react";
-import { ChevronDown, ChevronUp, Info } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Info,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 
 function AppointmentAccordion({ appointment, isOpen, onToggle }) {
   const displayPrice =
@@ -75,11 +81,27 @@ function AppointmentAccordion({ appointment, isOpen, onToggle }) {
 function AppointmentHistory({ appointments }) {
   const [isOpen, setIsOpen] = useState(false);
   const [openAppointmentId, setOpenAppointmentId] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const appointmentsPerPage = 10;
 
-  // Filter for concluded appointments and sort by date
   const concludedAppointments = appointments
     .filter((apt) => apt.status === "Concluded")
     .sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  const totalPages = Math.ceil(
+    concludedAppointments.length / appointmentsPerPage
+  );
+  const indexOfLastAppointment = currentPage * appointmentsPerPage;
+  const indexOfFirstAppointment = indexOfLastAppointment - appointmentsPerPage;
+  const currentAppointments = concludedAppointments.slice(
+    indexOfFirstAppointment,
+    indexOfLastAppointment
+  );
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+    setOpenAppointmentId(null);
+  };
 
   return (
     <div className="bg-background rounded-lg shadow-sm border-2 border-green3/60">
@@ -95,24 +117,64 @@ function AppointmentHistory({ appointments }) {
         )}
       </button>
       {isOpen && (
-        <div className="p-6 space-y-2">
-          {concludedAppointments.length === 0 ? (
-            <div className="text-center text-text/60 py-4">
-              No concluded appointments found
-            </div>
-          ) : (
-            concludedAppointments.map((appointment) => (
-              <AppointmentAccordion
-                key={appointment.id}
-                appointment={appointment}
-                isOpen={openAppointmentId === appointment.id}
-                onToggle={() =>
-                  setOpenAppointmentId(
-                    openAppointmentId === appointment.id ? null : appointment.id
+        <div className="p-6">
+          <div className="space-y-2">
+            {concludedAppointments.length === 0 ? (
+              <div className="text-center text-text/60 py-4">
+                No concluded appointments found
+              </div>
+            ) : (
+              currentAppointments.map((appointment) => (
+                <AppointmentAccordion
+                  key={appointment.id}
+                  appointment={appointment}
+                  isOpen={openAppointmentId === appointment.id}
+                  onToggle={() =>
+                    setOpenAppointmentId(
+                      openAppointmentId === appointment.id
+                        ? null
+                        : appointment.id
+                    )
+                  }
+                />
+              ))
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-2 mt-6">
+              <button
+                onClick={() => handlePageChange(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-1 rounded-md hover:bg-green3/10 disabled:opacity-50 disabled:hover:bg-transparent"
+              >
+                <ChevronLeft className="w-5 h-5 text-green2" />
+              </button>
+              <div className="flex gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                  (page) => (
+                    <button
+                      key={page}
+                      onClick={() => handlePageChange(page)}
+                      className={`px-3 py-1 rounded-md ${
+                        currentPage === page
+                          ? "bg-green3/20 text-green2"
+                          : "hover:bg-green3/10 text-text"
+                      }`}
+                    >
+                      {page}
+                    </button>
                   )
-                }
-              />
-            ))
+                )}
+              </div>
+              <button
+                onClick={() => handlePageChange(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded-md hover:bg-green3/10 disabled:opacity-50 disabled:hover:bg-transparent"
+              >
+                <ChevronRight className="w-5 h-5 text-green2" />
+              </button>
+            </div>
           )}
         </div>
       )}
