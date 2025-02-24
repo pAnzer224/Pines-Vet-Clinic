@@ -318,7 +318,7 @@ const PricingPage = () => {
           </div>
 
           {showDowngradeWarning && (
-            <div className="fixed inset-0 bg-text/50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div className="bg-background p-6 rounded-2xl max-w-md mx-4">
                 <h3 className="text-lg font-bold text-text mb-4">
                   Downgrade Confirmation
@@ -357,7 +357,7 @@ const PricingPage = () => {
           )}
 
           {showPhonePrompt && (
-            <div className="fixed inset-0 bg-text/50 flex items-center justify-center z-50">
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
               <div className="bg-background p-6 rounded-2xl max-w-md mx-4">
                 <h3 className="text-lg font-bold text-text mb-4">
                   Phone Number Required

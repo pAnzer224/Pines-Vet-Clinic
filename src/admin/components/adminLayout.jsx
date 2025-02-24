@@ -135,7 +135,7 @@ function AdminLayout() {
 
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-text/50 lg:hidden"
+          className="fixed inset-0 z-30 bg-black/50 lg:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

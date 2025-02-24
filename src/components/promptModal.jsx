@@ -6,7 +6,7 @@ const PromptModal = ({ isOpen, onClose, title, message, actionButtons }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-text bg-opacity-50">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
       <div className="bg-background rounded-2xl p-8 max-w-md w-full mx-4 border-2 border-primary/30">
         <div className="flex justify-between items-center mb-4">
           {title && (

@@ -142,7 +142,7 @@ function UserLayout() {
 
       {isSidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-text/50 md:hidden"
+          className="fixed inset-0 z-30 bg-black/50 md:hidden"
           onClick={() => setIsSidebarOpen(false)}
         />
       )}

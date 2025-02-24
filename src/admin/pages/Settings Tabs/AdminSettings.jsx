@@ -1,10 +1,9 @@
 import React, { useState } from "react";
-import { Settings, Bell, Shield, Store, Calendar } from "lucide-react";
+import { Settings, Bell, Shield, Calendar } from "lucide-react";
 
 // Import tab components - these will be created separately
 import NotificationsTab from "./NotificationsTab";
 import SecurityTab from "./SecurityTab";
-import BusinessTab from "./BusinessTab";
 import SchedulingTab from "./SchedulingTab";
 
 const AdminSettings = () => {
@@ -18,7 +17,6 @@ const AdminSettings = () => {
       component: NotificationsTab,
     },
     { id: "security", icon: Shield, label: "Security", component: SecurityTab },
-    { id: "business", icon: Store, label: "Business", component: BusinessTab },
     {
       id: "scheduling",
       icon: Calendar,

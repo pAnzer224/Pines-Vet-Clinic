@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   LineChart,
   Line,
@@ -50,6 +50,15 @@ const filterDataByMonth = (data, selectedMonth) => {
   });
 };
 
+const filterWeeklyDataByMonth = (data, selectedMonth) => {
+  if (selectedMonth === "all") return data;
+
+  const targetDate = new Date(selectedMonth);
+  const targetMonth = monthNames[targetDate.getMonth()];
+
+  return data.filter((item) => item.month === targetMonth);
+};
+
 const sortByMonth = (data) => {
   const currentDate = new Date();
   const currentMonth = currentDate.getMonth();
@@ -65,20 +74,54 @@ const sortByMonth = (data) => {
   });
 };
 
-export function MonthlyRevenueChart({ data, selectedMonth }) {
-  const filteredData = sortByMonth(filterDataByMonth(data, selectedMonth));
+export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
+  const [viewMode, setViewMode] = useState("monthly");
+  const filteredMonthlyData = sortByMonth(
+    filterDataByMonth(data, selectedMonth)
+  );
+  const filteredWeeklyData = filterWeeklyDataByMonth(weeklyData, selectedMonth);
+
+  const displayData =
+    viewMode === "monthly" ? filteredMonthlyData : filteredWeeklyData;
+  const xDataKey = viewMode === "monthly" ? "month" : "displayName";
 
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <h3 className="font-nunito-bold text-green2 mb-6">Monthly Revenue</h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-nunito-bold text-green2">
+          {viewMode === "monthly" ? "Monthly Revenue" : "Weekly Revenue"}
+        </h3>
+        <div className="flex gap-2 text-sm">
+          <button
+            onClick={() => setViewMode("monthly")}
+            className={`px-3 py-1 rounded ${
+              viewMode === "monthly"
+                ? "bg-green2 text-white"
+                : "bg-green3/20 text-green2"
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setViewMode("weekly")}
+            className={`px-3 py-1 rounded ${
+              viewMode === "weekly"
+                ? "bg-green2 text-white"
+                : "bg-green3/20 text-green2"
+            }`}
+          >
+            Weekly
+          </button>
+        </div>
+      </div>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={filteredData}
+            data={displayData}
             margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
-            <XAxis dataKey="month" stroke="#5B9279" />
+            <XAxis dataKey={xDataKey} stroke="#5B9279" />
             <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
             <Tooltip
               formatter={(value) => formatCurrency(value)}
@@ -153,20 +196,56 @@ export function ServiceBreakdownChart({ data, selectedMonth }) {
   );
 }
 
-export function ProductsSoldChart({ data, selectedMonth }) {
-  const filteredData = sortByMonth(filterDataByMonth(data, selectedMonth));
+export function ProductsSoldChart({ data, weeklyData, selectedMonth }) {
+  const [viewMode, setViewMode] = useState("monthly");
+  const filteredMonthlyData = sortByMonth(
+    filterDataByMonth(data, selectedMonth)
+  );
+  const filteredWeeklyData = filterWeeklyDataByMonth(weeklyData, selectedMonth);
+
+  const displayData =
+    viewMode === "monthly" ? filteredMonthlyData : filteredWeeklyData;
+  const xDataKey = viewMode === "monthly" ? "month" : "displayName";
 
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <h3 className="font-nunito-bold text-green2 mb-6">Products Sold</h3>
+      <div className="flex justify-between items-center mb-6">
+        <h3 className="font-nunito-bold text-green2">
+          {viewMode === "monthly"
+            ? "Monthly Products Sold"
+            : "Weekly Products Sold"}
+        </h3>
+        <div className="flex gap-2 text-sm">
+          <button
+            onClick={() => setViewMode("monthly")}
+            className={`px-3 py-1 rounded ${
+              viewMode === "monthly"
+                ? "bg-green2 text-white"
+                : "bg-green3/20 text-green2"
+            }`}
+          >
+            Monthly
+          </button>
+          <button
+            onClick={() => setViewMode("weekly")}
+            className={`px-3 py-1 rounded ${
+              viewMode === "weekly"
+                ? "bg-green2 text-white"
+                : "bg-green3/20 text-green2"
+            }`}
+          >
+            Weekly
+          </button>
+        </div>
+      </div>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
           <LineChart
-            data={filteredData}
+            data={displayData}
             margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
           >
             <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
-            <XAxis dataKey="month" stroke="#5B9279" />
+            <XAxis dataKey={xDataKey} stroke="#5B9279" />
             <YAxis
               stroke="#5B9279"
               tickFormatter={(value) => value.toLocaleString()}

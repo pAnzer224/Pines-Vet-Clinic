@@ -336,7 +336,7 @@ const Shop = () => {
             {showTooltip && (
               <>
                 <div
-                  className="fixed inset-0 bg-text/60 z-40"
+                  className="fixed inset-0 bg-black/60 z-40"
                   onClick={() => setShowTooltip(false)}
                 />
                 <div className="absolute right-0 mt-3 z-50">

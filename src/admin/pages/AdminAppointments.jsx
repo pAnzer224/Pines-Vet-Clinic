@@ -18,16 +18,22 @@ function AppointmentDetailsModal({
   appointment,
   onClose,
   onConfirm,
+  onComplete,
   onDelete,
 }) {
   if (!appointment) return null;
+
+  const isPastAppointment = new Date(appointment.date) < new Date();
 
   return (
     <div
       className="fixed inset-0 flex items-center justify-center"
       onClick={onClose}
     >
-      <div className="bg-white rounded-lg p-8 max-w-md w-full mx-4 border-2 border-green2/50 shadow-lg">
+      <div
+        className="bg-white rounded-lg p-8 max-w-md w-full mx-4 border-2 border-green2/50 shadow-lg"
+        onClick={(e) => e.stopPropagation()}
+      >
         <h2 className="text-xl font-nunito-bold text-green2 mb-4">
           Appointment Details
         </h2>
@@ -88,6 +94,17 @@ function AppointmentDetailsModal({
               Confirm
             </button>
           )}
+          {isPastAppointment && appointment.status === "Confirmed" && (
+            <button
+              onClick={() => {
+                onComplete(appointment.id);
+                onClose();
+              }}
+              className="px-4 py-2 text-sm font-nunito-semibold text-white bg-green3 rounded-lg hover:bg-green3/80 transition-colors"
+            >
+              Mark as Completed
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -98,6 +115,7 @@ function AppointmentCard({
   appointment,
   onDeleteAppointment,
   onConfirmAppointment,
+  onCompleteAppointment,
   onClick,
 }) {
   const statusColors = {
@@ -105,12 +123,13 @@ function AppointmentCard({
     Pending: "bg-yellow-100 text-yellow-800",
     Cancelled: "bg-red/30 text-red",
     Concluded: "bg-green3/30 text-green2",
+    "Awaiting Completion": "bg-blue-100 text-blue-800",
   };
 
   const isPastAppointment = new Date(appointment.date) < new Date();
   const displayStatus =
     isPastAppointment && appointment.status === "Confirmed"
-      ? "Concluded"
+      ? "Awaiting Completion"
       : appointment.status;
 
   return (
@@ -149,7 +168,7 @@ function AppointmentCard({
           </p>
         </div>
         <span
-          className={`px-3 py-1 rounded-full text-xs font-nunito-bold opacity-100 group-hover:opacity-0 transition-opacity ${
+          className={`px-3 py-1 rounded-full text-xs font-nunito-bold opacity-100 group-hover:opacity-0 transition-opacity whitespace-nowrap ${
             statusColors[displayStatus] || "bg-gray-100 text-gray-800"
           }`}
         >
@@ -177,6 +196,7 @@ function AdminAppointments() {
     "Pending",
     "Cancelled",
     "Concluded",
+    "Awaiting Completion",
   ];
 
   useEffect(() => {
@@ -187,23 +207,12 @@ function AdminAppointments() {
       (snapshot) => {
         try {
           setLoading(true);
-          const currentDate = new Date();
           const fetchedAppointments = snapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
           }));
 
-          const validAppointments = fetchedAppointments.filter((apt) => {
-            const aptDate = new Date(apt.date);
-            if (aptDate < currentDate && apt.status === "Pending") {
-              const appointmentRef = doc(db, "appointments", apt.id);
-              deleteDoc(appointmentRef);
-              return false;
-            }
-            return true;
-          });
-
-          const sortedAppointments = validAppointments.sort((a, b) => {
+          const sortedAppointments = fetchedAppointments.sort((a, b) => {
             return new Date(a.date) - new Date(b.date);
           });
 
@@ -240,6 +249,18 @@ function AdminAppointments() {
     }
   };
 
+  const handleCompleteAppointment = async (appointmentId) => {
+    try {
+      const appointmentRef = doc(db, "appointments", appointmentId);
+      await updateDoc(appointmentRef, {
+        status: "Concluded",
+        completedAt: serverTimestamp(),
+      });
+    } catch (error) {
+      console.error("Error completing appointment:", error);
+    }
+  };
+
   const filteredAppointments = appointments.filter((apt) => {
     const appointmentDate = new Date(apt.date);
     const today = new Date();
@@ -248,10 +269,16 @@ function AdminAppointments() {
     const isPastAppointment = appointmentDate < today;
     const effectiveStatus =
       isPastAppointment && apt.status === "Confirmed"
-        ? "Concluded"
+        ? "Awaiting Completion"
         : apt.status;
 
-    if (!showPastAppointments && isPastAppointment) return false;
+    if (
+      !showPastAppointments &&
+      isPastAppointment &&
+      apt.status === "Concluded"
+    )
+      return false;
+
     return selectedStatus === "All Status"
       ? true
       : effectiveStatus === selectedStatus;
@@ -296,6 +323,7 @@ function AdminAppointments() {
               appointment={appointment}
               onDeleteAppointment={handleDeleteAppointment}
               onConfirmAppointment={handleConfirmAppointment}
+              onCompleteAppointment={handleCompleteAppointment}
               onClick={() => setSelectedAppointment(appointment)}
             />
           ))}
@@ -307,6 +335,7 @@ function AdminAppointments() {
           appointment={selectedAppointment}
           onClose={() => setSelectedAppointment(null)}
           onConfirm={handleConfirmAppointment}
+          onComplete={handleCompleteAppointment}
           onDelete={handleDeleteAppointment}
         />
       )}

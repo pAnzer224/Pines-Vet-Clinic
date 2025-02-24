@@ -41,6 +41,7 @@ const monthNames = [
   "Nov",
   "Dec",
 ];
+const weekNames = ["Week1", "Week2", "Week3", "Week4"];
 
 const getMonthDisplay = (date) => {
   return date.toLocaleString("default", { month: "long", year: "numeric" });
@@ -51,6 +52,14 @@ const isSameMonth = (date1, date2) => {
     date1.getMonth() === date2.getMonth() &&
     date1.getFullYear() === date2.getFullYear()
   );
+};
+
+const getWeekOfMonth = (date) => {
+  const day = date.getDate();
+  if (day <= 7) return "Week1";
+  if (day <= 14) return "Week2";
+  if (day <= 21) return "Week3";
+  return "Week4";
 };
 
 function MetricCard({ title, value, icon: Icon, isToggleable = false }) {
@@ -95,7 +104,9 @@ function Reports() {
     totalCustomers: 0,
     totalProducts: 0,
     monthlyRevenue: [],
+    weeklyRevenue: [],
     monthlyProducts: [],
+    weeklyProducts: [],
     monthlyServices: [],
     serviceBreakdown: [],
     serviceBreakdownByMonth: {},
@@ -108,7 +119,9 @@ function Reports() {
     let totalRevenue = 0;
     let totalProducts = 0;
     const monthlyData = {};
+    const weeklyData = {};
     const productMonthlyData = {};
+    const productWeeklyData = {};
     const processedOrders = new Set();
     const months = new Set();
 
@@ -117,6 +130,8 @@ function Reports() {
       const orderDate = new Date(timestamp);
       months.add(orderDate.toISOString().slice(0, 7));
       const monthKey = monthNames[orderDate.getMonth()];
+      const weekKey = getWeekOfMonth(orderDate);
+      const monthWeekKey = `${monthKey}-${weekKey}`;
       const orderTotal = data.price * data.quantity;
 
       if (!processedOrders.has(data.id)) {
@@ -148,7 +163,10 @@ function Reports() {
       totalRevenue += orderTotal;
       productMonthlyData[monthKey] =
         (productMonthlyData[monthKey] || 0) + data.quantity;
+      productWeeklyData[monthWeekKey] =
+        (productWeeklyData[monthWeekKey] || 0) + data.quantity;
       monthlyData[monthKey] = (monthlyData[monthKey] || 0) + orderTotal;
+      weeklyData[monthWeekKey] = (weeklyData[monthWeekKey] || 0) + orderTotal;
     });
 
     appointmentsData.forEach((appointment) => {
@@ -169,11 +187,14 @@ function Reports() {
     appointmentsData.forEach((appointment) => {
       const appointmentDate = new Date(appointment.date);
       const monthKey = monthNames[appointmentDate.getMonth()];
+      const weekKey = getWeekOfMonth(appointmentDate);
+      const monthWeekKey = `${monthKey}-${weekKey}`;
       const yearMonthKey = appointmentDate.toISOString().slice(0, 7);
       const price = parseInt(appointment.price?.replace(/[^\d]/g, "")) || 0;
 
       appointmentRevenue += price;
       monthlyData[monthKey] = (monthlyData[monthKey] || 0) + price;
+      weeklyData[monthWeekKey] = (weeklyData[monthWeekKey] || 0) + price;
 
       if (!serviceMonthlyData[monthKey]) {
         serviceMonthlyData[monthKey] = SERVICE_CATEGORIES.reduce(
@@ -246,6 +267,23 @@ function Reports() {
         (a, b) => monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
       );
 
+    const weeklyRevenueData = Object.entries(weeklyData)
+      .map(([monthWeek, revenue]) => {
+        const [month, week] = monthWeek.split("-");
+        return {
+          month,
+          week,
+          revenue,
+          displayName: `${month}-${week}`,
+        };
+      })
+      .sort((a, b) => {
+        const monthDiff =
+          monthNames.indexOf(a.month) - monthNames.indexOf(b.month);
+        if (monthDiff !== 0) return monthDiff;
+        return weekNames.indexOf(a.week) - weekNames.indexOf(b.week);
+      });
+
     const productsData = Object.entries(productMonthlyData)
       .map(([month, products]) => ({
         month,
@@ -254,6 +292,23 @@ function Reports() {
       .sort(
         (a, b) => monthNames.indexOf(a.month) - monthNames.indexOf(b.month)
       );
+
+    const weeklyProductsData = Object.entries(productWeeklyData)
+      .map(([monthWeek, products]) => {
+        const [month, week] = monthWeek.split("-");
+        return {
+          month,
+          week,
+          products,
+          displayName: `${month}-${week}`,
+        };
+      })
+      .sort((a, b) => {
+        const monthDiff =
+          monthNames.indexOf(a.month) - monthNames.indexOf(b.month);
+        if (monthDiff !== 0) return monthDiff;
+        return weekNames.indexOf(a.week) - weekNames.indexOf(b.week);
+      });
 
     const sortedMonths = Array.from(months).sort();
     setAvailableMonths(sortedMonths);
@@ -268,7 +323,9 @@ function Reports() {
       totalCustomers: usersCount,
       totalProducts,
       monthlyRevenue: revenueData,
+      weeklyRevenue: weeklyRevenueData,
       monthlyProducts: productsData,
+      weeklyProducts: weeklyProductsData,
       monthlyServices: servicesData,
       serviceBreakdown,
       serviceBreakdownByMonth,
@@ -483,6 +540,7 @@ function Reports() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <MonthlyRevenueChart
           data={metrics.monthlyRevenue}
+          weeklyData={metrics.weeklyRevenue}
           selectedMonth={selectedMonth}
         />
         <ServiceBreakdownChart
@@ -494,6 +552,7 @@ function Reports() {
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <ProductsSoldChart
           data={metrics.monthlyProducts}
+          weeklyData={metrics.weeklyProducts}
           selectedMonth={selectedMonth}
         />
         <ServicesPerformedChart
