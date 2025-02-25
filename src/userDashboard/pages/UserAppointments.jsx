@@ -143,8 +143,8 @@ function Appointments() {
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Calendar className="text-green2" size={24} />
-              <h2 className="text-lg font-nunito-bold text-green2">
+              <Calendar className="text-primary" size={24} />
+              <h2 className="text-lg font-nunito-bold text-primary">
                 Upcoming Appointments
               </h2>
             </div>
@@ -172,8 +172,8 @@ function Appointments() {
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <Bell className="text-green2" size={24} />
-              <h2 className="text-lg font-nunito-bold text-green2">
+              <Bell className="text-primary" size={24} />
+              <h2 className="text-lg font-nunito-bold text-primary">
                 Recent Activity
               </h2>
             </div>

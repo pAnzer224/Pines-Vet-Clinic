@@ -111,7 +111,7 @@ function SubHeader() {
     <nav
       className={`fixed top-[60px] left-0 right-0 py-4 px-6 flex justify-center items-center transition-all duration-300 z-40 ${
         isScrolled
-          ? "bg-background/85 backdrop-blur-lg"
+          ? "bg-background/80 backdrop-blur-lg"
           : "bg-green3 backdrop-filter-none"
       }`}
     >

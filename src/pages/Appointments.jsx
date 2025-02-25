@@ -397,7 +397,7 @@ export default function Appointments() {
                 const isPast = isAppointmentPast(apt.date);
                 return (
                   <div key={apt.id} className="relative pl-8 pb-6 last:pb-0">
-                    <div className="absolute left-0 top-0 bottom-0 flex flex-col items-center z-20">
+                    <div className="absolute left-0 top-0 bottom-0 flex flex-col items-center z-10">
                       <div className="w-3 h-3 bg-green3 rounded-full border-[1.6px] border-green2" />
                       <div className="w-[1.6px] h-full bg-green2" />
                     </div>

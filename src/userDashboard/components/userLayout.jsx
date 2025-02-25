@@ -93,8 +93,8 @@ function UserLayout() {
               onClick={() => setIsSidebarOpen(false)}
               className={`flex items-center space-x-3 px-4 py-2 rounded-md transition-colors font-nunito-semibold tracking-wide ${
                 location.pathname === item.path
-                  ? "bg-green3 text-background"
-                  : "text-green2 hover:text-primary"
+                  ? "bg-green2 text-background"
+                  : "text-primary hover:text-green2"
               }`}
             >
               <item.icon size={20} />

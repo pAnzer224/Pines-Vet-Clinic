@@ -25,7 +25,7 @@ function MetricCard({ title, value, change, icon: Icon }) {
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-green2 font-nunito-semibold">{title}</p>
+          <p className="text-sm text-primary font-nunito-bold">{title}</p>
           <p className="text-2xl font-nunito-bold mt-2 text-primary">{value}</p>
           <p className="text-sm text-primary mt-1 font-nunito-semibold">
             {change} from last month
@@ -112,18 +112,28 @@ function Dashboard() {
         const appointmentsSnapshot = await getDocs(appointmentsQuery);
         const appointmentsToday = appointmentsSnapshot.size;
 
-        // Get current and last month's orders and revenue
+        // Fetch all orders for revenue calculation (confirmed and received orders)
         const ordersQuery = query(
           collection(db, "orders"),
           where("status", "in", ["Confirmed", "Received"])
         );
         const ordersSnapshot = await getDocs(ordersQuery);
 
+        // Fetch all completed appointments for revenue calculation
+        const completedAppointmentsQuery = query(
+          collection(db, "appointments"),
+          where("status", "==", "Concluded")
+        );
+        const completedAppointmentsSnapshot = await getDocs(
+          completedAppointmentsQuery
+        );
+
         let currentMonthOrders = 0;
         let currentMonthRevenue = 0;
         let lastMonthOrders = 0;
         let lastMonthRevenue = 0;
 
+        // Calculate order revenue
         ordersSnapshot.forEach((doc) => {
           const order = doc.data();
           const orderDate = new Date(order.createdAt?.seconds * 1000);
@@ -138,6 +148,22 @@ function Dashboard() {
           ) {
             lastMonthOrders++;
             lastMonthRevenue += orderTotal;
+          }
+        });
+
+        // Calculate appointment revenue
+        completedAppointmentsSnapshot.forEach((doc) => {
+          const appointment = doc.data();
+          const appointmentDate = new Date(appointment.date);
+          const price = parseInt(appointment.price?.replace(/[^\d]/g, "")) || 0;
+
+          if (appointmentDate >= startOfThisMonth) {
+            currentMonthRevenue += price;
+          } else if (
+            appointmentDate >= startOfLastMonth &&
+            appointmentDate <= endOfLastMonth
+          ) {
+            lastMonthRevenue += price;
           }
         });
 

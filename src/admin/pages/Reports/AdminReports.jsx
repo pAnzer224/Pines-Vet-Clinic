@@ -6,6 +6,7 @@ import {
   ShoppingBag,
   Eye,
   EyeOff,
+  Stethoscope,
 } from "lucide-react";
 import {
   collection,
@@ -63,7 +64,7 @@ const getWeekOfMonth = (date) => {
 };
 
 function MetricCard({ title, value, icon: Icon, isToggleable = false }) {
-  const [isVisible, setIsVisible] = useState(true);
+  const [isVisible, setIsVisible] = useState(false); //change to true if visible by default
 
   const toggleVisibility = () => {
     setIsVisible(!isVisible);
@@ -74,7 +75,7 @@ function MetricCard({ title, value, icon: Icon, isToggleable = false }) {
       <div className="flex items-center justify-between">
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-sm text-green2 font-nunito-semibold">{title}</p>
+            <p className="text-sm text-primary font-nunito-bold">{title}</p>
             {isToggleable && (
               <button
                 onClick={toggleVisibility}
@@ -320,6 +321,8 @@ function Reports() {
 
     setMetrics({
       totalRevenue: totalRevenue + appointmentRevenue,
+      shopRevenue: totalRevenue,
+      serviceRevenue: appointmentRevenue,
       totalCustomers: usersCount,
       totalProducts,
       monthlyRevenue: revenueData,
@@ -434,16 +437,21 @@ function Reports() {
       .filter((item) => item.value > 0);
   };
 
+  // Calculate filtered shop and service revenues
+  const shopRevenue = filteredOrders.reduce(
+    (sum, order) => sum + order.total,
+    0
+  );
+  const serviceRevenue = filteredAppointments.reduce(
+    (sum, apt) => sum + parseInt(apt.price?.replace(/[^\d]/g, "") || 0),
+    0
+  );
+
   const filteredMetrics = {
     ...metrics,
-    totalRevenue:
-      selectedMonth === "all"
-        ? metrics.totalRevenue
-        : filteredOrders.reduce((sum, order) => sum + order.total, 0) +
-          filteredAppointments.reduce(
-            (sum, apt) => sum + parseInt(apt.price?.replace(/[^\d]/g, "") || 0),
-            0
-          ),
+    shopRevenue,
+    serviceRevenue,
+    totalRevenue: shopRevenue + serviceRevenue,
     totalProducts:
       selectedMonth === "all"
         ? metrics.totalProducts
@@ -515,13 +523,7 @@ function Reports() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-        <MetricCard
-          title="Total Revenue"
-          value={`₱${filteredMetrics.totalRevenue.toLocaleString()}`}
-          icon={TrendingUp}
-          isToggleable={true}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         <MetricCard
           title="Total Customers"
           value={filteredMetrics.totalCustomers.toLocaleString()}
@@ -531,6 +533,24 @@ function Reports() {
           title="Total Products Sold"
           value={filteredMetrics.totalProducts.toLocaleString()}
           icon={ShoppingBag}
+        />
+        <MetricCard
+          title="Shop Revenue"
+          value={`₱${filteredMetrics.shopRevenue.toLocaleString()}`}
+          icon={ShoppingBag}
+          isToggleable={true}
+        />
+        <MetricCard
+          title="Service Revenue"
+          value={`₱${filteredMetrics.serviceRevenue.toLocaleString()}`}
+          icon={Stethoscope}
+          isToggleable={true}
+        />
+        <MetricCard
+          title="Total Revenue"
+          value={`₱${filteredMetrics.totalRevenue.toLocaleString()}`}
+          icon={TrendingUp}
+          isToggleable={true}
         />
       </div>
 

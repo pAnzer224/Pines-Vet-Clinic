@@ -22,7 +22,7 @@ function PetCard({ name, species, breed, age, id, onDelete }) {
       </div>
       <div className="space-y-2">
         <h3 className="text-lg font-nunito-bold text-green2">{name}</h3>
-        <div className="text-sm font-nunito-semibold text-primary/50 space-y-1">
+        <div className="text-sm font-nunito-semibold text-primary/80 space-y-1 tracking-wide">
           <p>Species: {species}</p>
           <p>Breed: {breed}</p>
           <p>Age: {age} years old</p>
