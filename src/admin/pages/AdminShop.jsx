@@ -1,5 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { PlusCircle, Edit, Trash2, CheckCircle, Upload } from "lucide-react";
+import {
+  PlusCircle,
+  Edit,
+  Trash2,
+  CheckCircle,
+  Upload,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import StatusDropdown from "../../components/StatusDropdown";
 import useFirestoreCrud from "../../hooks/useFirestoreCrud";
 import { handleImageUpload } from "../components/image-utils";
@@ -32,6 +40,10 @@ function AdminShop() {
     stock: "",
     image: "",
   });
+
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState(1);
+  const ordersPerPage = 5; //change amount of max pages here
 
   const categories = [
     "All Categories",
@@ -127,11 +139,39 @@ function AdminShop() {
     }
   };
 
-  const filteredProducts = products.filter(
-    (product) =>
-      selectedCategory === "All Categories" ||
-      product.category === selectedCategory
-  );
+  const handleDeleteProduct = async (productId, productName) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete the product "${productName}"?`
+      )
+    ) {
+      try {
+        await deleteItem(productId);
+        console.log(`Product "${productName}" successfully deleted.`);
+      } catch (e) {
+        console.error("Error deleting product: ", e);
+      }
+    }
+  };
+
+  const handleDeleteOrder = async (orderId, productName) => {
+    if (
+      window.confirm(
+        `Are you sure you want to delete this order for "${productName}"?`
+      )
+    ) {
+      try {
+        await deleteOrder(orderId);
+        console.log(`Order for "${productName}" successfully deleted.`);
+      } catch (e) {
+        console.error("Error deleting order: ", e);
+      }
+    }
+  };
+
+  // Pagination logic
+  const indexOfLastOrder = currentPage * ordersPerPage;
+  const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
 
   const sortedOrders = [...orders].sort((a, b) => {
     const statusOrder = {
@@ -147,6 +187,19 @@ function AdminShop() {
 
     return b.createdAt.seconds - a.createdAt.seconds;
   });
+
+  const currentOrders = sortedOrders.slice(indexOfFirstOrder, indexOfLastOrder);
+  const totalPages = Math.ceil(sortedOrders.length / ordersPerPage);
+
+  const handlePageChange = (pageNumber) => {
+    setCurrentPage(pageNumber);
+  };
+
+  const filteredProducts = products.filter(
+    (product) =>
+      selectedCategory === "All Categories" ||
+      product.category === selectedCategory
+  );
 
   return (
     <div className="space-y-6 mt-14">
@@ -405,7 +458,9 @@ function AdminShop() {
                       <Edit className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => deleteItem(product.id)}
+                      onClick={() =>
+                        handleDeleteProduct(product.id, product.name)
+                      }
                       className="text-red/80 hover:text-red transition-colors"
                     >
                       <Trash2 className="size-5" />
@@ -426,7 +481,7 @@ function AdminShop() {
           {orders.length} Orders
         </span>
         <div className="grid gap-3 pt-5">
-          {sortedOrders.map((order) => (
+          {currentOrders.map((order) => (
             <div
               key={order.id}
               className="bg-background/95 p-4 rounded-lg border border-green2/60 shadow-sm hover:shadow-[0_0_0_1px] hover:shadow-green2"
@@ -490,7 +545,9 @@ function AdminShop() {
                     </span>
                   )}
                   <button
-                    onClick={() => deleteOrder(order.id)}
+                    onClick={() =>
+                      handleDeleteOrder(order.id, order.productName)
+                    }
                     className="px-3 py-1.5 bg-red/10 text-red rounded-full hover:bg-red/20 transition-colors border border-red/60 flex items-center gap-1.5 text-sm"
                   >
                     <Trash2 className="size-4" />
@@ -501,6 +558,43 @@ function AdminShop() {
             </div>
           ))}
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2 mt-6">
+            <button
+              onClick={() => handlePageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              className="p-1 rounded-md hover:bg-green3/10 disabled:opacity-50 disabled:hover:bg-transparent"
+            >
+              <ChevronLeft className="w-5 h-5 text-green2" />
+            </button>
+            <div className="flex gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                (page) => (
+                  <button
+                    key={page}
+                    onClick={() => handlePageChange(page)}
+                    className={`px-3 py-1 rounded-md ${
+                      currentPage === page
+                        ? "bg-green3/20 text-green2"
+                        : "hover:bg-green3/10 text-text"
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              )}
+            </div>
+            <button
+              onClick={() => handlePageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              className="p-1 rounded-md hover:bg-green3/10 disabled:opacity-50 disabled:hover:bg-transparent"
+            >
+              <ChevronRight className="w-5 h-5 text-green2" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
