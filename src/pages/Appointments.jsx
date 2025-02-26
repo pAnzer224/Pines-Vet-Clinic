@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { CalendarFold, Wallet, CalendarDays, PlusCircle } from "lucide-react";
+import {
+  CalendarFold,
+  Wallet,
+  CalendarDays,
+  PlusCircle,
+  ChevronDown,
+} from "lucide-react";
 import {
   storeAppointment,
   getStoredAppointments,
@@ -38,6 +44,9 @@ export default function Appointments() {
     grooming: 0,
     dentalCheckups: 0,
   });
+  // New state for pet dropdown
+  const [isPetDropdownOpen, setIsPetDropdownOpen] = useState(false);
+  const petDropdownRef = useRef(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -50,6 +59,23 @@ export default function Appointments() {
     }
 
     return () => unsubscribe();
+  }, []);
+
+  // Handle clicks outside the pet dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (
+        petDropdownRef.current &&
+        !petDropdownRef.current.contains(event.target)
+      ) {
+        setIsPetDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   useEffect(() => {
@@ -311,27 +337,46 @@ export default function Appointments() {
                 Select Pet
               </label>
               <div className="flex items-center gap-2">
-                {pets.length > 0 ? (
-                  <select
-                    value={selectedPet?.id || ""}
-                    onChange={(e) => {
-                      const pet = pets.find((p) => p.id === e.target.value);
-                      setSelectedPet(pet);
+                <div ref={petDropdownRef} className="relative flex-grow">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsPetDropdownOpen(!isPetDropdownOpen);
                     }}
-                    className="flex-grow px-4 py-2 border-[1.6px] border-green2 rounded-2xl text-sm truncate"
+                    className="w-full px-4 py-2 rounded-2xl border-[1.6px] border-green2 hover:bg-green3/80 transition-colors text-text text-sm truncate flex items-center justify-between"
                   >
-                    <option value="">Select Pet</option>
-                    {pets.map((pet) => (
-                      <option key={pet.id} value={pet.id} className="truncate">
-                        {pet.name} ({pet.species})
-                      </option>
-                    ))}
-                  </select>
-                ) : (
-                  <span className="text-text/60 text-sm flex-grow">
-                    No pets added
-                  </span>
-                )}
+                    <span>
+                      {selectedPet
+                        ? `${selectedPet.name} (${selectedPet.species})`
+                        : "Select Pet"}
+                    </span>
+                    <ChevronDown className="w-4 h-4" />
+                  </button>
+
+                  {isPetDropdownOpen && (
+                    <div className="absolute top-full left-0 right-0 mt-2 bg-background/95 border-[1.6px] border-green2 rounded-xl shadow-lg z-50">
+                      {pets.length > 0 ? (
+                        pets.map((pet) => (
+                          <button
+                            key={pet.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedPet(pet);
+                              setIsPetDropdownOpen(false);
+                            }}
+                            className="w-full px-4 py-2 text-left hover:bg-green3/20 text-text transition-colors first:rounded-t-xl last:rounded-b-xl font-nunito truncate"
+                          >
+                            {pet.name} ({pet.species})
+                          </button>
+                        ))
+                      ) : (
+                        <div className="w-full px-4 py-2 text-left text-text/60 text-sm font-nunito">
+                          No pets added
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
                 <button
                   onClick={handleAddPetClick}
                   className="text-green2 hover:text-green3"

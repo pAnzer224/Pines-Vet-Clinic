@@ -3,7 +3,7 @@ import { Clock, ChevronRight, ChevronLeft, SquareX } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import PromptModal from "../components/promptModal";
 import { db } from "../firebase-config";
-import { collection, getDocs, setDoc, doc } from "firebase/firestore";
+import { collection, getDocs } from "firebase/firestore";
 
 const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   const [selectedDay, setSelectedDay] = useState(null);
@@ -196,39 +196,12 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
         year: "numeric",
       });
 
-      try {
-        const selectedSlot = timeSlots[selectedTime];
-        const scheduleRef = doc(collection(db, "appointments"));
+      const selectedSlot = timeSlots[selectedTime];
 
-        await setDoc(scheduleRef, {
-          time: selectedSlot.time,
-          date: selectedDate,
-          userId: currentUser.uid,
-          status: "Pending",
-          bookedAt: new Date().toISOString(),
-          lastUpdated: new Date().toISOString(),
-        });
-
-        onSchedule({
-          date: selectedDate,
-          time: selectedSlot.time,
-          scheduleId: scheduleRef.id,
-        });
-
-        setScheduledAppointments([
-          ...scheduledAppointments,
-          {
-            time: selectedSlot.time,
-            date: selectedDate,
-            userId: currentUser.uid,
-            status: "Pending",
-            bookedAt: new Date().toISOString(),
-            lastUpdated: new Date().toISOString(),
-          },
-        ]);
-      } catch (error) {
-        console.error("Error scheduling appointment:", error);
-      }
+      onSchedule({
+        date: selectedDate,
+        time: selectedSlot.time,
+      });
     }
   };
 
