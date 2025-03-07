@@ -13,6 +13,7 @@ import {
 } from "firebase/firestore";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ToggleSwitch from "../../components/ToggleSwitch";
+import PendingAppointmentsPopup from "../components/PendingAppointmentsPopup";
 
 function AppointmentDetailsModal({
   appointment,
@@ -244,6 +245,9 @@ function AdminAppointments() {
         status: "Confirmed",
         confirmedAt: serverTimestamp(),
       });
+
+      // The real-time listener will automatically update the UI
+      // both in the main appointments grid and the popup
     } catch (error) {
       console.error("Error confirming appointment:", error);
     }
@@ -283,6 +287,10 @@ function AdminAppointments() {
       ? true
       : effectiveStatus === selectedStatus;
   });
+
+  const handleViewPendingAppointment = (appointment) => {
+    setSelectedAppointment(appointment);
+  };
 
   return (
     <div className="space-y-6 mt-12">
@@ -339,6 +347,11 @@ function AdminAppointments() {
           onDelete={handleDeleteAppointment}
         />
       )}
+
+      {/* Enhanced real-time pending appointments popup */}
+      <PendingAppointmentsPopup
+        onViewAppointment={handleViewPendingAppointment}
+      />
     </div>
   );
 }
