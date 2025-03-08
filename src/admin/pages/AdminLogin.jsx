@@ -14,9 +14,8 @@ function AdminLogin() {
   useEffect(() => {
     const checkAuth = async () => {
       const token = sessionStorage.getItem("adminToken");
-      const expiry = sessionStorage.getItem("adminTokenExpiry");
 
-      if (token && expiry && new Date().getTime() < parseInt(expiry)) {
+      if (token) {
         navigate("/admin/dashboard");
       }
     };
@@ -33,9 +32,7 @@ function AdminLogin() {
       const isValid = await verifyAdminCredentials(adminId, password);
 
       if (isValid) {
-        const expiry = new Date().getTime() + 30 * 60 * 1000;
         sessionStorage.setItem("adminToken", "authenticated");
-        sessionStorage.setItem("adminTokenExpiry", expiry.toString());
         navigate("/admin/dashboard");
       } else {
         setError("Invalid admin ID or password");
