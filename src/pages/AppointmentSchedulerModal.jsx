@@ -3,7 +3,7 @@ import { Clock, ChevronRight, ChevronLeft, SquareX } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import PromptModal from "../components/promptModal";
 import { db } from "../firebase-config";
-import { collection, getDocs } from "firebase/firestore";
+import { collection, getDocs, setDoc, doc } from "firebase/firestore";
 
 const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   const [selectedDay, setSelectedDay] = useState(null);
@@ -19,7 +19,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
     const fetchTimeSlotsAndAppointments = async () => {
       try {
         const timeSlotsRef = collection(db, "timeSlots");
-        const appointmentsRef = collection(db, "appointments");
+        const appointmentsRef = collection(db, "timeScheduling");
 
         const [timeSlotsSnapshot, appointmentsSnapshot] = await Promise.all([
           getDocs(timeSlotsRef),
@@ -38,15 +38,10 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
           })
         );
 
-        const appointments = appointmentsSnapshot.docs
-          .map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }))
-          .filter(
-            (apt) => apt.status === "Pending" || apt.status === "Confirmed"
-          );
-
+        const appointments = appointmentsSnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
         setScheduledAppointments(appointments);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -87,17 +82,15 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
   };
 
   const isDayScheduled = (date) => {
-    if (!scheduledAppointments) return false;
-
     return scheduledAppointments.some(
       (appointment) =>
-        new Date(appointment.date).toDateString() === date.toDateString() &&
-        (appointment.status === "Confirmed" || appointment.status === "Pending")
+        new Date(appointment.date).toDateString() === date.toDateString()
     );
   };
 
   const isTimeSlotScheduled = (slotDate, slotTime) => {
-    if (!slotDate || !slotTime || !scheduledAppointments) return false;
+    // Ensure slotDate is a valid Date object
+    if (!slotDate || !slotTime) return false;
 
     const parsedDate =
       typeof slotDate === "string" || typeof slotDate === "number"
@@ -112,14 +105,10 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
       year: "numeric",
     });
 
-    return scheduledAppointments.some((appointment) => {
-      return (
-        appointment.date === formattedDate &&
-        appointment.time === slotTime &&
-        appointment.status &&
-        (appointment.status === "Confirmed" || appointment.status === "Pending")
-      );
-    });
+    return scheduledAppointments.some(
+      (appointment) =>
+        appointment.date === formattedDate && appointment.time === slotTime
+    );
   };
 
   const generateCalendarDays = () => {
@@ -196,12 +185,40 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
         year: "numeric",
       });
 
-      const selectedSlot = timeSlots[selectedTime];
+      try {
+        const selectedSlot = timeSlots[selectedTime];
+        const scheduleRef = doc(db, "timeScheduling", selectedSlot.id);
 
-      onSchedule({
-        date: selectedDate,
-        time: selectedSlot.time,
-      });
+        await setDoc(scheduleRef, {
+          time: selectedSlot.time,
+          date: selectedDate,
+          userId: currentUser.uid,
+          isAvailable: false,
+          bookedAt: new Date().toISOString(),
+          lastUpdated: new Date().toISOString(),
+        });
+
+        onSchedule({
+          date: selectedDate,
+          time: selectedSlot.time,
+          scheduleId: selectedSlot.id,
+        });
+
+        // Update the scheduledAppointments state
+        setScheduledAppointments([
+          ...scheduledAppointments,
+          {
+            time: selectedSlot.time,
+            date: selectedDate,
+            userId: currentUser.uid,
+            isAvailable: false,
+            bookedAt: new Date().toISOString(),
+            lastUpdated: new Date().toISOString(),
+          },
+        ]);
+      } catch (error) {
+        console.error("Error scheduling appointment:", error);
+      }
     }
   };
 
@@ -214,7 +231,7 @@ const AppointmentSchedulerModal = ({ isOpen, onClose, onSchedule }) => {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div className="fixed inset-0 bg-text bg-opacity-50 flex items-center justify-center z-50">
         <div
           ref={modalRef}
           className="bg-background rounded-2xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto"
