@@ -44,48 +44,56 @@ const Services = () => {
       description:
         "Our veterinarians focus on preventive care, providing personalized treatment plans for every pet.",
       image: "/images/card1.jpg",
+      bookable: true,
     },
     {
       title: "Confinement",
       description:
         "We offer inpatient care for pets recovering from illness or surgery, ensuring their comfort and safety.",
       image: "/images/card2.jpg",
+      bookable: true,
     },
     {
       title: "Surgery",
       description:
         "Equipped for various surgical procedures, we prioritize your pet's safety and comfort during every operation.",
       image: "/images/card3.jpg",
+      bookable: true,
     },
     {
       title: "Dental Care",
       description:
         "Regular dental check-ups and cleanings help maintain your pet's oral health and overall well-being.",
       image: "/images/card4.jpg",
+      bookable: true,
     },
     {
       title: "Pet Grooming",
       description:
         "Professional grooming services to keep your pets clean, healthy, and looking their best with specialized care for all breeds.",
       image: "/images/card5.jpg",
+      bookable: true,
     },
     {
       title: "Pet Boarding",
       description:
-        "Safe and comfortable accommodation for your pets when you're away, with 24/7 monitoring and personalized care routines.",
+        "Safe and comfortable accommodation for your pets when you're away, with 24/7 monitoring and personalized care. Walk-in service only.",
       image: "/images/card6.jpg",
+      bookable: false,
     },
     {
       title: "Home Service",
       description:
         "Convenient veterinary care at your doorstep, perfect for routine check-ups and pets who are more comfortable at home.",
       image: "/images/card7.jpg",
+      bookable: true,
     },
     {
       title: "Emergency Cases",
       description:
-        "Round-the-clock emergency veterinary care for urgent cases, with quick response times and critical care facilities.",
+        "Round-the-clock emergency veterinary care for urgent cases. Walk-in service only - no appointment needed.",
       image: "/images/card8.jpg",
+      bookable: false,
     },
   ];
 
@@ -210,6 +218,11 @@ const Services = () => {
                         <p className="text-xs sm:text-sm lg:text-[14px] font-nunito-semibold text-text/80 leading-relaxed tracking-wide">
                           {service.description}
                         </p>
+                        {!service.bookable && (
+                          <span className="inline-block mt-2 px-3 py-1 bg-green3/20 text-green2 text-xs rounded-full">
+                            Walk-in only
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>

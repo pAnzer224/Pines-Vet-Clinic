@@ -13,6 +13,8 @@ import {
   BarChart,
   Bar,
   Legend,
+  Area,
+  ComposedChart,
 } from "recharts";
 import useFirestoreCrud from "../../../../hooks/useFirestoreCrud";
 
@@ -91,14 +93,177 @@ const sortByMonth = (data) => {
 
 export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
   const [viewMode, setViewMode] = useState("monthly");
+  const [categoryMode, setCategoryMode] = useState("total");
+  const { items: orders } = useFirestoreCrud("orders");
+  const { items: appointments } = useFirestoreCrud("appointments");
+  const [categorizedData, setCategorizedData] = useState({
+    monthly: [],
+    weekly: [],
+  });
+
+  useEffect(() => {
+    const processData = () => {
+      if (!orders.length && !appointments.length) return;
+
+      // Initialize data structures
+      const monthlyRevenue = {};
+      const weeklyRevenue = {};
+
+      // Process orders data (products)
+      orders.forEach((order) => {
+        if (
+          !order.createdAt ||
+          !["Confirmed", "Received"].includes(order.status)
+        )
+          return;
+
+        const orderDate = new Date(order.createdAt.seconds * 1000);
+        const month = monthNames[orderDate.getMonth()];
+        const week = Math.ceil(orderDate.getDate() / 7);
+        const weekKey = `Week ${week}`;
+        const monthWeekKey = `${month}-${weekKey}`;
+        const orderTotal = order.price * order.quantity;
+
+        // Initialize monthly structure if needed
+        if (!monthlyRevenue[month]) {
+          monthlyRevenue[month] = {
+            month,
+            revenue: 0,
+            productRevenue: 0,
+            serviceRevenue: 0,
+          };
+        }
+
+        // Initialize weekly structure if needed
+        if (!weeklyRevenue[monthWeekKey]) {
+          weeklyRevenue[monthWeekKey] = {
+            month,
+            displayName: weekKey,
+            revenue: 0,
+            productRevenue: 0,
+            serviceRevenue: 0,
+          };
+        }
+
+        // Update revenues
+        monthlyRevenue[month].revenue += orderTotal;
+        monthlyRevenue[month].productRevenue += orderTotal;
+        weeklyRevenue[monthWeekKey].revenue += orderTotal;
+        weeklyRevenue[monthWeekKey].productRevenue += orderTotal;
+      });
+
+      // Process appointments data (services)
+      appointments.forEach((appointment) => {
+        if (appointment.status !== "Concluded" || !appointment.date) return;
+
+        const appointmentDate = new Date(appointment.date);
+        const month = monthNames[appointmentDate.getMonth()];
+        const week = Math.ceil(appointmentDate.getDate() / 7);
+        const weekKey = `Week ${week}`;
+        const monthWeekKey = `${month}-${weekKey}`;
+        const price = parseInt(appointment.price?.replace(/[^\d]/g, "")) || 0;
+
+        // Initialize monthly structure if needed
+        if (!monthlyRevenue[month]) {
+          monthlyRevenue[month] = {
+            month,
+            revenue: 0,
+            productRevenue: 0,
+            serviceRevenue: 0,
+          };
+        }
+
+        // Initialize weekly structure if needed
+        if (!weeklyRevenue[monthWeekKey]) {
+          weeklyRevenue[monthWeekKey] = {
+            month,
+            displayName: weekKey,
+            revenue: 0,
+            productRevenue: 0,
+            serviceRevenue: 0,
+          };
+        }
+
+        // Update revenues
+        monthlyRevenue[month].revenue += price;
+        monthlyRevenue[month].serviceRevenue += price;
+        weeklyRevenue[monthWeekKey].revenue += price;
+        weeklyRevenue[monthWeekKey].serviceRevenue += price;
+      });
+
+      // Convert to arrays and sort
+      const monthlyData = Object.values(monthlyRevenue);
+      const weeklyData = Object.values(weeklyRevenue).sort((a, b) => {
+        const monthDiff =
+          monthNames.indexOf(a.month) - monthNames.indexOf(b.month);
+        if (monthDiff !== 0) return monthDiff;
+        return (
+          parseInt(a.displayName.replace("Week ", "")) -
+          parseInt(b.displayName.replace("Week ", ""))
+        );
+      });
+
+      setCategorizedData({
+        monthly: sortByMonth(monthlyData),
+        weekly: weeklyData,
+      });
+    };
+
+    processData();
+  }, [orders, appointments]);
+
+  // Use original data if categorized data is empty
   const filteredMonthlyData = sortByMonth(
-    filterDataByMonth(data, selectedMonth)
+    filterDataByMonth(
+      categorizedData.monthly.length ? categorizedData.monthly : data,
+      selectedMonth
+    )
   );
-  const filteredWeeklyData = filterWeeklyDataByMonth(weeklyData, selectedMonth);
+
+  const filteredWeeklyData = filterWeeklyDataByMonth(
+    categorizedData.weekly.length ? categorizedData.weekly : weeklyData,
+    selectedMonth
+  );
 
   const displayData =
     viewMode === "monthly" ? filteredMonthlyData : filteredWeeklyData;
   const xDataKey = viewMode === "monthly" ? "month" : "displayName";
+
+  // Custom tooltip that shows categorized revenue
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (!active || !payload || !payload.length) return null;
+
+    const data = payload[0].payload;
+    const hasCategories =
+      data.productRevenue !== undefined && data.serviceRevenue !== undefined;
+
+    return (
+      <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+        <p className="font-bold text-green2 mb-2">{label}</p>
+        <div className="border-t border-green3/40 pt-2">
+          <p className="text-sm mb-1 font-nunito-bold">
+            Total Revenue: {formatCurrency(data.revenue)}
+          </p>
+          {hasCategories && (
+            <>
+              <div className="flex justify-between text-xs mb-1">
+                <span>Products:</span>
+                <span className="font-nunito-bold ml-4">
+                  {formatCurrency(data.productRevenue)}
+                </span>
+              </div>
+              <div className="flex justify-between text-xs mb-1">
+                <span>Services:</span>
+                <span className="font-nunito-bold ml-4">
+                  {formatCurrency(data.serviceRevenue)}
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
@@ -106,61 +271,128 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
         <h3 className="font-nunito-bold text-green2">
           {viewMode === "monthly" ? "Monthly Revenue" : "Weekly Revenue"}
         </h3>
-        <div className="flex gap-2 text-sm">
-          <button
-            onClick={() => setViewMode("monthly")}
-            className={`px-3 py-1 rounded ${
-              viewMode === "monthly"
-                ? "bg-green2 text-white"
-                : "bg-green3/20 text-green2"
-            }`}
-          >
-            Monthly
-          </button>
-          <button
-            onClick={() => setViewMode("weekly")}
-            className={`px-3 py-1 rounded ${
-              viewMode === "weekly"
-                ? "bg-green2 text-white"
-                : "bg-green3/20 text-green2"
-            }`}
-          >
-            Weekly
-          </button>
+        <div className="flex gap-2">
+          <div className="flex gap-1 text-sm">
+            <button
+              onClick={() => setViewMode("monthly")}
+              className={`px-3 py-1 rounded ${
+                viewMode === "monthly"
+                  ? "bg-green2 text-white"
+                  : "bg-green3/20 text-green2"
+              }`}
+            >
+              Monthly
+            </button>
+            <button
+              onClick={() => setViewMode("weekly")}
+              className={`px-3 py-1 rounded ${
+                viewMode === "weekly"
+                  ? "bg-green2 text-white"
+                  : "bg-green3/20 text-green2"
+              }`}
+            >
+              Weekly
+            </button>
+          </div>
+          <div className="h-7 border-l border-green3/60"></div>
+          <div className="flex gap-1 text-sm">
+            <button
+              onClick={() => setCategoryMode("total")}
+              className={`px-3 py-1 rounded ${
+                categoryMode === "total"
+                  ? "bg-green2 text-white"
+                  : "bg-green3/20 text-green2"
+              }`}
+            >
+              Total
+            </button>
+            <button
+              onClick={() => setCategoryMode("categorized")}
+              className={`px-3 py-1 rounded ${
+                categoryMode === "categorized"
+                  ? "bg-green2 text-white"
+                  : "bg-green3/20 text-green2"
+              }`}
+            >
+              Categorized
+            </button>
+          </div>
         </div>
       </div>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart
-            data={displayData}
-            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-          >
-            <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
-            <XAxis dataKey={xDataKey} stroke="#5B9279" />
-            <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
-            <Tooltip
-              formatter={(value) => formatCurrency(value)}
-              contentStyle={{
-                backgroundColor: "#FDFCFC",
-                border: "2px solid #5B9279",
-              }}
-            />
-            <Line
-              type="monotone"
-              dataKey="revenue"
-              name="Revenue"
-              stroke="#235840"
-              strokeWidth={3.5}
-              opacity={1}
-            />
-          </LineChart>
+          {categoryMode === "total" ? (
+            <LineChart
+              data={displayData}
+              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
+              <XAxis dataKey={xDataKey} stroke="#5B9279" />
+              <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
+              <Tooltip
+                content={<CustomTooltip />}
+                contentStyle={{
+                  backgroundColor: "#FDFCFC",
+                  border: "2px solid #5B9279",
+                }}
+              />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                name="Revenue"
+                stroke="#235840"
+                strokeWidth={3.5}
+                opacity={1}
+              />
+            </LineChart>
+          ) : (
+            <ComposedChart
+              data={displayData}
+              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+            >
+              <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
+              <XAxis dataKey={xDataKey} stroke="#5B9279" />
+              <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
+              <Tooltip
+                content={<CustomTooltip />}
+                contentStyle={{
+                  backgroundColor: "#FDFCFC",
+                  border: "2px solid #5B9279",
+                }}
+              />
+              <Legend />
+              <Area
+                type="monotone"
+                dataKey="productRevenue"
+                name="Products"
+                stackId="1"
+                fill="#8FCB9B"
+                stroke="#5B9279"
+              />
+              <Area
+                type="monotone"
+                dataKey="serviceRevenue"
+                name="Services"
+                stackId="1"
+                fill="#D1E8D5"
+                stroke="#9DC88D"
+              />
+              <Line
+                type="monotone"
+                dataKey="revenue"
+                name="Total Revenue"
+                stroke="#235840"
+                strokeWidth={2.5}
+              />
+            </ComposedChart>
+          )}
         </ResponsiveContainer>
       </div>
     </div>
   );
 }
 
-// Custom tooltip for the service breakdown chart
+// Service breakdown details
 const ServiceBreakdownTooltip = ({ active, payload }) => {
   if (!active || !payload || !payload.length) return null;
 
