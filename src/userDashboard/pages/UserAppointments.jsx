@@ -11,6 +11,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { getStoredAppointments } from "../../pages/appointmentsUtils";
 import { toast } from "react-toastify";
+import PendingAppointmentsPopup from "../components/PendingAppointmentsPopup";
 
 function AppointmentCard({ appointment }) {
   return (
@@ -60,8 +61,13 @@ function ActivityCard({ activity }) {
 
 function Appointments() {
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
+  const [allAppointments, setAllAppointments] = useState([]);
   const [recentActivities, setRecentActivities] = useState([]);
+  const [allActivities, setAllActivities] = useState([]);
+  const [showAllAppointments, setShowAllAppointments] = useState(false);
+  const [showAllActivities, setShowAllActivities] = useState(false);
   const { currentUser } = useAuth();
+  const [setSelectedAppointment] = useState(null);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -70,21 +76,18 @@ function Appointments() {
       try {
         const allAppointments = await getStoredAppointments();
 
-        // Filter appointments for the current user
         const userAppointments = allAppointments.filter(
           (apt) => apt.userId === currentUser.uid
         );
 
-        // Sort appointments by date (most recent first)
         const sortedAppointments = userAppointments.sort(
           (a, b) =>
             new Date(b.createdAt.toDate()) - new Date(a.createdAt.toDate())
         );
 
-        // Take first 2 appointments as upcoming
+        setAllAppointments(sortedAppointments);
         setUpcomingAppointments(sortedAppointments.slice(0, 2));
 
-        // Generate recent activities based on appointments
         const activities = sortedAppointments.map((apt, index) => ({
           id: apt.id,
           type: index === 0 ? "Upcoming Appointment" : "Past Appointment",
@@ -92,6 +95,7 @@ function Appointments() {
           time: formatTimeAgo(apt.createdAt.toDate()),
         }));
 
+        setAllActivities(activities);
         setRecentActivities(activities.slice(0, 2));
       } catch (error) {
         toast.error("Failed to fetch appointments");
@@ -101,7 +105,6 @@ function Appointments() {
     fetchAppointments();
   }, [currentUser]);
 
-  // Helper function to format time ago
   const formatTimeAgo = (date) => {
     const now = new Date();
     const diffInMs = now - date;
@@ -114,6 +117,13 @@ function Appointments() {
 
     return date.toLocaleDateString();
   };
+
+  const handleViewAppointment = (appointment) => {
+    setSelectedAppointment(appointment);
+    window.location.href = "/appointments";
+  };
+
+  const needsScroll = (items) => items.length > 6;
 
   return (
     <div className="space-y-6 mt-14">
@@ -139,18 +149,40 @@ function Appointments() {
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Upcoming Appointments */}
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Calendar className="text-primary" size={24} />
               <h2 className="text-lg font-nunito-bold text-primary">
-                Upcoming Appointments
+                {showAllAppointments
+                  ? "All Appointments"
+                  : "Upcoming Appointments"}
               </h2>
             </div>
           </div>
-          <div className="space-y-4">
-            {upcomingAppointments.length > 0 ? (
+          <div
+            className={`space-y-4 ${
+              needsScroll(
+                showAllAppointments ? allAppointments : upcomingAppointments
+              )
+                ? "max-h-96 overflow-y-auto pr-2"
+                : ""
+            }`}
+          >
+            {showAllAppointments ? (
+              allAppointments.length > 0 ? (
+                allAppointments.map((appointment) => (
+                  <AppointmentCard
+                    key={appointment.id}
+                    appointment={appointment}
+                  />
+                ))
+              ) : (
+                <p className="text-center text-primary/50 font-nunito-semibold">
+                  No appointments found
+                </p>
+              )
+            ) : upcomingAppointments.length > 0 ? (
               upcomingAppointments.map((appointment) => (
                 <AppointmentCard
                   key={appointment.id}
@@ -158,42 +190,68 @@ function Appointments() {
                 />
               ))
             ) : (
-              <p className="text-center text-primary/50 font-nunito-semibold ">
+              <p className="text-center text-primary/50 font-nunito-semibold">
                 No upcoming appointments
               </p>
             )}
           </div>
-          <button className="w-full mt-4 px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30">
-            View All Appointments
+          <button
+            className="w-full mt-4 px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30"
+            onClick={() => setShowAllAppointments(!showAllAppointments)}
+          >
+            {showAllAppointments ? "Show Less" : "View All Appointments"}
           </button>
         </div>
 
-        {/* Recent Activity */}
         <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Bell className="text-primary" size={24} />
               <h2 className="text-lg font-nunito-bold text-primary">
-                Recent Activity
+                {showAllActivities ? "All Activity" : "Recent Activity"}
               </h2>
             </div>
           </div>
-          <div className="space-y-4">
-            {recentActivities.length > 0 ? (
+          <div
+            className={`space-y-4 ${
+              needsScroll(showAllActivities ? allActivities : recentActivities)
+                ? "max-h-96 overflow-y-auto pr-2"
+                : ""
+            }`}
+          >
+            {showAllActivities ? (
+              allActivities.length > 0 ? (
+                allActivities.map((activity) => (
+                  <ActivityCard key={activity.id} activity={activity} />
+                ))
+              ) : (
+                <p className="text-center text-primary/50 font-nunito-semibold">
+                  No activities found
+                </p>
+              )
+            ) : recentActivities.length > 0 ? (
               recentActivities.map((activity) => (
                 <ActivityCard key={activity.id} activity={activity} />
               ))
             ) : (
-              <p className="text-center text-primary/50 font-nunito-semibold  ">
+              <p className="text-center text-primary/50 font-nunito-semibold">
                 No recent activities
               </p>
             )}
           </div>
-          <button className="w-full mt-4 px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30">
-            View All Activity
+          <button
+            className="w-full mt-4 px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30"
+            onClick={() => setShowAllActivities(!showAllActivities)}
+          >
+            {showAllActivities ? "Show Less" : "View All Activity"}
           </button>
         </div>
       </div>
+
+      <PendingAppointmentsPopup
+        onViewAppointment={handleViewAppointment}
+        currentUserId={currentUser?.uid}
+      />
     </div>
   );
 }

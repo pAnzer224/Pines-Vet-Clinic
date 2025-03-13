@@ -16,7 +16,6 @@ import {
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", path: "/admin/dashboard" },
   { icon: Calendar, label: "Appointments", path: "/admin/appointments" },
-  { icon: Gem, label: "Care Plans", path: "/admin/care-plans" },
   { icon: Store, label: "Shop", path: "/admin/shop" },
   { icon: Users, label: "Customers", path: "/admin/customers" },
   { icon: BarChart, label: "Reports", path: "/admin/reports" },

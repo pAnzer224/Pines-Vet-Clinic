@@ -19,9 +19,6 @@ const NOTIFICATION_TYPES = {
   ORDER: "order",
   ADMIN: "admin",
   SUBSCRIPTION: "subscription",
-  PLAN_REQUEST: "plan-request",
-  CARE_PLAN_APPROVED: "care-plan-approved",
-  CARE_PLAN_REJECTED: "care-plan-rejected",
 };
 
 const NOTIFICATION_CONFIG = {
@@ -29,9 +26,6 @@ const NOTIFICATION_CONFIG = {
   [NOTIFICATION_TYPES.ORDER]: { icon: "🛍️", link: "/user/orders" },
   [NOTIFICATION_TYPES.ADMIN]: { icon: "🔔", link: "/user/dashboard" },
   [NOTIFICATION_TYPES.SUBSCRIPTION]: { icon: "⭐", link: "/user" },
-  [NOTIFICATION_TYPES.PLAN_REQUEST]: { icon: "📝", link: "/pricing" },
-  [NOTIFICATION_TYPES.CARE_PLAN_APPROVED]: { icon: "✨", link: "/user" },
-  [NOTIFICATION_TYPES.CARE_PLAN_REJECTED]: { icon: "ℹ️", link: "/#footer" },
 };
 
 const notificationSound = "/images/notif-sound.mp3";
@@ -122,33 +116,6 @@ const NotificationButton = () => {
     const handleUserData = (userData, activityItems) => {
       if (!userData) return;
 
-      if (userData.planStatus && userData.planRequestDate) {
-        const id = `care-plan-${userData.planRequestDate}`;
-        let type, message;
-
-        if (userData.planStatus === "Approved") {
-          type = NOTIFICATION_TYPES.CARE_PLAN_APPROVED;
-          message = `Great news! Your ${userData.plan} (${userData.billingPeriod}) care plan is now active`;
-        } else if (userData.planStatus === "Rejected") {
-          type = NOTIFICATION_TYPES.CARE_PLAN_REJECTED;
-          message =
-            "We couldn't process your care plan request at this time. Please contact support for assistance";
-        }
-
-        if (message) {
-          activityItems.set(
-            id,
-            createNotificationItem(
-              id,
-              type,
-              message,
-              userData.planRequestDate,
-              false
-            )
-          );
-        }
-      }
-
       if (userData.subscriptionHistory?.lastChanged) {
         const {
           lastChanged,
@@ -168,19 +135,6 @@ const NotificationButton = () => {
             NOTIFICATION_TYPES.SUBSCRIPTION,
             message,
             lastChanged,
-            false
-          )
-        );
-      }
-
-      if (userData.planRequest && userData.planStatus === "Pending") {
-        activityItems.set(
-          `plan-request-${userData.planRequest.requestDate}`,
-          createNotificationItem(
-            `plan-request-${userData.planRequest.requestDate}`,
-            NOTIFICATION_TYPES.PLAN_REQUEST,
-            `Your request for ${userData.planRequest.requestedPlan} plan is pending approval`,
-            userData.planRequest.requestDate,
             false
           )
         );
@@ -240,7 +194,8 @@ const NotificationButton = () => {
         createCollectionListener(
           "orders",
           NOTIFICATION_TYPES.ORDER,
-          (data) => `New order: ${data.productName} (${data.quantity} items)`
+          (data) =>
+            `New order placed: ${data.productName} (${data.quantity} items)`
         ),
         createCollectionListener(
           "adminActivity",
@@ -302,15 +257,9 @@ const NotificationButton = () => {
         .map((notification) => {
           const baseUpdate = { read: true };
 
-          if (
-            notification.type.startsWith("care-plan") ||
-            notification.type === NOTIFICATION_TYPES.SUBSCRIPTION ||
-            notification.type === NOTIFICATION_TYPES.PLAN_REQUEST
-          ) {
+          if (notification.type === NOTIFICATION_TYPES.SUBSCRIPTION) {
             return updateDoc(doc(db, "users", currentUser.uid), {
               "subscriptionHistory.read": true,
-              "planRequest.read": true,
-              "planStatus.read": true,
             });
           }
 
@@ -412,12 +361,7 @@ const NotificationButton = () => {
                     onClick={() => handleNotificationClick(notification)}
                     className={`p-4 hover:bg-green3/10 cursor-pointer ${
                       notification.status === "cancelled" ? "opacity-60" : ""
-                    } ${!notification.read ? "bg-green3/5" : ""} ${
-                      notification.type ===
-                      NOTIFICATION_TYPES.CARE_PLAN_REJECTED
-                        ? "bg-blue-50/50"
-                        : ""
-                    }`}
+                    } ${!notification.read ? "bg-green3/5" : ""}`}
                   >
                     <div className="flex gap-3">
                       <span className="text-xl">

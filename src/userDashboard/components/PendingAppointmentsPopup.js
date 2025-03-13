@@ -3,16 +3,20 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Bell, X, Calendar } from "lucide-react";
 import { db } from "../../firebase-config";
 import { collection, query, where, onSnapshot } from "firebase/firestore";
+import { useAuth } from "../../hooks/useAuth";
 
 function PendingAppointmentsPopup({ onViewAppointment }) {
   const [pendingAppointments, setPendingAppointments] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
+  const { currentUser } = useAuth();
 
   useEffect(() => {
-    // Query for pending appointments
+    if (!currentUser) return;
+
     const appointmentsQuery = query(
       collection(db, "appointments"),
-      where("status", "==", "Pending")
+      where("status", "==", "Pending"),
+      where("userId", "==", currentUser.uid)
     );
 
     const unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
@@ -30,7 +34,7 @@ function PendingAppointmentsPopup({ onViewAppointment }) {
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [currentUser]);
 
   if (pendingAppointments.length === 0) {
     return null;
@@ -49,7 +53,7 @@ function PendingAppointmentsPopup({ onViewAppointment }) {
             <div className="flex items-center">
               <Bell className="text-yellow-500 mr-2 size-5" />
               <h3 className="font-nunito-bold text-green2">
-                Pending Appointments ({pendingAppointments.length})
+                Your Pending Appointments ({pendingAppointments.length})
               </h3>
             </div>
             <button
@@ -73,15 +77,12 @@ function PendingAppointmentsPopup({ onViewAppointment }) {
                 <div className="font-nunito-bold text-md text-text">
                   {appointment.petName || "Unnamed Pet"}
                 </div>
-                <div className="text-sm text-text/80">
+                <div className="text-sm text-text/80 font-nunito-bold tracking-wide">
                   {appointment.service || "No service specified"}
                 </div>
-                <div className="flex items-center text-sm text-text/70 mt-1">
+                <div className="flex items-center text-sm text-text/70 mt-1 font-nunito-semibold">
                   <Calendar size={15} className="mr-1" />
                   {appointment.date || "No date specified"}
-                </div>
-                <div className="text-xs font-nunito-semibold text-text/80 mt-1">
-                  By: {appointment.userName || "Unknown"}
                 </div>
               </div>
             ))}
@@ -90,7 +91,7 @@ function PendingAppointmentsPopup({ onViewAppointment }) {
           <div className="mt-3 flex justify-end">
             <button
               onClick={() => setIsOpen(false)}
-              className="px-3 py-1 text-xs font-nunito-semibold text-text/60 hover:text-text/80 transition-colors"
+              className="px-3 py-1 text-xs font-nunito-bold text-text/60 hover:text-text/90 transition-colors p-2 hover:bg-green2/10 rounded-md"
             >
               Close
             </button>

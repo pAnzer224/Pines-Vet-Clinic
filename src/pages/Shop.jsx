@@ -26,13 +26,6 @@ import PromptModal from "../components/promptModal";
 
 const PRODUCTS_PER_PAGE = 12;
 
-const planDiscounts = {
-  premium: 0.2,
-  standard: 0.15,
-  basic: 0.1,
-  free: 0,
-};
-
 const Shop = () => {
   const [products, setProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
@@ -45,10 +38,6 @@ const Shop = () => {
   const [lastProduct, setLastProduct] = useState(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [isAuthPromptOpen, setIsAuthPromptOpen] = useState(false);
-  const [userPlan, setUserPlan] = useState({
-    name: "free",
-    discount: 0,
-  });
   const { currentUser } = useAuth();
   const [overlaySettings, setOverlaySettings] = useState({
     isEnabled: false,
@@ -89,23 +78,6 @@ const Shop = () => {
     }, 500);
     return () => clearTimeout(timer);
   }, [overlaySettings.isEnabled]);
-
-  useEffect(() => {
-    if (!currentUser) return;
-
-    const unsubscribe = onSnapshot(doc(db, "users", currentUser.uid), (doc) => {
-      if (doc.exists()) {
-        const userData = doc.data();
-        const planName = userData.plan || "free";
-        setUserPlan({
-          name: planName,
-          discount: planDiscounts[planName] || 0,
-        });
-      }
-    });
-
-    return () => unsubscribe();
-  }, [currentUser]);
 
   useEffect(() => {
     const initialQuery = query(
@@ -199,17 +171,11 @@ const Shop = () => {
 
       const cartSnapshot = await getDocs(cartQuery);
 
-      const discountedPrice = Math.round(
-        product.price * (1 - (userPlan.discount || 0))
-      );
-
       if (!cartSnapshot.empty) {
         const cartItem = cartSnapshot.docs[0];
         await updateDoc(doc(db, "cart", cartItem.id), {
           quantity: cartItem.data().quantity + 1,
           updatedAt: serverTimestamp(),
-          price: discountedPrice,
-          originalPrice: product.price,
         });
       } else {
         await addDoc(collection(db, "cart"), {
@@ -217,8 +183,7 @@ const Shop = () => {
           productId: product.id,
           productName: product.name,
           productImage: product.image,
-          price: discountedPrice,
-          originalPrice: product.price,
+          price: product.price,
           quantity: 1,
           createdAt: serverTimestamp(),
           userName: currentUser.displayName || "Unknown User",
@@ -245,20 +210,9 @@ const Shop = () => {
           product.description
             .toLowerCase()
             .includes(searchQuery.toLowerCase()));
-
-      if (matchesCategory && matchesSearch) {
-        const discountedPrice = Math.round(
-          product.price * (1 - (userPlan.discount || 0))
-        );
-        return {
-          ...product,
-          originalPrice: product.price,
-          price: discountedPrice,
-        };
-      }
-      return false;
+      return matchesCategory && matchesSearch;
     });
-  }, [products, selectedCategory, searchQuery, userPlan.discount]);
+  }, [products, selectedCategory, searchQuery]);
 
   return (
     <div className="min-h-screen bg-background/40">
@@ -278,16 +232,6 @@ const Shop = () => {
             place.
           </p>
         </div>
-
-        {userPlan.name !== "free" && (
-          <div className="bg-green3/20 border-l-4 border-green2 p-4 mb-8 max-w-7xl mx-auto">
-            <p className="text-primary font-nunito-semibold tracking-wide">
-              Your{" "}
-              {userPlan.name.charAt(0).toUpperCase() + userPlan.name.slice(1)}{" "}
-              Plan discount: {userPlan.discount * 100}% off all products!
-            </p>
-          </div>
-        )}
 
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 relative max-w-7xl mx-auto">
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
@@ -336,7 +280,7 @@ const Shop = () => {
             {showTooltip && (
               <>
                 <div
-                  className="fixed inset-0 bg-black/60 z-40"
+                  className="fixed inset-0 bg-black/50 z-40"
                   onClick={() => setShowTooltip(false)}
                 />
                 <div className="absolute right-0 mt-3 z-50">
@@ -386,25 +330,9 @@ const Shop = () => {
                   {product.description}
                 </p>
 
-                <div className="mb-4">
-                  {userPlan.discount > 0 ? (
-                    <>
-                      <p className="text-text/60 text-sm line-through">
-                        ₱{product.originalPrice}
-                      </p>
-                      <p className="text-lg font-semibold text-primary">
-                        ₱{product.price}
-                        <span className="text-sm text-green2 ml-2">
-                          ({userPlan.discount * 100}% off)
-                        </span>
-                      </p>
-                    </>
-                  ) : (
-                    <p className="text-lg font-semibold text-primary">
-                      ₱{product.price}
-                    </p>
-                  )}
-                </div>
+                <p className="text-lg font-semibold text-primary mb-4">
+                  ₱{product.price}
+                </p>
 
                 <button
                   onClick={() => handleAddToCart(product)}

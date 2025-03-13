@@ -28,7 +28,6 @@ import UserOrders from "./userDashboard/pages/UserOrders";
 import AdminLogin from "./admin/pages/AdminLogin";
 import AdminDashboard from "./admin/pages/AdminDashboard";
 import AdminAppointments from "./admin/pages/AdminAppointments";
-import AdminCarePlans from "./admin/pages/AdminCarePlans";
 import AdminShop from "./admin/pages/AdminShop";
 import AdminCustomers from "./admin/pages/AdminCustomers";
 import AdminReports from "./admin/pages/Reports/AdminReports";
@@ -88,7 +87,6 @@ function AppContent() {
                 <Route index element={<Navigate to="dashboard" replace />} />
                 <Route path="dashboard" element={<AdminDashboard />} />
                 <Route path="appointments" element={<AdminAppointments />} />
-                <Route path="care-plans" element={<AdminCarePlans />} />
                 <Route path="shop" element={<AdminShop />} />
                 <Route path="customers" element={<AdminCustomers />} />
                 <Route path="reports" element={<AdminReports />} />

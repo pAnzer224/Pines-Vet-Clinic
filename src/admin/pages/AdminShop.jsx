@@ -7,6 +7,7 @@ import {
   Upload,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import StatusDropdown from "../../components/StatusDropdown";
 import useFirestoreCrud from "../../hooks/useFirestoreCrud";
@@ -40,6 +41,9 @@ function AdminShop() {
     stock: "",
     image: "",
   });
+  const [selectedProduct, setSelectedProduct] = useState("All Products");
+  const [isProductFilterOpen, setIsProductFilterOpen] = useState(false);
+  const productFilterRef = useRef(null);
 
   // Pagination states
   const [currentPage, setCurrentPage] = useState(1);
@@ -58,6 +62,12 @@ function AdminShop() {
     function handleClickOutside(event) {
       if (modalRef.current && !modalRef.current.contains(event.target)) {
         setIsModalOpen(false);
+      }
+      if (
+        productFilterRef.current &&
+        !productFilterRef.current.contains(event.target)
+      ) {
+        setIsProductFilterOpen(false);
       }
     }
 
@@ -169,11 +179,33 @@ function AdminShop() {
     }
   };
 
+  // Get list of all product names from orders
+  const productNames = [
+    "All Products",
+    ...new Set(orders.map((order) => order.productName)),
+  ];
+
+  // Filter orders based on selected product
+  const filteredOrders =
+    selectedProduct === "All Products"
+      ? orders
+      : orders.filter((order) => order.productName === selectedProduct);
+
+  // Count orders per product
+  const orderCountByProduct = {};
+  orders.forEach((order) => {
+    if (orderCountByProduct[order.productName]) {
+      orderCountByProduct[order.productName]++;
+    } else {
+      orderCountByProduct[order.productName] = 1;
+    }
+  });
+
   // Pagination logic
   const indexOfLastOrder = currentPage * ordersPerPage;
   const indexOfFirstOrder = indexOfLastOrder - ordersPerPage;
 
-  const sortedOrders = [...orders].sort((a, b) => {
+  const sortedOrders = [...filteredOrders].sort((a, b) => {
     const statusOrder = {
       Pending: 0,
       Cancelled: 0,
@@ -407,7 +439,7 @@ function AdminShop() {
             {filteredProducts.map((product) => (
               <tr
                 key={product.id}
-                className="border-b border-green3/30 hover:bg-green3/10 font-nunito-semibold text-text/80"
+                className="border-b border-green3/30 hover:bg-green3/10 font-nunito-bold text-text/80"
               >
                 <td className="p-3 font-nunito-bold text-base">
                   {product.name}
@@ -477,9 +509,57 @@ function AdminShop() {
         <h2 className="text-2xl font-nunito-bold text-green2 mb-4">
           Order History
         </h2>
-        <span className="px-2.5 py-1 bg-green3/30 text-green2 rounded-full text-sm font-nunito-bold border border-green2">
-          {orders.length} Orders
-        </span>
+        <div className="flex items-center gap-4 flex-wrap">
+          <span className="px-2.5 py-1 bg-green3/30 text-green2 rounded-full text-sm font-nunito-bold border border-green2">
+            {orders.length} Orders
+          </span>
+
+          {/* Product Filter Dropdown */}
+          <div className="relative" ref={productFilterRef}>
+            <button
+              onClick={() => setIsProductFilterOpen(!isProductFilterOpen)}
+              className="flex items-center gap-2 px-2.5 py-1 bg-green3/30 text-green2 rounded-full text-sm font-nunito-bold border border-green2"
+            >
+              {selectedProduct}
+              {selectedProduct !== "All Products" && (
+                <span className="ml-1">
+                  ({orderCountByProduct[selectedProduct] || 0})
+                </span>
+              )}
+              <ChevronDown className="h-4 w-4" />
+            </button>
+
+            {isProductFilterOpen && (
+              <div className="absolute z-10 mt-1 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                <div className="py-1 max-h-60 overflow-auto">
+                  {productNames.map((name) => (
+                    <button
+                      key={name}
+                      onClick={() => {
+                        setSelectedProduct(name);
+                        setCurrentPage(1);
+                        setIsProductFilterOpen(false);
+                      }}
+                      className={`block w-full text-left px-4 py-2 text-sm ${
+                        selectedProduct === name
+                          ? "bg-green3/20 text-green2 font-nunito-bold"
+                          : "text-text hover:bg-green3/10"
+                      }`}
+                    >
+                      {name}
+                      {name !== "All Products" && (
+                        <span className="ml-2 text-green2 font-nunito-bold">
+                          ({orderCountByProduct[name] || 0})
+                        </span>
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
         <div className="grid gap-3 pt-5">
           {currentOrders.map((order) => (
             <div

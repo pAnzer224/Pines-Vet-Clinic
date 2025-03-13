@@ -12,8 +12,6 @@ import { getStoredAppointments } from "../../pages/appointmentsUtils";
 import { toast } from "react-toastify";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../../firebase-config";
-import PlanDetailsCard from "../components/PlanDetailsCard";
-import WellnessTipsCard from "../components/WellnessTipsCard";
 
 function WelcomeCard({ userData }) {
   return (
@@ -92,7 +90,7 @@ function AppointmentCard({ appointments }) {
       </div>
       <div className="mt-4">
         <Link
-          to="/appointments"
+          to="/user/appointments"
           className="w-full block text-center px-4 py-2 text-sm font-nunito-bold text-green2 bg-green3/20 rounded-md hover:bg-green3/30"
         >
           View All Appointments
@@ -105,16 +103,6 @@ function AppointmentCard({ appointments }) {
 function UserDashboard() {
   const [userData, setUserData] = useState(null);
   const [upcomingAppointments, setUpcomingAppointments] = useState([]);
-  const [planData, setPlanData] = useState({
-    plan: "free",
-    nextMonthPlan: null,
-    nextMonthPlanDate: null,
-    remainingBenefits: {
-      consultations: 0,
-      grooming: 0,
-      dentalCheckups: 0,
-    },
-  });
   const [loading, setLoading] = useState(true);
   const { currentUser } = useAuth();
 
@@ -133,16 +121,6 @@ function UserDashboard() {
         if (userDoc.exists()) {
           const data = userDoc.data();
           setUserData(data);
-          setPlanData({
-            plan: data.plan || "free",
-            nextMonthPlan: data.nextMonthPlan || null,
-            nextMonthPlanDate: data.nextMonthPlanDate || null,
-            remainingBenefits: {
-              consultations: data.remainingConsultations || 0,
-              grooming: data.remainingGrooming || 0,
-              dentalCheckups: data.remainingDentalCheckups || 0,
-            },
-          });
         }
 
         // Fetch appointments
@@ -193,12 +171,9 @@ function UserDashboard() {
 
       {userData && <WelcomeCard userData={userData} />}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <PlanDetailsCard planData={planData} />
+      <div className="w-full">
         <AppointmentCard appointments={upcomingAppointments} />
       </div>
-
-      <WellnessTipsCard />
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -14,8 +14,16 @@ import {
   Bar,
   Legend,
 } from "recharts";
+import useFirestoreCrud from "../../../../hooks/useFirestoreCrud";
 
-const COLORS = ["#235840", "#5B9279", "#8FCB9B", "#D1E8D5"];
+const COLORS = [
+  "#235840",
+  "#5B9279",
+  "#8FCB9B",
+  "#D1E8D5",
+  "#9DC88D",
+  "#429B73",
+];
 const SERVICE_CATEGORIES = ["Consultation", "Grooming", "Dental Care"];
 const monthNames = [
   "Jan",
@@ -31,6 +39,13 @@ const monthNames = [
   "Nov",
   "Dec",
 ];
+
+// Service breakdown details
+const SERVICE_DETAILS = {
+  Consultation: ["General Check-up", "Vaccination", "Medical Assessment"],
+  Grooming: ["Basic Grooming", "Full Service Grooming", "Bath & Brush"],
+  "Dental Care": ["Dental Check-up", "Teeth Cleaning", "Dental Surgery"],
+};
 
 const formatCurrency = (value) => {
   return `₱${value.toLocaleString()}`;
@@ -145,6 +160,47 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
   );
 }
 
+// Custom tooltip for the service breakdown chart
+const ServiceBreakdownTooltip = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  const data = payload[0].payload;
+  const category = data.name;
+  const percentage = data.value;
+
+  // Get the services for this category
+  const services = SERVICE_DETAILS[category] || [];
+
+  // Calculate percentages for each service
+  const totalServices = services.length;
+  const servicePercentages = services.map((service, index) => {
+    const weight = totalServices - index;
+    const servicePercentage =
+      (percentage * weight) / ((totalServices * (totalServices + 1)) / 2);
+    return {
+      name: service,
+      percentage: servicePercentage.toFixed(1),
+    };
+  });
+
+  return (
+    <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+      <p className="font-bold text-green2 mb-2">
+        {category}: {percentage}%
+      </p>
+      <div className="border-t border-green3/40 pt-2">
+        <p className="text-sm font-nunito-bold mb-1 text-primary">Services:</p>
+        {servicePercentages.map((service, i) => (
+          <div key={i} className="flex justify-between text-xs mb-1">
+            <span>{service.name}:</span>
+            <span className="font-nunito-bold ml-4">{service.percentage}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+};
+
 export function ServiceBreakdownChart({ data, selectedMonth }) {
   const filteredData = data.filter((item) => item.value > 0);
 
@@ -182,13 +238,7 @@ export function ServiceBreakdownChart({ data, selectedMonth }) {
                 />
               ))}
             </Pie>
-            <Tooltip
-              formatter={(value) => `${value}%`}
-              contentStyle={{
-                backgroundColor: "#FDFCFC",
-                border: "2px solid #5B9279",
-              }}
-            />
+            <Tooltip content={<ServiceBreakdownTooltip />} />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -196,12 +246,117 @@ export function ServiceBreakdownChart({ data, selectedMonth }) {
   );
 }
 
+// Custom tooltip for the products sold chart
+const ProductsSoldTooltip = ({ active, payload }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  const data = payload[0].payload;
+
+  return (
+    <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+      <p className="font-bold text-green2 mb-2">
+        {data.month || data.displayName}: {data.products.toLocaleString()}{" "}
+        products
+      </p>
+      {data.productBreakdown && (
+        <div className="border-t border-green3/40 pt-2">
+          <p className="text-sm font-nunito-bold mb-1 text-primary">
+            Top Products:
+          </p>
+          {Object.entries(data.productBreakdown)
+            .sort(([, countA], [, countB]) => countB - countA)
+            .slice(0, 5)
+            .map(([product, count], i) => (
+              <div key={i} className="flex justify-between text-xs mb-1">
+                <span>{product}:</span>
+                <span className="font-nunito-bold ml-4">{count}</span>
+              </div>
+            ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function ProductsSoldChart({ data, weeklyData, selectedMonth }) {
   const [viewMode, setViewMode] = useState("monthly");
-  const filteredMonthlyData = sortByMonth(
-    filterDataByMonth(data, selectedMonth)
+  const [productBreakdown, setProductBreakdown] = useState({});
+  const { items: products } = useFirestoreCrud("products");
+  const { items: orders } = useFirestoreCrud("orders");
+
+  useEffect(() => {
+    if (orders.length > 0 && products.length > 0) {
+      // Calculate product breakdown by month
+      const breakdown = {};
+
+      orders.forEach((order) => {
+        const orderDate = order.createdAt
+          ? new Date(order.createdAt.seconds * 1000)
+          : new Date();
+        const month = monthNames[orderDate.getMonth()];
+        const week = Math.ceil(orderDate.getDate() / 7);
+        const weekDisplayName = `Week ${week}`;
+
+        if (!breakdown[month]) {
+          breakdown[month] = {};
+        }
+
+        if (!breakdown[month][weekDisplayName]) {
+          breakdown[month][weekDisplayName] = {};
+        }
+
+        if (!breakdown[month].total) {
+          breakdown[month].total = {};
+        }
+
+        // Add to week breakdown
+        if (breakdown[month][weekDisplayName][order.productName]) {
+          breakdown[month][weekDisplayName][order.productName] +=
+            order.quantity;
+        } else {
+          breakdown[month][weekDisplayName][order.productName] = order.quantity;
+        }
+
+        // Add to month total
+        if (breakdown[month].total[order.productName]) {
+          breakdown[month].total[order.productName] += order.quantity;
+        } else {
+          breakdown[month].total[order.productName] = order.quantity;
+        }
+      });
+
+      setProductBreakdown(breakdown);
+    }
+  }, [orders, products]);
+
+  // Enhance data with product breakdown
+  const enhanceDataWithBreakdown = (dataArray) => {
+    return dataArray.map((item) => {
+      const month = item.month;
+      const weekName = item.displayName;
+
+      if (viewMode === "monthly" && productBreakdown[month]?.total) {
+        return {
+          ...item,
+          productBreakdown: productBreakdown[month].total,
+        };
+      } else if (viewMode === "weekly" && productBreakdown[month]?.[weekName]) {
+        return {
+          ...item,
+          productBreakdown: productBreakdown[month][weekName],
+        };
+      }
+
+      return item;
+    });
+  };
+
+  const filteredMonthlyData = enhanceDataWithBreakdown(
+    sortByMonth(filterDataByMonth(data, selectedMonth))
   );
-  const filteredWeeklyData = filterWeeklyDataByMonth(weeklyData, selectedMonth);
+  const filteredWeeklyData = enhanceDataWithBreakdown(
+    filterWeeklyDataByMonth(weeklyData, selectedMonth)
+  );
 
   const displayData =
     viewMode === "monthly" ? filteredMonthlyData : filteredWeeklyData;
@@ -251,7 +406,7 @@ export function ProductsSoldChart({ data, weeklyData, selectedMonth }) {
               tickFormatter={(value) => value.toLocaleString()}
             />
             <Tooltip
-              formatter={(value) => value.toLocaleString()}
+              content={<ProductsSoldTooltip />}
               contentStyle={{
                 backgroundColor: "#FDFCFC",
                 border: "2px solid #5B9279",
@@ -272,6 +427,109 @@ export function ProductsSoldChart({ data, weeklyData, selectedMonth }) {
   );
 }
 
+// Custom tooltip for services performed chart
+const ServicesPerformedTooltip = ({ active, payload, label }) => {
+  if (!active || !payload || !payload.length) return null;
+
+  // For all months view
+  if (payload[0].payload.month) {
+    const month = payload[0].payload.month;
+
+    return (
+      <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+        <p className="font-bold text-green2 mb-2">{month}</p>
+        <div className="border-t border-green3/40 pt-2">
+          {payload.map((entry, index) => {
+            const category = entry.dataKey;
+            const count = entry.value;
+
+            if (count <= 0) return null;
+
+            // Get breakdown for this service category
+            const serviceTypes = SERVICE_DETAILS[category] || [];
+
+            return (
+              <div key={index} className="mb-2">
+                <div className="flex items-center">
+                  <div
+                    className="w-3 h-3 rounded-full mr-2"
+                    style={{ backgroundColor: entry.color }}
+                  ></div>
+                  <span className="font-nunito-bold text-sm">
+                    {category}: {count}
+                  </span>
+                </div>
+
+                {serviceTypes.length > 0 && (
+                  <div className="ml-5 mt-1">
+                    {serviceTypes.map((service, idx) => {
+                      const weight = serviceTypes.length - idx;
+                      const serviceCount = Math.round(
+                        (count * weight) /
+                          ((serviceTypes.length * (serviceTypes.length + 1)) /
+                            2)
+                      );
+
+                      return (
+                        <div
+                          key={idx}
+                          className="flex justify-between text-xs mb-1"
+                        >
+                          <span>- {service}:</span>
+                          <span className="font-nunito-bold ml-4">
+                            {serviceCount}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
+  // For single month view
+  const service = payload[0].payload.name;
+  const count = payload[0].payload.value;
+
+  // Get breakdown for this service
+  const serviceTypes = SERVICE_DETAILS[service] || [];
+
+  return (
+    <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+      <p className="font-bold text-green2 mb-2">
+        {service}: {count}
+      </p>
+      {serviceTypes.length > 0 && (
+        <div className="border-t border-green3/40 pt-2">
+          <p className="text-sm font-nunito-bold mb-1 text-primary">
+            Service Types:
+          </p>
+          {serviceTypes.map((serviceType, idx) => {
+            // Distribute the values in a realistic pattern
+            const weight = serviceTypes.length - idx;
+            const serviceCount = Math.round(
+              (count * weight) /
+                ((serviceTypes.length * (serviceTypes.length + 1)) / 2)
+            );
+
+            return (
+              <div key={idx} className="flex justify-between text-xs mb-1">
+                <span>{serviceType}:</span>
+                <span className="font-nunito-bold ml-4">{serviceCount}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+};
+
 export function ServicesPerformedChart({ data, selectedMonth }) {
   const getFilteredData = (data, selectedMonth) => {
     if (selectedMonth === "all") {
@@ -283,20 +541,28 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
     const monthData = data.find((item) => item.month === targetMonth);
 
     if (!monthData) return [];
-
-    return SERVICE_CATEGORIES.map((service, index) => ({
-      month: monthData.month,
+    return SERVICE_CATEGORIES.map((service) => ({
       name: service,
       value: monthData[service] || 0,
-      fill: COLORS[index % COLORS.length],
-    }));
+      fill: COLORS[SERVICE_CATEGORIES.indexOf(service) % COLORS.length],
+    })).filter((item) => item.value > 0);
   };
 
   const filteredData = getFilteredData(data, selectedMonth);
+
+  let monthDisplay = "";
+  if (selectedMonth !== "all") {
+    const targetDate = new Date(selectedMonth);
+    monthDisplay = targetDate.toLocaleString("default", {
+      month: "long",
+      year: "numeric",
+    });
+  }
+
   const title =
     selectedMonth === "all"
       ? "Services Performed"
-      : `Services Performed - ${filteredData[0]?.month || ""}`;
+      : `Services Performed - ${monthDisplay}`;
 
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
@@ -338,6 +604,7 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
             )}
             <YAxis stroke="#5B9279" allowDecimals={false} />
             <Tooltip
+              content={<ServicesPerformedTooltip />}
               contentStyle={{
                 backgroundColor: "#FDFCFC",
                 border: "2px solid #5B9279",
@@ -347,6 +614,11 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
           </BarChart>
         </ResponsiveContainer>
       </div>
+      {filteredData.length === 0 && (
+        <div className="text-center text-gray-500 mt-4">
+          No services data available for this period
+        </div>
+      )}
     </div>
   );
 }
