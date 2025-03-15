@@ -9,6 +9,7 @@ import {
   serverTimestamp,
   orderBy,
   updateDoc,
+  onSnapshot,
 } from "firebase/firestore";
 import { toast } from "react-toastify";
 
@@ -116,5 +117,57 @@ export const cancelAppointment = async (appointmentId) => {
     console.error("Error canceling appointment:", error);
     toast.error("Failed to cancel appointment. Please try again.");
     return false;
+  }
+};
+
+// New function for real-time appointment updates
+export const subscribeToAppointmentUpdates = (userId, callback) => {
+  try {
+    if (!userId) {
+      console.error("No user ID provided for subscription");
+      return () => {}; // Return empty function if no userId
+    }
+
+    const q = query(
+      collection(db, "appointments"),
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+
+    // Create a real-time listener
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedAppointments = snapshot.docs
+        .map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }))
+        .filter((apt) => apt.status !== "Cancelled");
+
+      callback(updatedAppointments);
+
+      // Show toast notification for status changes
+      snapshot.docChanges().forEach((change) => {
+        const appointment = { id: change.doc.id, ...change.doc.data() };
+
+        // Only show for modifications, not new appointments
+        if (change.type === "modified") {
+          if (appointment.status === "Confirmed") {
+            toast.success(
+              `Your appointment for ${appointment.petName} has been confirmed!`
+            );
+          } else if (appointment.status === "Rejected") {
+            toast.error(
+              `Your appointment for ${appointment.petName} has been rejected. Please contact us for more information.`
+            );
+          }
+        }
+      });
+    });
+
+    return unsubscribe;
+  } catch (error) {
+    console.error("Error subscribing to appointments:", error);
+    toast.error("Failed to subscribe to appointment updates");
+    return () => {};
   }
 };

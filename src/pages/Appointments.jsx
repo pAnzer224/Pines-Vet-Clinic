@@ -6,11 +6,13 @@ import {
   CalendarDays,
   PlusCircle,
   ChevronDown,
+  CheckCircle,
 } from "lucide-react";
 import {
   storeAppointment,
   getStoredAppointments,
   cancelAppointment,
+  subscribeToAppointmentUpdates,
 } from "../pages/appointmentsUtils";
 import { getPets } from "../pages/petsUtils";
 import { auth } from "../firebase-config";
@@ -38,6 +40,8 @@ export default function Appointments() {
   // New state for pet dropdown
   const [isPetDropdownOpen, setIsPetDropdownOpen] = useState(false);
   const petDropdownRef = useRef(null);
+  // New state for status notification
+  const [statusNotification, setStatusNotification] = useState(null);
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
@@ -70,6 +74,8 @@ export default function Appointments() {
   }, []);
 
   useEffect(() => {
+    let unsubscribe = null;
+
     const fetchData = async () => {
       if (currentUser) {
         try {
@@ -82,6 +88,14 @@ export default function Appointments() {
 
           setAppointments(userAppointments);
           setPets(Array.isArray(fetchedPets) ? fetchedPets : []);
+
+          // Subscribe to realtime updates for this user's appointments
+          unsubscribe = subscribeToAppointmentUpdates(
+            currentUser.uid,
+            (updatedAppointments) => {
+              setAppointments(updatedAppointments);
+            }
+          );
         } catch (error) {
           toast.error("Failed to fetch data");
           setAppointments([]);
@@ -94,6 +108,13 @@ export default function Appointments() {
     };
 
     fetchData();
+
+    // Cleanup subscription on unmount
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [currentUser]);
 
   const handleServiceSelection = (serviceDetails) => {
@@ -145,7 +166,21 @@ export default function Appointments() {
           setSelectedServiceDetails(null);
           setSelectedPet(null);
           setIsSchedulerOpen(false);
-          toast.success("Appointment booked successfully!");
+
+          //  status notification
+          setStatusNotification({
+            id: storedAppointment.id,
+            message:
+              "Your appointment has been scheduled and is pending approval from our staff. We'll notify you once it's confirmed.",
+            type: "pending",
+            service: storedAppointment.service,
+            date: storedAppointment.date,
+          });
+
+          // Auto-close the notification after 10 seconds (change if needed)
+          setTimeout(() => {
+            setStatusNotification(null);
+          }, 10000);
         } else {
           toast.error(
             "This time slot is already booked. Please choose another."
@@ -197,6 +232,76 @@ export default function Appointments() {
           message={overlaySettings.appointments.message}
         />
       )}
+
+      <AnimatePresence>
+        {statusNotification && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 z-50"
+              onClick={() => setStatusNotification(null)}
+            />
+
+            {/* Notification */}
+            <div
+              style={{
+                position: "fixed",
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+                width: "100%",
+                maxWidth: "480px",
+                zIndex: 100,
+                margin: 0,
+                padding: 0,
+              }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                className="bg-white border-2 border-green2 rounded-xl shadow-xl p-6"
+              >
+                <div>
+                  <div className="flex items-center mb-1">
+                    <div className="bg-yellow-100 p-3 rounded-full mr-3">
+                      <CalendarDays className="text-yellow-700 size-6" />
+                    </div>
+                    <h3 className="font-bold text-lg text-text">
+                      Appointment Status
+                    </h3>
+                  </div>
+                  <p className="text-text/80 mb-4 text-sm tracking-wide">
+                    {statusNotification.message}
+                  </p>
+
+                  {statusNotification.service && statusNotification.date && (
+                    <div className="bg-green3/10 p-3 rounded-lg border border-green2/30 mt-2">
+                      <p className="text-text/80 text-sm font-semibold">
+                        {statusNotification.service}
+                      </p>
+                      <p className="text-text/70 text-sm">
+                        {statusNotification.date}
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className="flex justify-end mt-6">
+                  <button
+                    onClick={() => setStatusNotification(null)}
+                    className="flex items-center bg-green3 hover:bg-green3/80 text-text px-4 py-2 rounded-full transition-colors"
+                  >
+                    <CheckCircle className="size-4 mr-2" />
+                    <span>Got it</span>
+                  </button>
+                </div>
+              </motion.div>
+            </div>
+          </>
+        )}
+      </AnimatePresence>
 
       <div className="max-w-5xl mx-auto grid md:grid-cols-2 gap-8">
         <div className="border-[1.6px] border-green2 rounded-2xl p-8 bg-background">
