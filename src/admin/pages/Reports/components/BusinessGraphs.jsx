@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   LineChart,
   Line,
@@ -13,8 +13,6 @@ import {
   BarChart,
   Bar,
   Legend,
-  Area,
-  ComposedChart,
 } from "recharts";
 import useFirestoreCrud from "../../../../hooks/useFirestoreCrud";
 
@@ -93,13 +91,29 @@ const sortByMonth = (data) => {
 
 export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
   const [viewMode, setViewMode] = useState("monthly");
-  const [categoryMode, setCategoryMode] = useState("total");
+  const [filterMode, setFilterMode] = useState("total");
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+  const [expandedCategories, setExpandedCategories] = useState({});
+  const dropdownRef = useRef(null);
   const { items: orders } = useFirestoreCrud("orders");
   const { items: appointments } = useFirestoreCrud("appointments");
   const [categorizedData, setCategorizedData] = useState({
     monthly: [],
     weekly: [],
   });
+  const [filterOptions, setFilterOptions] = useState([]);
+
+  useEffect(() => {
+    // Close dropdown when clicking outside
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setIsFilterDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     const processData = () => {
@@ -108,6 +122,8 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
       // Initialize data structures
       const monthlyRevenue = {};
       const weeklyRevenue = {};
+      const productCategories = new Set();
+      const serviceCategories = new Set();
 
       // Process orders data (products)
       orders.forEach((order) => {
@@ -123,6 +139,9 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
         const weekKey = `Week ${week}`;
         const monthWeekKey = `${month}-${weekKey}`;
         const orderTotal = order.price * order.quantity;
+        const productName = order.productName || "Unknown Product";
+
+        productCategories.add(productName);
 
         // Initialize monthly structure if needed
         if (!monthlyRevenue[month]) {
@@ -145,11 +164,22 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
           };
         }
 
+        // Add product-specific revenue tracking
+        if (!monthlyRevenue[month][productName]) {
+          monthlyRevenue[month][productName] = 0;
+        }
+        if (!weeklyRevenue[monthWeekKey][productName]) {
+          weeklyRevenue[monthWeekKey][productName] = 0;
+        }
+
         // Update revenues
         monthlyRevenue[month].revenue += orderTotal;
         monthlyRevenue[month].productRevenue += orderTotal;
+        monthlyRevenue[month][productName] += orderTotal;
+
         weeklyRevenue[monthWeekKey].revenue += orderTotal;
         weeklyRevenue[monthWeekKey].productRevenue += orderTotal;
+        weeklyRevenue[monthWeekKey][productName] += orderTotal;
       });
 
       // Process appointments data (services)
@@ -162,6 +192,9 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
         const weekKey = `Week ${week}`;
         const monthWeekKey = `${month}-${weekKey}`;
         const price = parseInt(appointment.price?.replace(/[^\d]/g, "")) || 0;
+        const serviceName = appointment.service || "Unknown Service";
+
+        serviceCategories.add(serviceName);
 
         // Initialize monthly structure if needed
         if (!monthlyRevenue[month]) {
@@ -184,11 +217,22 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
           };
         }
 
+        // Add service-specific revenue tracking
+        if (!monthlyRevenue[month][serviceName]) {
+          monthlyRevenue[month][serviceName] = 0;
+        }
+        if (!weeklyRevenue[monthWeekKey][serviceName]) {
+          weeklyRevenue[monthWeekKey][serviceName] = 0;
+        }
+
         // Update revenues
         monthlyRevenue[month].revenue += price;
         monthlyRevenue[month].serviceRevenue += price;
+        monthlyRevenue[month][serviceName] += price;
+
         weeklyRevenue[monthWeekKey].revenue += price;
         weeklyRevenue[monthWeekKey].serviceRevenue += price;
+        weeklyRevenue[monthWeekKey][serviceName] += price;
       });
 
       // Convert to arrays and sort
@@ -203,6 +247,48 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
         );
       });
 
+      // Create organized filter options with categories
+      const options = [
+        {
+          id: "overview",
+          name: "Overview",
+          items: [
+            { id: "total", name: "Total Revenue", type: "total" },
+            { id: "products", name: "All Products", type: "category" },
+            { id: "services", name: "All Services", type: "category" },
+          ],
+        },
+        {
+          id: "products",
+          name: "Products",
+          items: Array.from(productCategories)
+            .sort()
+            .map((product) => ({
+              id: product,
+              name: product,
+              type: "product",
+            })),
+        },
+        {
+          id: "services",
+          name: "Services",
+          items: Array.from(serviceCategories)
+            .sort()
+            .map((service) => ({
+              id: service,
+              name: service,
+              type: "service",
+            })),
+        },
+      ];
+
+      const initialExpandedState = {};
+      options.forEach((category) => {
+        initialExpandedState[category.id] = category.items.length <= 10;
+      });
+      setExpandedCategories(initialExpandedState);
+
+      setFilterOptions(options);
       setCategorizedData({
         monthly: sortByMonth(monthlyData),
         weekly: weeklyData,
@@ -229,33 +315,60 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
     viewMode === "monthly" ? filteredMonthlyData : filteredWeeklyData;
   const xDataKey = viewMode === "monthly" ? "month" : "displayName";
 
+  // Find current filter information
+  const currentFilterInfo = (() => {
+    for (const category of filterOptions) {
+      const found = category.items.find((item) => item.id === filterMode);
+      if (found) return found;
+    }
+    return { id: "total", name: "Total Revenue", type: "total" };
+  })();
+
+  // Determine which data key to use for the chart
+  const getDataKey = () => {
+    switch (currentFilterInfo.type) {
+      case "total":
+        return "revenue";
+      case "category":
+        return currentFilterInfo.id === "products"
+          ? "productRevenue"
+          : "serviceRevenue";
+      case "product":
+      case "service":
+        return currentFilterInfo.id;
+      default:
+        return "revenue";
+    }
+  };
+
+  const dataKey = getDataKey();
+
   // Custom tooltip that shows categorized revenue
   const CustomTooltip = ({ active, payload, label }) => {
     if (!active || !payload || !payload.length) return null;
 
     const data = payload[0].payload;
-    const hasCategories =
-      data.productRevenue !== undefined && data.serviceRevenue !== undefined;
+    const value = payload[0].value || 0;
 
     return (
       <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
         <p className="font-bold text-green2 mb-2">{label}</p>
         <div className="border-t border-green3/40 pt-2">
           <p className="text-sm mb-1 font-nunito-bold">
-            Total Revenue: {formatCurrency(data.revenue)}
+            {currentFilterInfo.name}: {formatCurrency(value)}
           </p>
-          {hasCategories && (
+          {currentFilterInfo.type === "total" && (
             <>
               <div className="flex justify-between text-xs mb-1">
                 <span>Products:</span>
                 <span className="font-nunito-bold ml-4">
-                  {formatCurrency(data.productRevenue)}
+                  {formatCurrency(data.productRevenue || 0)}
                 </span>
               </div>
               <div className="flex justify-between text-xs mb-1">
                 <span>Services:</span>
                 <span className="font-nunito-bold ml-4">
-                  {formatCurrency(data.serviceRevenue)}
+                  {formatCurrency(data.serviceRevenue || 0)}
                 </span>
               </div>
             </>
@@ -267,11 +380,11 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
 
   return (
     <div className="bg-background p-6 rounded-lg shadow-sm border-2 border-green3/60">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h3 className="font-nunito-bold text-green2">
           {viewMode === "monthly" ? "Monthly Revenue" : "Weekly Revenue"}
         </h3>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <div className="flex gap-1 text-sm">
             <button
               onClick={() => setViewMode("monthly")}
@@ -294,100 +407,122 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
               Weekly
             </button>
           </div>
-          <div className="h-7 border-l border-green3/60"></div>
-          <div className="flex gap-1 text-sm">
+          <div className="h-7 border-l border-green3/60 hidden sm:block"></div>
+          <div className="relative" ref={dropdownRef}>
             <button
-              onClick={() => setCategoryMode("total")}
-              className={`px-3 py-1 rounded ${
-                categoryMode === "total"
-                  ? "bg-green2 text-white"
-                  : "bg-green3/20 text-green2"
-              }`}
+              onClick={() => setIsFilterDropdownOpen(!isFilterDropdownOpen)}
+              className="flex items-center bg-green3/20 text-green2 px-3 py-1 rounded text-sm focus:outline-none focus:ring-2 focus:ring-green2"
             >
-              Total
+              <span className="mr-2">{currentFilterInfo.name}</span>
+              <svg
+                className={`fill-current h-4 w-4 transition-transform ${
+                  isFilterDropdownOpen ? "transform rotate-180" : ""
+                }`}
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+              >
+                <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+              </svg>
             </button>
-            <button
-              onClick={() => setCategoryMode("categorized")}
-              className={`px-3 py-1 rounded ${
-                categoryMode === "categorized"
-                  ? "bg-green2 text-white"
-                  : "bg-green3/20 text-green2"
-              }`}
-            >
-              Categorized
-            </button>
+
+            {isFilterDropdownOpen && (
+              <div className="absolute right-0 mt-1 w-64 bg-white rounded-md shadow-lg border border-green3/40 z-10 max-h-[400px] overflow-y-auto">
+                {filterOptions.map((category) => {
+                  // Determine if this category has too many items
+                  const hasManyItems = category.items.length > 10;
+                  // Get expanded state from the state object
+                  const isExpanded = expandedCategories[category.id];
+
+                  return (
+                    <div key={category.id} className="px-1 py-1">
+                      <div
+                        className="px-3 py-1 text-xs font-bold text-green2 border-b border-green3/20 flex justify-between items-center cursor-pointer"
+                        onClick={() =>
+                          hasManyItems &&
+                          setExpandedCategories((prev) => ({
+                            ...prev,
+                            [category.id]: !isExpanded,
+                          }))
+                        }
+                      >
+                        <span>{category.name}</span>
+                        {hasManyItems && (
+                          <svg
+                            className={`fill-current h-3 w-3 transition-transform ${
+                              isExpanded ? "transform rotate-180" : ""
+                            }`}
+                            xmlns="http://www.w3.org/2000/svg"
+                            viewBox="0 0 20 20"
+                          >
+                            <path d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
+                          </svg>
+                        )}
+                      </div>
+
+                      {isExpanded && (
+                        <div
+                          className={
+                            hasManyItems ? "max-h-40 overflow-y-auto" : ""
+                          }
+                        >
+                          {category.items.map((option) => (
+                            <div
+                              key={option.id}
+                              className={`px-4 py-2 text-sm cursor-pointer hover:bg-green3/10 ${
+                                filterMode === option.id
+                                  ? "bg-green3/20 font-medium"
+                                  : ""
+                              }`}
+                              onClick={() => {
+                                setFilterMode(option.id);
+                                setIsFilterDropdownOpen(false);
+                              }}
+                            >
+                              {option.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </div>
       </div>
       <div className="w-full h-[300px] min-h-[250px]">
         <ResponsiveContainer width="100%" height="100%">
-          {categoryMode === "total" ? (
-            <LineChart
-              data={displayData}
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
-              <XAxis dataKey={xDataKey} stroke="#5B9279" />
-              <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
-              <Tooltip
-                content={<CustomTooltip />}
-                contentStyle={{
-                  backgroundColor: "#FDFCFC",
-                  border: "2px solid #5B9279",
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                name="Revenue"
-                stroke="#235840"
-                strokeWidth={3.5}
-                opacity={1}
-              />
-            </LineChart>
-          ) : (
-            <ComposedChart
-              data={displayData}
-              margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
-              <XAxis dataKey={xDataKey} stroke="#5B9279" />
-              <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
-              <Tooltip
-                content={<CustomTooltip />}
-                contentStyle={{
-                  backgroundColor: "#FDFCFC",
-                  border: "2px solid #5B9279",
-                }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="productRevenue"
-                name="Products"
-                stackId="1"
-                fill="#8FCB9B"
-                stroke="#5B9279"
-              />
-              <Area
-                type="monotone"
-                dataKey="serviceRevenue"
-                name="Services"
-                stackId="1"
-                fill="#D1E8D5"
-                stroke="#9DC88D"
-              />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                name="Total Revenue"
-                stroke="#235840"
-                strokeWidth={2.5}
-              />
-            </ComposedChart>
-          )}
+          <LineChart
+            data={displayData}
+            margin={{ top: 5, right: 20, left: 0, bottom: 5 }}
+          >
+            <CartesianGrid strokeDasharray="3 3" stroke="#C9DAD2" />
+            <XAxis dataKey={xDataKey} stroke="#5B9279" />
+            <YAxis stroke="#5B9279" tickFormatter={formatCurrency} />
+            <Tooltip
+              content={<CustomTooltip />}
+              contentStyle={{
+                backgroundColor: "#FDFCFC",
+                border: "2px solid #5B9279",
+              }}
+            />
+            <Line
+              type="monotone"
+              dataKey={dataKey}
+              name={currentFilterInfo.name}
+              stroke="#235840"
+              strokeWidth={3.5}
+              opacity={1}
+            />
+          </LineChart>
         </ResponsiveContainer>
       </div>
+      {displayData.length === 0 && (
+        <div className="text-center text-gray-500 mt-4">
+          No data available for the selected filter
+        </div>
+      )}
     </div>
   );
 }

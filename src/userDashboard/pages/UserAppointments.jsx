@@ -11,7 +11,6 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import { getStoredAppointments } from "../../pages/appointmentsUtils";
 import { toast } from "react-toastify";
-import PendingAppointmentsPopup from "../components/PendingAppointmentsPopup";
 
 function AppointmentCard({ appointment }) {
   return (
@@ -247,11 +246,6 @@ function Appointments() {
           </button>
         </div>
       </div>
-
-      <PendingAppointmentsPopup
-        onViewAppointment={handleViewAppointment}
-        currentUserId={currentUser?.uid}
-      />
     </div>
   );
 }
