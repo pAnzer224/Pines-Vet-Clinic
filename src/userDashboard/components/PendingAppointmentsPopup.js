@@ -27,10 +27,7 @@ function PendingAppointmentsPopup({ onViewAppointment }) {
 
       setPendingAppointments(appointments);
 
-      // Auto-open popup when there are pending appointments
-      if (appointments.length > 0) {
-        setIsOpen(true);
-      }
+
     });
 
     return () => unsubscribe();

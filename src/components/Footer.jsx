@@ -69,14 +69,8 @@ const Footer = () => {
 
   const locations = [
     {
-      name: "Maginhawa Branch",
-      address: "208 Lower East Camp 7",
-      phone: "712-5577, 946-1906",
-    },
-    {
-      name: "Katipunan Branch",
-      address: "123 Katipunan Ave",
-      phone: "349-0091, 917-1522",
+      address: "68 Purok 1 Kennon Rd, Baguio, 2600 Benguet"
+      phone: "(074)443-5144, 0910-292-2618",
     },
   ];
 
@@ -171,7 +165,7 @@ const Footer = () => {
                 <div>
                   <p className="text-background/80">Monday - Saturday</p>
                   <p className="text-background font-semibold">
-                    9:00 AM - 6:00 PM
+                    8:00 AM - 6:00 PM
                   </p>
                 </div>
               </div>
