@@ -62,16 +62,17 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { icon: <FaFacebookF />, label: "Facebook", url: "https://facebook.com" },
+    { icon: <FaFacebookF />, label: "Facebook", url: "https://www.facebook.com/profile.php?id=100086417720891" },
     { icon: <FaInstagram />, label: "Instagram", url: "https://instagram.com" },
     { icon: <FaTwitter />, label: "Twitter", url: "https://twitter.com" },
   ];
 
   const locations = [
     {
-      address: "68 Purok 1 Kennon Rd, Baguio, 2600 Benguet"
+      address: "#68 Purok 1, Kennon Road, Baguio City",
       phone: "(074)443-5144, 0910-292-2618",
     },
+
   ];
 
   return (
