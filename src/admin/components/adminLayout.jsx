@@ -10,7 +10,6 @@ import {
   Menu,
   X,
   LogOut,
-  Gem,
 } from "lucide-react";
 
 const sidebarItems = [

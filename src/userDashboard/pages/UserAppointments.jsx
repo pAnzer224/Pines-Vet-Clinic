@@ -66,7 +66,6 @@ function Appointments() {
   const [showAllAppointments, setShowAllAppointments] = useState(false);
   const [showAllActivities, setShowAllActivities] = useState(false);
   const { currentUser } = useAuth();
-  const [setSelectedAppointment] = useState(null);
 
   useEffect(() => {
     const fetchAppointments = async () => {
@@ -115,11 +114,6 @@ function Appointments() {
     if (diffInDays < 30) return `${Math.floor(diffInDays / 7)} weeks ago`;
 
     return date.toLocaleDateString();
-  };
-
-  const handleViewAppointment = (appointment) => {
-    setSelectedAppointment(appointment);
-    window.location.href = "/appointments";
   };
 
   const needsScroll = (items) => items.length > 6;

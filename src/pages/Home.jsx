@@ -1,17 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import React, { useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import Services from "./Services";
 import { Phone } from "lucide-react";
 
 const Home = () => {
-  const navigate = useNavigate();
-  const [showMore, setShowMore] = useState(false);
-
   useEffect(() => {
-    const handleScroll = () => {
-      setShowMore(window.scrollY > 750);
-    };
+    const handleScroll = () => {};
 
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
@@ -55,7 +50,6 @@ const Home = () => {
       smoothScroll(offsetPosition, 700);
     }
   };
-
   return (
     <motion.div
       id="home"
