@@ -10,6 +10,7 @@ import {
   deleteDoc,
   updateDoc,
   serverTimestamp,
+  orderBy,
 } from "firebase/firestore";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import ToggleSwitch from "../../components/ToggleSwitch";
@@ -202,28 +203,26 @@ function AdminAppointments() {
   useEffect(() => {
     const appointmentsCollectionRef = collection(db, "appointments");
 
-    const unsubscribe = onSnapshot(
-      query(appointmentsCollectionRef),
-      (snapshot) => {
-        try {
-          setLoading(true);
-          const fetchedAppointments = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          const sortedAppointments = fetchedAppointments.sort((a, b) => {
-            return new Date(a.date) - new Date(b.date);
-          });
-
-          setAppointments(sortedAppointments);
-        } catch (error) {
-          console.error("Appointments fetch error:", error);
-        } finally {
-          setLoading(false);
-        }
-      }
+    const appointmentsQuery = query(
+      appointmentsCollectionRef,
+      orderBy("createdAt", "desc")
     );
+
+    const unsubscribe = onSnapshot(appointmentsQuery, (snapshot) => {
+      try {
+        setLoading(true);
+        const fetchedAppointments = snapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        setAppointments(fetchedAppointments);
+      } catch (error) {
+        console.error("Appointments fetch error:", error);
+      } finally {
+        setLoading(false);
+      }
+    });
 
     return () => unsubscribe();
   }, []);
@@ -284,6 +283,18 @@ function AdminAppointments() {
       : effectiveStatus === selectedStatus;
   });
 
+  // Sort appointments based on the selected status
+  const sortedAppointments = [...filteredAppointments].sort((a, b) => {
+    // Keep the default createdAt descending order for "All Status"
+    if (selectedStatus === "All Status") {
+      // Already sorted by the query, keep the order
+      return 0;
+    } else {
+      // For specific statuses, sort by appointment date
+      return new Date(a.date) - new Date(b.date);
+    }
+  });
+
   return (
     <div className="space-y-6 mt-12">
       <div>
@@ -317,16 +328,22 @@ function AdminAppointments() {
         <LoadingSpinner />
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {filteredAppointments.map((appointment) => (
-            <AppointmentCard
-              key={appointment.id}
-              appointment={appointment}
-              onDeleteAppointment={handleDeleteAppointment}
-              onConfirmAppointment={handleConfirmAppointment}
-              onCompleteAppointment={handleCompleteAppointment}
-              onClick={() => setSelectedAppointment(appointment)}
-            />
-          ))}
+          {sortedAppointments.length > 0 ? (
+            sortedAppointments.map((appointment) => (
+              <AppointmentCard
+                key={appointment.id}
+                appointment={appointment}
+                onDeleteAppointment={handleDeleteAppointment}
+                onConfirmAppointment={handleConfirmAppointment}
+                onCompleteAppointment={handleCompleteAppointment}
+                onClick={() => setSelectedAppointment(appointment)}
+              />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-10 text-text/60">
+              No appointments found matching the selected criteria
+            </div>
+          )}
         </div>
       )}
 
