@@ -62,22 +62,17 @@ const Footer = () => {
   };
 
   const socialLinks = [
-    { icon: <FaFacebookF />, label: "Facebook", url: "https://facebook.com" },
+    { icon: <FaFacebookF />, label: "Facebook", url: "https://www.facebook.com/profile.php?id=100086417720891" },
     { icon: <FaInstagram />, label: "Instagram", url: "https://instagram.com" },
     { icon: <FaTwitter />, label: "Twitter", url: "https://twitter.com" },
   ];
 
   const locations = [
     {
-      name: "Maginhawa Branch",
-      address: "208 Lower East Camp 7",
-      phone: "712-5577, 946-1906",
+      address: "#68 Purok 1, Kennon Road, Baguio City",
+      phone: "(074)443-5144, 0910-292-2618",
     },
-    {
-      name: "Katipunan Branch",
-      address: "123 Katipunan Ave",
-      phone: "349-0091, 917-1522",
-    },
+
   ];
 
   return (
@@ -171,7 +166,7 @@ const Footer = () => {
                 <div>
                   <p className="text-background/80">Monday - Saturday</p>
                   <p className="text-background font-semibold">
-                    9:00 AM - 6:00 PM
+                    8:00 AM - 6:00 PM
                   </p>
                 </div>
               </div>
