@@ -26,8 +26,6 @@ function PendingAppointmentsPopup({ onViewAppointment }) {
       }));
 
       setPendingAppointments(appointments);
-
-
     });
 
     return () => unsubscribe();
