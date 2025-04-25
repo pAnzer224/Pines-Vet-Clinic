@@ -1,0 +1,13 @@
+{
+  "projects": {},
+  "targets": {
+    "highland-petvibes-ph": {
+      "hosting": {
+        "pines-vet-clinic": [
+          "pines-vet-clinic"
+        ]
+      }
+    }
+  },
+  "etags": {}
+}

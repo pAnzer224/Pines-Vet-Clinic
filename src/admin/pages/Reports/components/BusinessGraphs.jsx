@@ -212,7 +212,7 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
     processData();
   }, [orders, appointments]);
 
-  // Use original data if categorized data is empty
+  // Use processed data if available, otherwise use props data
   const filteredMonthlyData = sortByMonth(
     filterDataByMonth(
       categorizedData.monthly.length ? categorizedData.monthly : data,
@@ -238,7 +238,7 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
       data.productRevenue !== undefined && data.serviceRevenue !== undefined;
 
     return (
-      <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+      <div className="p-4 bg-background border-2 border-green2 rounded-md shadow-md">
         <p className="font-bold text-green2 mb-2">{label}</p>
         <div className="border-t border-green3/40 pt-2">
           <p className="text-sm mb-1 font-nunito-bold">
@@ -277,7 +277,7 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
               onClick={() => setViewMode("monthly")}
               className={`px-3 py-1 rounded ${
                 viewMode === "monthly"
-                  ? "bg-green2 text-white"
+                  ? "bg-green2 text-background"
                   : "bg-green3/20 text-green2"
               }`}
             >
@@ -287,7 +287,7 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
               onClick={() => setViewMode("weekly")}
               className={`px-3 py-1 rounded ${
                 viewMode === "weekly"
-                  ? "bg-green2 text-white"
+                  ? "bg-green2 text-background"
                   : "bg-green3/20 text-green2"
               }`}
             >
@@ -300,7 +300,7 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
               onClick={() => setCategoryMode("total")}
               className={`px-3 py-1 rounded ${
                 categoryMode === "total"
-                  ? "bg-green2 text-white"
+                  ? "bg-green2 text-background"
                   : "bg-green3/20 text-green2"
               }`}
             >
@@ -310,7 +310,7 @@ export function MonthlyRevenueChart({ data, weeklyData, selectedMonth }) {
               onClick={() => setCategoryMode("categorized")}
               className={`px-3 py-1 rounded ${
                 categoryMode === "categorized"
-                  ? "bg-green2 text-white"
+                  ? "bg-green2 text-background"
                   : "bg-green3/20 text-green2"
               }`}
             >
@@ -416,7 +416,7 @@ const ServiceBreakdownTooltip = ({ active, payload }) => {
   });
 
   return (
-    <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+    <div className="p-4 bg-background border-2 border-green2 rounded-md shadow-md">
       <p className="font-bold text-green2 mb-2">
         {category}: {percentage}%
       </p>
@@ -485,7 +485,7 @@ const ProductsSoldTooltip = ({ active, payload }) => {
   const data = payload[0].payload;
 
   return (
-    <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+    <div className="p-4 bg-background border-2 border-green2 rounded-md shadow-md">
       <p className="font-bold text-green2 mb-2">
         {data.month || data.displayName}: {data.products.toLocaleString()}{" "}
         products
@@ -607,7 +607,7 @@ export function ProductsSoldChart({ data, weeklyData, selectedMonth }) {
             onClick={() => setViewMode("monthly")}
             className={`px-3 py-1 rounded ${
               viewMode === "monthly"
-                ? "bg-green2 text-white"
+                ? "bg-green2 text-background"
                 : "bg-green3/20 text-green2"
             }`}
           >
@@ -617,7 +617,7 @@ export function ProductsSoldChart({ data, weeklyData, selectedMonth }) {
             onClick={() => setViewMode("weekly")}
             className={`px-3 py-1 rounded ${
               viewMode === "weekly"
-                ? "bg-green2 text-white"
+                ? "bg-green2 text-background"
                 : "bg-green3/20 text-green2"
             }`}
           >
@@ -659,12 +659,20 @@ export function ProductsSoldChart({ data, weeklyData, selectedMonth }) {
   );
 }
 
-// Custom tooltip for services performed chart
-const ServicesPerformedTooltip = ({ active, payload, label }) => {
+const ServicesPerformedTooltip = ({ active, payload, label, coordinate }) => {
   if (!active || !payload || !payload.length) return null;
 
+  const tooltipStyle = {
+    transform: "translate(20px, -100%)",
+    position: "relative",
+    pointerEvents: "none",
+  };
+
   return (
-    <div className="p-4 bg-white border-2 border-green2 rounded-md shadow-md">
+    <div
+      className="p-4 bg-background border-2 border-green2 rounded-md shadow-md"
+      style={tooltipStyle}
+    >
       <p className="font-bold text-green2 mb-2">
         {payload[0].payload.month || payload[0].payload.name}
       </p>
@@ -797,11 +805,9 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
             <YAxis stroke="#5B9279" allowDecimals={false} />
             <Tooltip
               content={<ServicesPerformedTooltip />}
-              contentStyle={{
-                backgroundColor: "#FDFCFC",
-                border: "2px solid #5B9279",
-              }}
               cursor={{ fill: "transparent" }}
+              offset={20}
+              position={{ x: "auto", y: "auto" }}
             />
             <Legend />
           </BarChart>
