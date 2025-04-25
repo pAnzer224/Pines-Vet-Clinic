@@ -761,7 +761,7 @@ export function ServicesPerformedChart({ data, selectedMonth }) {
 
   const title =
     selectedMonth === "all"
-      ? "Services Performed"
+      ? "Services Performedddddsddd"
       : `Services Performed - ${monthDisplay}`;
 
   return (
