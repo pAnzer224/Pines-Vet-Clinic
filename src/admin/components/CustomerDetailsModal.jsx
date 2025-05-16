@@ -10,6 +10,8 @@ import {
   onSnapshot,
 } from "firebase/firestore";
 import { db } from "../../firebase-config";
+// Fix: Import PetAddModal at the component level
+import PetAddModal from "../../components/PetAddModal";
 
 function CustomerDetailsModal({
   isOpen,
@@ -26,6 +28,8 @@ function CustomerDetailsModal({
   const [showAllPets, setShowAllPets] = useState(false);
   const [selectedPet, setSelectedPet] = useState(null);
   const [pets, setPets] = useState([]);
+  // Add state for pet modal
+  const [isPetModalOpen, setIsPetModalOpen] = useState(false);
   const modalRef = useRef(null);
 
   useEffect(() => {
@@ -112,6 +116,16 @@ function CustomerDetailsModal({
         console.error("Error deleting pet:", error);
       }
     }
+  };
+
+  // Fix: Create a function to handle opening the pet modal
+  const handleAddPetClick = () => {
+    setIsPetModalOpen(true);
+  };
+
+  // Fix: Handle pet added
+  const handlePetAdded = () => {
+    setIsPetModalOpen(false);
   };
 
   const displayPets = showAllPets ? pets : pets.slice(0, 1);
@@ -243,7 +257,7 @@ function CustomerDetailsModal({
                   <div className="flex items-center justify-between mb-3">
                     <h4 className="font-nunito-bold text-text/80">Pets</h4>
                     <button
-                      onClick={() => onAddPet(customer.id)}
+                      onClick={handleAddPetClick}
                       className="text-primary hover:bg-green3/20 rounded-full p-1 transition-colors"
                     >
                       <PlusCircle className="w-5 h-5" />
@@ -334,6 +348,13 @@ function CustomerDetailsModal({
           </div>
         </div>
       </div>
+
+      <PetAddModal
+        isOpen={isPetModalOpen}
+        onClose={() => setIsPetModalOpen(false)}
+        onPetAdded={handlePetAdded}
+        userId={customer?.id}
+      />
     </div>
   );
 }

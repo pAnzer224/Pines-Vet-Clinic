@@ -271,26 +271,25 @@ function AdminAppointments() {
         ? "Awaiting Completion"
         : apt.status;
 
-    if (
-      !showPastAppointments &&
-      isPastAppointment &&
-      apt.status === "Concluded"
-    )
-      return false;
+    if (showPastAppointments) {
+      return apt.status === "Concluded";
+    }
+
+    if (apt.status === "Concluded") return false;
 
     return selectedStatus === "All Status"
       ? true
       : effectiveStatus === selectedStatus;
   });
 
-  // Sort appointments based on the selected status
   const sortedAppointments = [...filteredAppointments].sort((a, b) => {
-    // Keep the default createdAt descending order for "All Status"
+    if (showPastAppointments) {
+      return new Date(b.date) - new Date(a.date);
+    }
+
     if (selectedStatus === "All Status") {
-      // Already sorted by the query, keep the order
       return 0;
     } else {
-      // For specific statuses, sort by appointment date
       return new Date(a.date) - new Date(b.date);
     }
   });

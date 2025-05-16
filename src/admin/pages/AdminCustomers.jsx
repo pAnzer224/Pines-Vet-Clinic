@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import StatusDropdown from "../../components/StatusDropdown";
 import AddCustomerModal from "../components/AddCustomerModal";
+// Fix: Import PetAddModal from the correct path
 import PetAddModal from "../../components/PetAddModal";
 import CustomerDetailsModal from "../components/CustomerDetailsModal";
 import LoadingSpinner from "../../components/LoadingSpinner";
