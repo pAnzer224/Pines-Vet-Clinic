@@ -1,17 +1,48 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { ArrowRight, Menu } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import NotificationButton from "./NotificationButton";
+import { doc, getDoc } from "firebase/firestore";
+import { db } from "../firebase-config";
 
 function MainHeader() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [firstName, setFirstName] = useState("User");
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
-  const firstName = currentUser?.displayName
-    ? currentUser.displayName.split(" ")[0]
-    : "User";
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        if (currentUser) {
+          // First try to get name from Firestore user document
+          const userDocRef = doc(db, "users", currentUser.uid);
+          const userDoc = await getDoc(userDocRef);
+
+          if (
+            userDoc.exists() &&
+            userDoc.data().fullName &&
+            userDoc.data().fullName !== "Add Now"
+          ) {
+            const fullName = userDoc.data().fullName;
+            setFirstName(fullName.split(" ")[0]);
+          } else if (
+            currentUser.displayName &&
+            currentUser.displayName !== "Add Now"
+          ) {
+            // Fallback to auth displayName if available
+            setFirstName(currentUser.displayName.split(" ")[0]);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+        // Keep default "User" if there's an error
+      }
+    };
+
+    fetchUserData();
+  }, [currentUser]);
 
   const handleProfileClick = () => {
     navigate("/user/profile");
